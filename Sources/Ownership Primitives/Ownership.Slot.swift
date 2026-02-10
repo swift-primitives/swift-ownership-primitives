@@ -109,14 +109,14 @@ extension Ownership {
         /// Preallocated storage for the value. Always allocated, even when empty.
         /// This avoids allocation on the hot path (store/take operations).
         @usableFromInline
-        let _storage: Pointer<Value>.Mutable
+        let _storage: UnsafeMutablePointer<Value>
 
         /// Creates an empty slot.
         ///
         /// Storage is preallocated but uninitialized.
         public init() {
             _state = Atomic(State.empty)
-            _storage = .allocate(capacity: Index<Value>.Count(__unchecked: (), 1))
+            _storage = unsafe .allocate(capacity: 1)
         }
 
         /// Creates a slot containing the given value.
@@ -124,19 +124,19 @@ extension Ownership {
         /// - Parameter value: The value to store (ownership transferred).
         public init(_ value: consuming Value) {
             _state = Atomic(State.initializing)
-            _storage = .allocate(capacity: Index<Value>.Count(__unchecked: (), 1))
-            _storage.initialize(to: value)
+            _storage = unsafe .allocate(capacity: 1)
+            unsafe _storage.initialize(to: value)
             _state.store(State.full, ordering: .releasing)
         }
 
         deinit {
             let prior = _state.exchange(State.empty, ordering: .acquiringAndReleasing)
             if prior == State.full {
-                _ = _storage.deinitialize(count: Index<Value>.Count(__unchecked: (), 1))
+                unsafe _storage.deinitialize(count: 1)
             }
             // State.initializing at deinit indicates a logic bug (store in progress
             // when object deallocated). In release builds we treat as empty.
-            _storage.deallocate()
+            unsafe _storage.deallocate()
         }
     }
 }

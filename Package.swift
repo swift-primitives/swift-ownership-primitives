@@ -18,13 +18,11 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../swift-memory-primitives"),
     ],
     targets: [
         .target(
             name: "Ownership Primitives",
             dependencies: [
-                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
             ]
         ),
         .testTarget(

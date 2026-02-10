@@ -86,14 +86,14 @@ extension Ownership.Transfer {
         /// Storage for the value. Access protected by _state transitions.
         /// Non-nil only when state is State.full.
         @usableFromInline
-        var _storage: Pointer<T>.Mutable?
+        var _storage: UnsafeMutablePointer<T>?
 
         /// Creates a box containing a value.
         @usableFromInline
         init(_ value: consuming T) {
             _state = Atomic(State.initializing)
-            let p = Pointer<T>.Mutable.allocate(capacity: Index<T>.Count(__unchecked: (), 1))
-            p.initialize(to: value)
+            let p = unsafe UnsafeMutablePointer<T>.allocate(capacity: 1)
+            unsafe p.initialize(to: value)
             (_storage = p)
             _state.store(State.full, ordering: .releasing)
         }
@@ -123,8 +123,8 @@ extension Ownership.Transfer {
             }
 
             // Allocate and initialize
-            let p = Pointer<T>.Mutable.allocate(capacity: Index<T>.Count(__unchecked: (), 1))
-            p.initialize(to: value)
+            let p = unsafe UnsafeMutablePointer<T>.allocate(capacity: 1)
+            unsafe p.initialize(to: value)
             (_storage = p)
 
             // Publish: store full (release ensures init is visible to takers)
@@ -150,8 +150,8 @@ extension Ownership.Transfer {
 
             let p = _storage!
             (_storage = nil)
-            let value = p.move()
-            p.deallocate()
+            let value = unsafe p.move()
+            unsafe p.deallocate()
             return value
         }
 
@@ -170,8 +170,8 @@ extension Ownership.Transfer {
 
             let p = _storage!
             (_storage = nil)
-            let value = p.move()
-            p.deallocate()
+            let value = unsafe p.move()
+            unsafe p.deallocate()
             return value
         }
 
@@ -185,8 +185,8 @@ extension Ownership.Transfer {
             let state = _state.load(ordering: .acquiring)
             if state == State.full, let p = _storage {
                 // Value was never taken - clean up to avoid memory leak
-                _ = p.deinitialize(count: Index<T>.Count(__unchecked: (), 1))
-                p.deallocate()
+                unsafe p.deinitialize(count: 1)
+                unsafe p.deallocate()
             }
             // State.initializing at deinit indicates a logic bug (store in progress
             // when object deallocated). In release builds we ignore.

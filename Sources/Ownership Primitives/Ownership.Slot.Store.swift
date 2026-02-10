@@ -49,7 +49,7 @@ extension Ownership.Slot where Value: ~Copyable {
         }
 
         // Initialize storage
-        _storage.initialize(to: value)
+        unsafe _storage.initialize(to: value)
 
         // Publish: store full (release ensures init is visible to takers)
         _state.store(State.full, ordering: .releasing)
@@ -90,7 +90,7 @@ extension Ownership.Slot where Value: ~Copyable {
         guard exchanged else {
             return nil
         }
-        return _storage.move()
+        return unsafe _storage.move()
     }
 
     /// Atomically takes the value from the slot, trapping if empty.

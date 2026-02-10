@@ -10,10 +10,6 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Memory_Primitives
-public import Identity_Primitives
-import Index_Primitives
-
 // MARK: - Ownership.Unique
 
 extension Ownership {
@@ -50,7 +46,7 @@ extension Ownership {
 
         /// Internal pointer storage. Nil after `take()` or `leak()`.
         @usableFromInline
-        internal var _storage: Pointer<Value>.Mutable?
+        internal var _storage: UnsafeMutablePointer<Value>?
 
         // MARK: - Initialization
 
@@ -62,17 +58,17 @@ extension Ownership {
         /// - Parameter value: The value to own (consumed/moved).
         @inlinable
         public init(_ value: consuming Value) {
-            let storage = Pointer<Value>.Mutable.allocate(
-                capacity: .one
+            let storage = unsafe UnsafeMutablePointer<Value>.allocate(
+                capacity: 1
             )
-            storage.initialize(to: value)
+            unsafe storage.initialize(to: value)
             self._storage = storage
         }
 
         deinit {
             if let storage = _storage {
-                _ = storage.deinitialize(count: .one)
-                storage.deallocate()
+                unsafe storage.deinitialize(count: 1)
+                unsafe storage.deallocate()
             }
         }
     }
@@ -97,8 +93,8 @@ extension Ownership.Unique {
         guard let storage = _storage else {
             preconditionFailure("Ownership.Unique value has already been taken")
         }
-        let value = storage.move()
-        storage.deallocate()
+        let value = unsafe storage.move()
+        unsafe storage.deallocate()
         _storage = nil
         return value
     }
@@ -115,7 +111,7 @@ extension Ownership.Unique {
         guard let storage = _storage else {
             preconditionFailure("Ownership.Unique value has already been taken")
         }
-        return try body(storage.pointee)
+        return try unsafe body(storage.pointee)
     }
 
     /// Executes a closure with mutable access to the owned value.
@@ -130,7 +126,7 @@ extension Ownership.Unique {
         guard let storage = _storage else {
             preconditionFailure("Ownership.Unique value has already been taken")
         }
-        return try body(&storage.pointee)
+        return try unsafe body(&storage.pointee)
     }
 
     /// Returns the underlying pointer and prevents automatic cleanup.
@@ -141,7 +137,8 @@ extension Ownership.Unique {
     /// - Returns: The mutable pointer to the value.
     /// - Precondition: The owner has not already been emptied.
     @inlinable
-    public mutating func leak() -> Pointer<Value>.Mutable {
+    @unsafe
+    public mutating func leak() -> UnsafeMutablePointer<Value> {
         guard let storage = _storage else {
             preconditionFailure("Ownership.Unique value has already been taken")
         }
