@@ -105,9 +105,9 @@ extension Ownership.Unique {
     /// - Returns: The closure's return value.
     /// - Precondition: The owner has not been emptied via `take()` or `leak()`.
     @inlinable
-    public borrowing func withValue<Result: ~Copyable>(
-        _ body: (borrowing Value) throws -> Result
-    ) rethrows -> Result {
+    public borrowing func withValue<Result: ~Copyable, E: Swift.Error>(
+        _ body: (borrowing Value) throws(E) -> Result
+    ) throws(E) -> Result {
         guard let storage = _storage else {
             preconditionFailure("Ownership.Unique value has already been taken")
         }
@@ -120,9 +120,9 @@ extension Ownership.Unique {
     /// - Returns: The closure's return value.
     /// - Precondition: The owner has not been emptied via `take()` or `leak()`.
     @inlinable
-    public mutating func withMutableValue<Result: ~Copyable>(
-        _ body: (inout Value) throws -> Result
-    ) rethrows -> Result {
+    public mutating func withMutableValue<Result: ~Copyable, E: Swift.Error>(
+        _ body: (inout Value) throws(E) -> Result
+    ) throws(E) -> Result {
         guard let storage = _storage else {
             preconditionFailure("Ownership.Unique value has already been taken")
         }
