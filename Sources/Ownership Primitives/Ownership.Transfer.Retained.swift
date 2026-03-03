@@ -69,6 +69,19 @@ extension Ownership.Transfer {
             unsafe (self.raw = UnsafeMutableRawPointer(Unmanaged.passRetained(instance).toOpaque()))
         }
 
+        /// Creates a retained transfer token from an opaque pointer
+        /// previously created by `Unmanaged.passRetained(_:).toOpaque()`.
+        ///
+        /// The pointer must represent a +1 retained reference to `T`.
+        /// Call ``take()`` exactly once to recover the instance.
+        ///
+        /// - Parameter ptr: An opaque pointer holding a +1 retained reference.
+        @inlinable
+        @unsafe
+        public init(_ ptr: UnsafeRawPointer) {
+            unsafe (self.raw = UnsafeMutableRawPointer(mutating: ptr))
+        }
+
         /// Takes ownership of the retained object, decrementing the retain count.
         ///
         /// This method consumes `self`, ensuring it can only be called once.
