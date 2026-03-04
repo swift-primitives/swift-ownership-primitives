@@ -91,87 +91,19 @@ extension Ownership.Transfer.Box {
     }
 }
 
-// MARK: - Result Boxing
-
-extension Ownership.Transfer.Box {
-    /// Allocate and initialize a boxed Result.
-    ///
-    /// Returns a pointer to the erased header. Use `take<T,E>` to unbox
-    /// or `destroy` to free without unboxing.
-    ///
-    /// ## Single Allocation
-    /// The header and payload are stored in a single contiguous allocation.
-    /// The payload is placed at an aligned offset after the header.
-    @unsafe
-    public static func make<T: Sendable, E: Swift.Error & Sendable>(
-        _ result: Result<T, E>
-    ) -> UnsafeMutableRawPointer {
-        let headerSize = MemoryLayout<Header>.size
-        let headerAlignment = MemoryLayout<Header>.alignment
-        let payloadSize = MemoryLayout<Result<T, E>>.size
-        let payloadAlignment = MemoryLayout<Result<T, E>>.alignment
-
-        // Align payload offset properly
-        let payloadOffset = (headerSize + payloadAlignment - 1) & ~(payloadAlignment - 1)
-        let totalSize = payloadOffset + payloadSize
-        let alignment = max(headerAlignment, payloadAlignment)
-
-        let ptr = unsafe UnsafeMutableRawPointer.allocate(
-            byteCount: totalSize,
-            alignment: alignment
-        )
-
-        // Store header at start (includes payloadOffset for destroy)
-        let headerPtr = unsafe ptr.assumingMemoryBound(to: Header.self)
-        unsafe headerPtr.initialize(
-            to: Header(
-                destroyPayload: { base, offset in
-                    unsafe base.advanced(by: offset).assumingMemoryBound(to: Result<T, E>.self)
-                        .deinitialize(count: 1)
-                },
-                payloadOffset: payloadOffset
-            )
-        )
-
-        // Store payload at aligned offset
-        let payloadPtr = unsafe ptr.advanced(by: payloadOffset).assumingMemoryBound(to: Result<T, E>.self)
-        unsafe payloadPtr.initialize(to: result)
-
-        return ptr
-    }
-
-    /// Unbox and deallocate a Result.
-    ///
-    /// Moves the Result out of the box and deallocates all memory.
-    /// Caller must provide the correct T and E types.
-    @unsafe
-    public static func take<T: Sendable, E: Swift.Error & Sendable>(
-        _ ptr: UnsafeMutableRawPointer
-    ) -> Result<T, E> {
-        let headerPtr = unsafe ptr.assumingMemoryBound(to: Header.self)
-        let header = unsafe headerPtr.move()  // releases closure
-        let payloadPtr = unsafe (ptr + header.payloadOffset).assumingMemoryBound(to: Result<T, E>.self)
-        let result = unsafe payloadPtr.move()
-        // Single deallocation for entire box
-        unsafe ptr.deallocate()
-        // destroyPayload not called - we moved the payload out instead
-        return result
-    }
-}
-
-// MARK: - Value Boxing (Non-Result)
+// MARK: - Boxing
 
 extension Ownership.Transfer.Box {
     /// Allocate and initialize a boxed value.
     ///
-    /// Returns a pointer to the erased header. Use `takeValue<T>` to unbox
+    /// Returns a pointer to the erased header. Use `take<T>` to unbox
     /// or `destroy` to free without unboxing.
     ///
     /// ## Single Allocation
     /// The header and payload are stored in a single contiguous allocation.
     /// The payload is placed at an aligned offset after the header.
     @unsafe
-    public static func makeValue<T: Sendable>(
+    public static func make<T: Sendable>(
         _ value: T
     ) -> UnsafeMutableRawPointer {
         let headerSize = MemoryLayout<Header>.size
@@ -213,7 +145,7 @@ extension Ownership.Transfer.Box {
     /// Moves the value out of the box and deallocates all memory.
     /// Caller must provide the correct T type.
     @unsafe
-    public static func takeValue<T: Sendable>(
+    public static func take<T: Sendable>(
         _ ptr: UnsafeMutableRawPointer
     ) -> T {
         let headerPtr = unsafe ptr.assumingMemoryBound(to: Header.self)
