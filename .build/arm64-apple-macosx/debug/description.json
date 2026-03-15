@@ -787,7 +787,7 @@
     }
   },
   "traitConfiguration" : {
-    "default" : {
+    "enableAllTraits" : {
 
     }
   },
