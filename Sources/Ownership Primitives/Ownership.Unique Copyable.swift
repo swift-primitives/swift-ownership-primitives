@@ -22,9 +22,9 @@ extension Ownership.Unique where Value: Copyable {
     /// - Precondition: The owner has not been emptied via `take()` or `leak()`.
     @inlinable
     public borrowing func duplicated() -> Ownership.Unique<Value> {
-        guard let storage = _storage else {
+        guard let storage = unsafe _storage else {
             preconditionFailure("Ownership.Unique value has already been taken")
         }
-        return Ownership.Unique(storage.pointee)
+        return unsafe Ownership.Unique(storage.pointee)
     }
 }

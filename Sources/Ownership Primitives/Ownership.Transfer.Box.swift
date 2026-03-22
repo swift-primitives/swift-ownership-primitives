@@ -65,6 +65,7 @@ extension Ownership.Transfer.Box {
     /// - Static witness-per-specialization patterns are blocked by Swift restrictions
     ///
     /// Revisit when the compiler bug is fixed.
+    @safe
     fileprivate struct Header {
         /// Function to destroy the payload given base pointer and offset.
         /// Captures type information (T, E) for proper deinitialization.
@@ -87,7 +88,7 @@ extension Ownership.Transfer.Box {
     public struct Pointer: @unchecked Sendable {
         public let raw: UnsafeMutableRawPointer
         @unsafe
-        public init(_ raw: UnsafeMutableRawPointer) { (self.raw = raw) }
+        public init(_ raw: UnsafeMutableRawPointer) { unsafe (self.raw = raw) }
     }
 }
 
@@ -116,7 +117,7 @@ extension Ownership.Transfer.Box {
         let totalSize = payloadOffset + payloadSize
         let alignment = max(headerAlignment, payloadAlignment)
 
-        let ptr = unsafe UnsafeMutableRawPointer.allocate(
+        let ptr = UnsafeMutableRawPointer.allocate(
             byteCount: totalSize,
             alignment: alignment
         )
@@ -137,7 +138,7 @@ extension Ownership.Transfer.Box {
         let payloadPtr = unsafe (ptr + payloadOffset).assumingMemoryBound(to: T.self)
         unsafe payloadPtr.initialize(to: value)
 
-        return ptr
+        return unsafe ptr
     }
 
     /// Unbox and deallocate a value.
@@ -172,7 +173,7 @@ extension Ownership.Transfer.Box {
     public static func destroy(_ ptr: UnsafeMutableRawPointer) {
         let headerPtr = unsafe ptr.assumingMemoryBound(to: Header.self)
         let header = unsafe headerPtr.move()  // releases closure
-        header.destroyPayload(ptr, header.payloadOffset)
+        unsafe header.destroyPayload(ptr, header.payloadOffset)
         // Single deallocation for entire box
         unsafe ptr.deallocate()
     }

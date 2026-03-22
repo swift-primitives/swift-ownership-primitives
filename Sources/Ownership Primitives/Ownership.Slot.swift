@@ -116,7 +116,7 @@ extension Ownership {
         /// Storage is preallocated but uninitialized.
         public init() {
             _state = Atomic(State.empty)
-            _storage = unsafe .allocate(capacity: 1)
+            unsafe (_storage = .allocate(capacity: 1))
         }
 
         /// Creates a slot containing the given value.
@@ -124,7 +124,7 @@ extension Ownership {
         /// - Parameter value: The value to store (ownership transferred).
         public init(_ value: consuming Value) {
             _state = Atomic(State.initializing)
-            _storage = unsafe .allocate(capacity: 1)
+            unsafe (_storage = .allocate(capacity: 1))
             unsafe _storage.initialize(to: value)
             _state.store(State.full, ordering: .releasing)
         }

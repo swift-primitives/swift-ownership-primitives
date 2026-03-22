@@ -92,9 +92,9 @@ extension Ownership.Transfer {
         @usableFromInline
         init(_ value: consuming T) {
             _state = Atomic(State.initializing)
-            let p = unsafe UnsafeMutablePointer<T>.allocate(capacity: 1)
+            let p = UnsafeMutablePointer<T>.allocate(capacity: 1)
             unsafe p.initialize(to: value)
-            (_storage = p)
+            unsafe (_storage = p)
             _state.store(State.full, ordering: .releasing)
         }
 
@@ -102,7 +102,7 @@ extension Ownership.Transfer {
         @usableFromInline
         init() {
             _state = Atomic(State.empty)
-            (_storage = nil)
+            unsafe (_storage = nil)
         }
 
         /// Atomically stores a value. Traps if already has a value or already taken.
@@ -123,9 +123,9 @@ extension Ownership.Transfer {
             }
 
             // Allocate and initialize
-            let p = unsafe UnsafeMutablePointer<T>.allocate(capacity: 1)
+            let p = UnsafeMutablePointer<T>.allocate(capacity: 1)
             unsafe p.initialize(to: value)
-            (_storage = p)
+            unsafe (_storage = p)
 
             // Publish: store full (release ensures init is visible to takers)
             _state.store(State.full, ordering: .releasing)
@@ -148,8 +148,8 @@ extension Ownership.Transfer {
                 }
             }
 
-            let p = _storage!
-            (_storage = nil)
+            let p = unsafe _storage!
+            unsafe (_storage = nil)
             let value = unsafe p.move()
             unsafe p.deallocate()
             return value
@@ -168,8 +168,8 @@ extension Ownership.Transfer {
                 return nil
             }
 
-            let p = _storage!
-            (_storage = nil)
+            let p = unsafe _storage!
+            unsafe (_storage = nil)
             let value = unsafe p.move()
             unsafe p.deallocate()
             return value
@@ -183,7 +183,7 @@ extension Ownership.Transfer {
 
         deinit {
             let state = _state.load(ordering: .acquiring)
-            if state == State.full, let p = _storage {
+            if state == State.full, let p = unsafe _storage {
                 // Value was never taken - clean up to avoid memory leak
                 unsafe p.deinitialize(count: 1)
                 unsafe p.deallocate()

@@ -58,15 +58,15 @@ extension Ownership {
         /// - Parameter value: The value to own (consumed/moved).
         @inlinable
         public init(_ value: consuming Value) {
-            let storage = unsafe UnsafeMutablePointer<Value>.allocate(
+            let storage = UnsafeMutablePointer<Value>.allocate(
                 capacity: 1
             )
             unsafe storage.initialize(to: value)
-            self._storage = storage
+            unsafe (self._storage = storage)
         }
 
         deinit {
-            if let storage = _storage {
+            if let storage = unsafe _storage {
                 unsafe storage.deinitialize(count: 1)
                 unsafe storage.deallocate()
             }
@@ -90,12 +90,12 @@ extension Ownership.Unique {
     /// - Precondition: The owner has not already been emptied via `take()` or `leak()`.
     @inlinable
     public mutating func take() -> Value {
-        guard let storage = _storage else {
+        guard let storage = unsafe _storage else {
             preconditionFailure("Ownership.Unique value has already been taken")
         }
         let value = unsafe storage.move()
         unsafe storage.deallocate()
-        _storage = nil
+        unsafe (_storage = nil)
         return value
     }
 
@@ -108,7 +108,7 @@ extension Ownership.Unique {
     public borrowing func withValue<Result: ~Copyable, E: Swift.Error>(
         _ body: (borrowing Value) throws(E) -> Result
     ) throws(E) -> Result {
-        guard let storage = _storage else {
+        guard let storage = unsafe _storage else {
             preconditionFailure("Ownership.Unique value has already been taken")
         }
         return try unsafe body(storage.pointee)
@@ -123,7 +123,7 @@ extension Ownership.Unique {
     public mutating func withMutableValue<Result: ~Copyable, E: Swift.Error>(
         _ body: (inout Value) throws(E) -> Result
     ) throws(E) -> Result {
-        guard let storage = _storage else {
+        guard let storage = unsafe _storage else {
             preconditionFailure("Ownership.Unique value has already been taken")
         }
         return try unsafe body(&storage.pointee)
@@ -139,11 +139,11 @@ extension Ownership.Unique {
     @inlinable
     @unsafe
     public mutating func leak() -> UnsafeMutablePointer<Value> {
-        guard let storage = _storage else {
+        guard let storage = unsafe _storage else {
             preconditionFailure("Ownership.Unique value has already been taken")
         }
-        _storage = nil
-        return storage
+        unsafe (_storage = nil)
+        return unsafe storage
     }
 
     /// A Boolean indicating whether the owner still holds a value.
@@ -151,7 +151,7 @@ extension Ownership.Unique {
     /// Returns `false` after `take()` or `leak()` has been called.
     @inlinable
     public var hasValue: Bool {
-        _storage != nil
+        unsafe (_storage != nil)
     }
 }
 
@@ -160,8 +160,8 @@ extension Ownership.Unique {
 extension Ownership.Unique {
     /// A textual representation of the owner.
     public var description: String {
-        if let storage = _storage {
-            return "Ownership.Unique<\(Value.self)>(\(storage))"
+        if let storage = unsafe _storage {
+            return unsafe "Ownership.Unique<\(Value.self)>(\(storage))"
         } else {
             return "Ownership.Unique<\(Value.self)>(empty)"
         }
@@ -169,8 +169,8 @@ extension Ownership.Unique {
 
     /// A textual representation suitable for debugging.
     public var debugDescription: String {
-        if let storage = _storage {
-            return "Ownership.Unique<\(Value.self)>(storage: \(storage))"
+        if let storage = unsafe _storage {
+            return unsafe "Ownership.Unique<\(Value.self)>(storage: \(storage))"
         } else {
             return "Ownership.Unique<\(Value.self)>(storage: nil)"
         }
