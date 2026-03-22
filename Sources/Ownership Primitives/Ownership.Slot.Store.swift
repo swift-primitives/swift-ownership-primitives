@@ -10,7 +10,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Synchronization
+internal import Synchronization
 
 // MARK: - Store Result
 
