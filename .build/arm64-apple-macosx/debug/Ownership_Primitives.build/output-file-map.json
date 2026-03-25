@@ -2,6 +2,13 @@
   "": {
     "swift-dependencies": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/master.swiftdeps"
   },
+  "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Optional+take.swift": {
+    "dependencies": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Optional+take.d",
+    "object": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Optional+take.swift.o",
+    "swiftmodule": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Optional+take~partial.swiftmodule",
+    "swift-dependencies": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Optional+take.swiftdeps",
+    "diagnostics": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Optional+take.dia"
+  },
   "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Mutable.Unchecked.swift": {
     "dependencies": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Ownership.Mutable.Unchecked.d",
     "object": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Ownership.Mutable.Unchecked.swift.o",

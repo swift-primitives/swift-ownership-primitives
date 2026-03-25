@@ -153,6 +153,10 @@
       "inputs" : [
         {
           "kind" : "file",
+          "name" : "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Optional+take.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Mutable.Unchecked.swift"
         },
         {
@@ -228,6 +232,7 @@
       "moduleName" : "Ownership_Primitives",
       "moduleOutputPath" : "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Modules/Ownership_Primitives.swiftmodule",
       "objects" : [
+        "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Optional+take.swift.o",
         "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Ownership.Mutable.Unchecked.swift.o",
         "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Ownership.Mutable.swift.o",
         "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Ownership.Shared.swift.o",
@@ -319,6 +324,10 @@
       "outputs" : [
         {
           "kind" : "file",
+          "name" : "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Optional+take.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Ownership.Mutable.Unchecked.swift.o"
         },
         {
@@ -388,6 +397,7 @@
       ],
       "prepareForIndexing" : false,
       "sources" : [
+        "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Optional+take.swift",
         "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Mutable.Unchecked.swift",
         "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Mutable.swift",
         "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Shared.swift",
@@ -521,6 +531,7 @@
       "-package-name",
       "swift_ownership_primitives",
       "-c",
+      "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Optional+take.swift",
       "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Mutable.Unchecked.swift",
       "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Mutable.swift",
       "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Shared.swift",
@@ -787,7 +798,7 @@
     }
   },
   "traitConfiguration" : {
-    "enableAllTraits" : {
+    "default" : {
 
     }
   },
@@ -798,6 +809,10 @@
         {
           "kind" : "virtual",
           "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Sources/Ownership Primitives/Optional+take.swift"
         },
         {
           "kind" : "file",
@@ -890,6 +905,10 @@
         {
           "kind" : "virtual",
           "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives.build/Optional+take.swift.o"
         },
         {
           "kind" : "file",
