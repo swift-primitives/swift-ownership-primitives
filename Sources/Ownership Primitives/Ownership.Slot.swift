@@ -71,7 +71,7 @@ extension Ownership {
     /// }
     /// ```
     @safe
-    public final class Slot<Value: ~Copyable & Sendable>: @unchecked Sendable {
+    public final class Slot<Value: ~Copyable>: @unchecked Sendable {
         // MARK: - State Machine
         //
         // ## Publication Protocol (release/acquire)
@@ -122,7 +122,7 @@ extension Ownership {
         /// Creates a slot containing the given value.
         ///
         /// - Parameter value: The value to store (ownership transferred).
-        public init(_ value: consuming Value) {
+        public init(_ value: consuming sending Value) {
             _state = Atomic(State.initializing)
             unsafe (_storage = .allocate(capacity: 1))
             unsafe _storage.initialize(to: value)

@@ -80,7 +80,7 @@ extension Ownership.Slot where Value: ~Copyable {
     /// This is the primary, total take operation.
     ///
     /// - Returns: The stored value, or `nil` if empty.
-    public func take() -> Value? {
+    public func take() -> sending Value? {
         // CAS full -> empty
         let (exchanged, _) = _state.compareExchange(
             expected: State.full,
@@ -99,7 +99,7 @@ extension Ownership.Slot where Value: ~Copyable {
     ///
     /// - Returns: The stored value.
     /// - Precondition: The slot must be occupied.
-    public func take(__unchecked: Void) -> Value {
+    public func take(__unchecked: Void) -> sending Value {
         guard let value = take() else {
             preconditionFailure("Ownership.Slot.take(__unchecked:): already empty")
         }
