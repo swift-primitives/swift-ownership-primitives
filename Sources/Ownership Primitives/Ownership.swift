@@ -24,6 +24,8 @@
 /// | ``Mutable`` | Shared (ARC) | Mutable | Not Sendable (use `.Unchecked`) |
 /// | ``Slot`` | Reusable | Move semantics | `@unchecked` (atomic sync) |
 /// | ``Transfer`` | One-shot | Move-only | Tokens are Sendable |
+/// | ``Borrow`` | Borrowed | Read-only | N/A (~Escapable) |
+/// | ``Inout`` | Borrowed | Mutable | N/A (~Escapable) |
 ///
 /// ## Design Philosophy
 ///
@@ -34,6 +36,8 @@
 /// - Need shared mutable heap storage? → ``Mutable``
 /// - Need atomic move semantics? → ``Slot``
 /// - Need cross-boundary ownership transfer? → ``Transfer``
+/// - Need read-only borrowed access without consuming? → ``Borrow``
+/// - Need mutable borrowed access without consuming? → ``Inout``
 ///
 /// ## Sendable Policy
 ///
