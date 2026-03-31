@@ -1,6 +1,6 @@
 {
   "": {
-    "swift-dependencies": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives_Tests.build/master.swiftdeps"
+    "swift-dependencies": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives_Tests.build/primary.swiftdeps"
   },
   "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/Tests/Ownership Primitives Tests/Ownership.Unique Tests.swift": {
     "dependencies": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives/.build/arm64-apple-macosx/debug/Ownership_Primitives_Tests.build/Ownership.Unique Tests.d",
