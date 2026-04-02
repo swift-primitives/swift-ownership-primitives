@@ -51,6 +51,22 @@ extension Ownership {
     }
 }
 
+// MARK: - Mutating Construction
+
+extension Ownership.Inout where Value: ~Copyable {
+    /// Creates a mutable reference from an inout value.
+    ///
+    /// This mirrors stdlib `Inout.init(_ value: inout Value)`. Enables
+    /// construction from any mutating context without pointer exposure.
+    ///
+    /// - Parameter value: The value to mutate.
+    @inlinable
+    @_lifetime(&value)
+    public init(mutating value: inout Value) {
+        unsafe (_pointer = withUnsafeMutablePointer(to: &value) { unsafe $0 })
+    }
+}
+
 // MARK: - Unsafe Construction
 
 extension Ownership.Inout where Value: ~Copyable {
@@ -80,7 +96,8 @@ extension Ownership.Inout where Value: ~Copyable {
     ///
     /// Provides in-place read and write access to the underlying value
     /// through the stored pointer. Uses `_read`/`nonmutating _modify`
-    /// coroutines until `borrow`/`mutate` accessors (SE-0507) are available.
+    /// coroutines until `borrow`/`mutate` accessors (SE-0507,
+    /// `BorrowAndMutateAccessors`) ship in a production compiler.
     ///
     /// `nonmutating _modify` provides interior mutability per [IMPL-071]:
     /// the pointer itself is `let` — mutation goes through to the pointee.

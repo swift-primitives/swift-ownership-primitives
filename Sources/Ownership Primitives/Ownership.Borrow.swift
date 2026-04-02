@@ -50,6 +50,23 @@ extension Ownership {
     }
 }
 
+// MARK: - Borrowing Construction
+
+extension Ownership.Borrow where Value: ~Copyable {
+    /// Creates a borrow reference from a borrowed value.
+    ///
+    /// This mirrors stdlib `Borrow.init(_ value: borrowing Value)` and the
+    /// ecosystem `Property.View.Read.init(borrowing:)` pattern. Enables
+    /// construction from any borrowing context without pointer exposure.
+    ///
+    /// - Parameter value: The value to borrow.
+    @inlinable
+    @_lifetime(borrow value)
+    public init(borrowing value: borrowing Value) {
+        unsafe (_pointer = withUnsafePointer(to: value) { unsafe $0 })
+    }
+}
+
 // MARK: - Unsafe Construction
 
 extension Ownership.Borrow where Value: ~Copyable {
@@ -78,7 +95,7 @@ extension Ownership.Borrow where Value: ~Copyable {
     ///
     /// Provides in-place read access to the underlying value through the
     /// stored pointer. Uses `_read` coroutine until `borrow` accessor
-    /// (SE-0507) is available.
+    /// (SE-0507, `BorrowAndMutateAccessors`) ships in a production compiler.
     @inlinable
     public var value: Value {
         _read { yield unsafe _pointer.pointee }
