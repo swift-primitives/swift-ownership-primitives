@@ -104,7 +104,7 @@ extension Ownership.Transfer.Box {
     /// The header and payload are stored in a single contiguous allocation.
     /// The payload is placed at an aligned offset after the header.
     @unsafe
-    public static func make<T: Sendable>(
+    public static func make<T>(
         _ value: T
     ) -> UnsafeMutableRawPointer {
         let headerSize = MemoryLayout<Header>.size
@@ -146,7 +146,7 @@ extension Ownership.Transfer.Box {
     /// Moves the value out of the box and deallocates all memory.
     /// Caller must provide the correct T type.
     @unsafe
-    public static func take<T: Sendable>(
+    public static func take<T>(
         _ ptr: UnsafeMutableRawPointer
     ) -> T {
         let headerPtr = unsafe ptr.assumingMemoryBound(to: Header.self)
