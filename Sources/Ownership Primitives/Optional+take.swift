@@ -29,7 +29,7 @@ extension Optional where Wrapped: ~Copyable {
     ///
     /// - Returns: The wrapped value if present, nil otherwise.
     @inlinable
-    public mutating func take() -> Wrapped? {
+    public mutating func take() -> sending Wrapped? {
         switch consume self {
         case .some(let value):
             self = nil
