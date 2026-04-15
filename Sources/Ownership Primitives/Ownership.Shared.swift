@@ -43,7 +43,20 @@ extension Ownership {
     /// print(shared.value)  // 42
     /// ```
     @safe
-    public final class Shared<Value: ~Copyable & Sendable>: @unchecked Sendable {
+    /// ## Safety Invariant
+    ///
+    /// `Ownership.Shared` holds an immutable `let value: Value` where
+    /// `Value: Sendable`. The value cannot be mutated after construction.
+    /// `~Copyable` generic in class storage blocks structural Sendable inference.
+    ///
+    /// ## Intended Use
+    ///
+    /// - Sharing an immutable value across multiple owners.
+    ///
+    /// ## Non-Goals
+    ///
+    /// - Does not support mutation after construction.
+    public final class Shared<Value: ~Copyable & Sendable>: @unsafe @unchecked Sendable {
         /// The wrapped value.
         public let value: Value
 

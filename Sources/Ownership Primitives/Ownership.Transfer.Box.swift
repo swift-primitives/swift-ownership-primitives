@@ -85,7 +85,20 @@ extension Ownership.Transfer.Box {
     /// It represents a capability to consume or destroy a box, and
     /// concentrates the unsafe sendability at the boundary.
     @safe
-    public struct Pointer: @unchecked Sendable {
+    /// ## Safety Invariant
+    ///
+    /// `Pointer` carries an `UnsafeMutableRawPointer` as an ownership-transfer
+    /// token. Sendability is the capability to consume or destroy the box
+    /// across threads.
+    ///
+    /// ## Intended Use
+    ///
+    /// - Boundary-concentrating unsafe sendability for boxed ownership transfer.
+    ///
+    /// ## Non-Goals
+    ///
+    /// - Not a general-purpose pointer wrapper.
+    public struct Pointer: @unsafe @unchecked Sendable {
         public let raw: UnsafeMutableRawPointer
         @unsafe
         public init(_ raw: UnsafeMutableRawPointer) { unsafe (self.raw = raw) }

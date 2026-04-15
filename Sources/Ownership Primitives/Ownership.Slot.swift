@@ -71,7 +71,20 @@ extension Ownership {
     /// }
     /// ```
     @safe
-    public final class Slot<Value: ~Copyable>: @unchecked Sendable {
+    /// ## Safety Invariant
+    ///
+    /// Atomic state machine (`Atomic<UInt8>` with release/acquire) protects
+    /// all mutable state. Publication protocol ensures stored value is
+    /// visible after CAS succeeds.
+    ///
+    /// ## Intended Use
+    ///
+    /// - Single-writer/single-reader ownership transfer channel.
+    ///
+    /// ## Non-Goals
+    ///
+    /// - Not a queue; exactly one value at a time.
+    public final class Slot<Value: ~Copyable>: @unsafe @unchecked Sendable {
         // MARK: - State Machine
         //
         // ## Publication Protocol (release/acquire)

@@ -44,7 +44,21 @@ extension Ownership.Mutable where Value: ~Copyable {
     /// Task { await box.mutable.value.next() }  // Race!
     /// Task { await box.mutable.value.next() }  // Race!
     /// ```
-    public struct Unchecked: @unchecked Sendable {
+    /// ## Safety Invariant
+    ///
+    /// Deliberately unchecked — the caller promises external synchronization.
+    /// This type bypasses the compiler's Sendable checking. Concurrent
+    /// mutation WILL cause data races (no runtime trap, silent corruption).
+    ///
+    /// ## Intended Use
+    ///
+    /// - Wrapping non-Sendable state for single-consumer async patterns
+    ///   where external synchronization is guaranteed.
+    ///
+    /// ## Non-Goals
+    ///
+    /// - NOT thread-safe. Concurrent mutation is undefined behavior.
+    public struct Unchecked: @unsafe @unchecked Sendable {
         /// The wrapped `Mutable` instance.
         public let mutable: Ownership.Mutable<Value>
 

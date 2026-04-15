@@ -76,7 +76,7 @@ extension Ownership {
 
 // MARK: - Sendable
 
-extension Ownership.Unique: @unchecked Sendable where Value: Sendable {}
+extension Ownership.Unique: @unsafe @unchecked Sendable where Value: Sendable {}
 
 // MARK: - Core Operations
 

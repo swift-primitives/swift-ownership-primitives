@@ -47,7 +47,19 @@ extension Ownership.Transfer {
     /// - Storage pointer access is serialized by atomic state transitions
     @safe
     @usableFromInline
-    internal final class _Box<T: ~Copyable>: @unchecked Sendable {
+    /// ## Safety Invariant
+    ///
+    /// Atomic state machine (`Atomic<Int>` with acquiringAndReleasing CAS) +
+    /// release/acquire publication protocol protects storage access.
+    ///
+    /// ## Intended Use
+    ///
+    /// - Internal ownership-transfer box for cross-thread handoff.
+    ///
+    /// ## Non-Goals
+    ///
+    /// - Not for direct use outside ownership-primitives.
+    internal final class _Box<T: ~Copyable>: @unsafe @unchecked Sendable {
         // MARK: - State Machine
         //
         // ## Publication Protocol (release/acquire)
