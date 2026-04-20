@@ -56,7 +56,7 @@ extension Ownership.Borrow where Value: ~Copyable {
     /// Creates a borrow reference from a borrowed value.
     ///
     /// This mirrors stdlib `Borrow.init(_ value: borrowing Value)` and the
-    /// ecosystem `Property.View.Read.init(borrowing:)` pattern. Enables
+    /// ecosystem `Property.View.Read` borrowing-init pattern. Enables
     /// construction from any borrowing context without pointer exposure.
     ///
     /// - Parameter value: The value to borrow.
