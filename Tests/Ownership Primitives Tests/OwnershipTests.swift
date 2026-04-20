@@ -16,8 +16,8 @@ import Ownership_Primitives
 @Suite("Ownership Primitives")
 struct OwnershipPrimitivesTests {
 
-    @Test("Ownership.Unique basic operations")
-    func uniqueBasicOperations() {
+    @Test
+    func `Ownership.Unique basic operations`() {
         var unique = Ownership.Unique(42)
         #expect(unique.hasValue == true)
 
@@ -26,14 +26,14 @@ struct OwnershipPrimitivesTests {
         #expect(unique.hasValue == false)
     }
 
-    @Test("Ownership.Shared basic operations")
-    func sharedBasicOperations() {
+    @Test
+    func `Ownership.Shared basic operations`() {
         let shared = Ownership.Shared(42)
         #expect(shared.value == 42)
     }
 
-    @Test("Ownership.Mutable basic operations")
-    func mutableBasicOperations() {
+    @Test
+    func `Ownership.Mutable basic operations`() {
         let mutable = Ownership.Mutable(42)
         #expect(mutable.value == 42)
 
@@ -41,8 +41,8 @@ struct OwnershipPrimitivesTests {
         #expect(mutable.value == 100)
     }
 
-    @Test("Ownership.Slot basic operations")
-    func slotBasicOperations() {
+    @Test
+    func `Ownership.Slot basic operations`() {
         let slot = Ownership.Slot<Int>()
         #expect(slot.isEmpty == true)
         #expect(slot.isFull == false)

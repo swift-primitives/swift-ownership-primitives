@@ -23,30 +23,30 @@ struct OwnershipUniqueTests {
 // MARK: - Unit Tests
 
 extension OwnershipUniqueTests.Unit {
-    @Test("init heap-allocates value")
-    func initHeapAllocates() {
+    @Test
+    func `init heap-allocates value`() {
         let unique = Ownership.Unique<Int>(42)
         unique.withValue { value in
             #expect(value == 42)
         }
     }
 
-    @Test("hasValue returns true after init")
-    func hasValueAfterInit() {
+    @Test
+    func `hasValue returns true after init`() {
         let unique = Ownership.Unique<Int>(99)
         #expect(unique.hasValue == true)
     }
 
-    @Test("withValue provides borrowed access")
-    func withValueBorrowedAccess() {
+    @Test
+    func `withValue provides borrowed access`() {
         let unique = Ownership.Unique<String>("Hello")
         unique.withValue { value in
             #expect(value == "Hello")
         }
     }
 
-    @Test("withMutableValue provides mutable access")
-    func withMutableValueAccess() {
+    @Test
+    func `withMutableValue provides mutable access`() {
         var unique = Ownership.Unique<Int>(10)
         unique.withMutableValue { value in
             value += 5
@@ -56,22 +56,22 @@ extension OwnershipUniqueTests.Unit {
         }
     }
 
-    @Test("take returns owned value")
-    func takeReturnsValue() {
+    @Test
+    func `take returns owned value`() {
         var unique = Ownership.Unique<Int>(123)
         let value = unique.take()
         #expect(value == 123)
     }
 
-    @Test("hasValue returns false after take")
-    func hasValueAfterTake() {
+    @Test
+    func `hasValue returns false after take`() {
         var unique = Ownership.Unique<Int>(42)
         _ = unique.take()
         #expect(!unique.hasValue == true)
     }
 
-    @Test("duplicated returns new owner with copy (Copyable)")
-    func duplicatedWithoutConsuming() {
+    @Test
+    func `duplicated returns new owner with copy (Copyable)`() {
         let unique = Ownership.Unique<Int>(77)
         var duplicated = unique.duplicated()
         #expect(duplicated.take() == 77)
@@ -82,8 +82,8 @@ extension OwnershipUniqueTests.Unit {
 // MARK: - Edge Case Tests
 
 extension OwnershipUniqueTests.EdgeCase {
-    @Test("works with struct types")
-    func worksWithStructs() {
+    @Test
+    func `works with struct types`() {
         struct Point: Equatable {
             var x: Double
             var y: Double
@@ -104,8 +104,8 @@ extension OwnershipUniqueTests.EdgeCase {
         #expect(point.y == 2.0)
     }
 
-    @Test("works with class types")
-    func worksWithClasses() {
+    @Test
+    func `works with class types`() {
         class Counter {
             var value: Int
             init(_ value: Int) { self.value = value }
@@ -117,8 +117,8 @@ extension OwnershipUniqueTests.EdgeCase {
         }
     }
 
-    @Test("works with optional types")
-    func worksWithOptionals() {
+    @Test
+    func `works with optional types`() {
         var unique = Ownership.Unique<Int?>(42)
         unique.withValue { value in
             #expect(value == 42)
@@ -133,8 +133,8 @@ extension OwnershipUniqueTests.EdgeCase {
         }
     }
 
-    @Test("works with array types")
-    func worksWithArrays() {
+    @Test
+    func `works with array types`() {
         var unique = Ownership.Unique<[Int]>([1, 2, 3])
         unique.withMutableValue { array in
             array.append(4)
@@ -144,8 +144,8 @@ extension OwnershipUniqueTests.EdgeCase {
         }
     }
 
-    @Test("description shows state")
-    func descriptionShowsState() {
+    @Test
+    func `description shows state`() {
         var unique = Ownership.Unique<Int>(42)
         let descBefore = unique.description
         #expect(descBefore.contains("Unique"))
@@ -160,8 +160,8 @@ extension OwnershipUniqueTests.EdgeCase {
 // MARK: - Integration Tests
 
 extension OwnershipUniqueTests.Integration {
-    @Test("deinit deallocates memory")
-    func deinitDeallocates() {
+    @Test
+    func `deinit deallocates memory`() {
         // This test verifies that deinit runs without crashing
         // Memory leak detection would require external tools
         do {
@@ -171,8 +171,8 @@ extension OwnershipUniqueTests.Integration {
         #expect(true) // If we get here, deinit didn't crash
     }
 
-    @Test("multiple owners are independent")
-    func multipleOwnersIndependent() {
+    @Test
+    func `multiple owners are independent`() {
         var unique1 = Ownership.Unique<Int>(100)
         let unique2 = Ownership.Unique<Int>(200)
 
@@ -182,8 +182,8 @@ extension OwnershipUniqueTests.Integration {
         unique2.withValue { #expect($0 == 200) }
     }
 
-    @Test("nested withValue calls")
-    func nestedWithValue() {
+    @Test
+    func `nested withValue calls`() {
         let unique1 = Ownership.Unique<Int>(10)
         let unique2 = Ownership.Unique<Int>(20)
 
@@ -194,8 +194,8 @@ extension OwnershipUniqueTests.Integration {
         }
     }
 
-    @Test("throwing closure in withValue")
-    func throwingClosureWithValue() throws {
+    @Test
+    func `throwing closure in withValue`() throws {
         struct TestError: Error {}
 
         let unique = Ownership.Unique<Int>(42)
@@ -215,8 +215,8 @@ extension OwnershipUniqueTests.Integration {
         #expect(unique.hasValue == true)
     }
 
-    @Test("throwing closure in withMutableValue")
-    func throwingClosureWithMutableValue() throws {
+    @Test
+    func `throwing closure in withMutableValue`() throws {
         struct TestError: Error {}
 
         var unique = Ownership.Unique<Int>(42)
@@ -240,8 +240,8 @@ extension OwnershipUniqueTests.Integration {
 // MARK: - Performance Tests
 
 extension OwnershipUniqueTests.Performance {
-    @Test("allocation and deallocation")
-    func allocationDeallocation() {
+    @Test
+    func `allocation and deallocation`() {
         // Warmup
         for _ in 0..<10 {
             for _ in 0..<1000 {
@@ -259,8 +259,8 @@ extension OwnershipUniqueTests.Performance {
         }
     }
 
-    @Test("withValue access")
-    func withValueAccess() {
+    @Test
+    func `withValue access`() {
         let unique = Ownership.Unique<Int>(42)
 
         // Warmup
@@ -278,8 +278,8 @@ extension OwnershipUniqueTests.Performance {
         }
     }
 
-    @Test("withMutableValue access")
-    func withMutableValueAccess() {
+    @Test
+    func `withMutableValue access`() {
         var unique = Ownership.Unique<Int>(0)
 
         // Warmup
