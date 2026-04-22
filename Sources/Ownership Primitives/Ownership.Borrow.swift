@@ -32,7 +32,7 @@ extension Ownership {
     /// (must not outlive its source). This enables `Optional<Ownership.Borrow<Element>>`
     /// — the key use case that `Property.View` (~Copyable) cannot serve.
     @safe
-    public struct Borrow<Value: ~Copyable>: ~Escapable {
+    public struct Borrow<Value: ~Copyable & ~Escapable>: ~Escapable {
 
         @usableFromInline
         let _pointer: UnsafePointer<Value>
@@ -47,6 +47,14 @@ extension Ownership {
         public init(_ pointer: UnsafePointer<Value>) {
             unsafe (self._pointer = pointer)
         }
+
+        /// Canonical conformance path for the borrow-capability protocol.
+        ///
+        /// Conform via `extension Path: Ownership.Borrow.\`Protocol\` {}`.
+        /// The typealias resolves to the module-scope
+        /// `__Ownership_Borrow_Protocol` (hoisted because SE-0404 prohibits
+        /// protocol nesting inside a generic struct).
+        public typealias `Protocol` = __Ownership_Borrow_Protocol
     }
 }
 
@@ -59,6 +67,11 @@ extension Ownership.Borrow where Value: ~Copyable {
     /// ecosystem `Property.View.Read` borrowing-init pattern. Enables
     /// construction from any borrowing context without pointer exposure.
     ///
+    /// Only available for `Escapable` `Value` — stdlib's
+    /// `withUnsafePointer(to:)` does not support `~Escapable` values.
+    /// `~Escapable` conformers construct via
+    /// `init(unsafeAddress:borrowing:)` or `init(_:)` instead.
+    ///
     /// - Parameter value: The value to borrow.
     @inlinable
     @_lifetime(borrow value)
@@ -69,7 +82,7 @@ extension Ownership.Borrow where Value: ~Copyable {
 
 // MARK: - Unsafe Construction
 
-extension Ownership.Borrow where Value: ~Copyable {
+extension Ownership.Borrow where Value: ~Copyable & ~Escapable {
     /// Unsafely creates a borrow reference using the given address, with
     /// lifetime based on the borrowed owner.
     ///
@@ -90,7 +103,7 @@ extension Ownership.Borrow where Value: ~Copyable {
 
 // MARK: - Value Access
 
-extension Ownership.Borrow where Value: ~Copyable {
+extension Ownership.Borrow where Value: ~Copyable & ~Escapable {
     /// The borrowed value.
     ///
     /// Provides in-place read access to the underlying value through the
