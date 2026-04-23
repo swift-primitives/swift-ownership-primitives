@@ -70,18 +70,19 @@ extension Ownership.Transfer.Cell where T: ~Copyable {
         init(_ box: Ownership.Transfer._Box<T>) {
             self._box = box
         }
+    }
+}
 
-        /// Atomically takes the stored value.
-        ///
-        /// - Returns: The stored value.
-        /// - Precondition: Must be called exactly once across all token copies.
-        ///   Second call traps with a clear error message.
-        // NOTE: Kept in body per [API-IMPL-008] exception — extending
-        // `Cell.Token` with `where T: ~Copyable` causes constraint-poisoning
-        // and a cross-target symbol-mangling mismatch at link time.
-        public func take() -> T {
-            _box.take()
-        }
+// MARK: - Token Take
+
+extension Ownership.Transfer.Cell.Token where T: ~Copyable {
+    /// Atomically takes the stored value.
+    ///
+    /// - Returns: The stored value.
+    /// - Precondition: Must be called exactly once across all token copies.
+    ///   Second call traps with a clear error message.
+    public func take() -> T {
+        _box.take()
     }
 }
 

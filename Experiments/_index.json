@@ -17,7 +17,7 @@
       "statusRaw": "CONFIRMED",
       "supersededBy": null,
       "crossRefs": [
-        "swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Inout.swift",
+        "swift-ownership-primitives/Sources/Ownership Inout Primitives/Ownership.Inout.swift",
         "swift-primitives/Experiments/property-view-lifetime-escape-reproduction",
         "HANDOFF-property-view-ownership-inout-lifetime-chain.md"
       ]
@@ -34,8 +34,24 @@
       "supersededBy": null,
       "crossRefs": [
         "swift-ownership-primitives/Audits/audit.md",
-        "swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Borrow.swift",
-        "swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Inout.swift"
+        "swift-ownership-primitives/Sources/Ownership Borrow Primitives/Ownership.Borrow.swift",
+        "swift-ownership-primitives/Sources/Ownership Inout Primitives/Ownership.Inout.swift"
+      ]
+    },
+    {
+      "directory": "nested-in-generic-extension-target-boundary",
+      "displayName": "nested-in-generic-extension-target-boundary",
+      "purpose": "Validate whether a nested type inside a ~Copyable-generic outer struct, itself nested in a sub-namespace across a 4-target chain (Namespace → Core → Variant → Umbrella → consumer), can have public methods declared in `extension Outer.Inner.Cell.Token where T: ~Copyable` and be called from a Copyable-T consumer. Result: FIXED on Swift 6.3.1 — clean build passes; the earlier linker failure that motivated keeping `Ownership.Transfer.Cell.Token.take()` and `Storage.Token.store(_:)` in the struct bodies was stale-cache-related. Decision: moved both methods into `extension ... where T: ~Copyable`.",
+      "date": "2026-04-23",
+      "toolchain": "Apple Swift 6.3.1 (swiftlang-6.3.1.1.2)",
+      "status": "FIXED",
+      "statusDetail": "hypothesis REFUTED — workaround obsolete",
+      "statusRaw": "FIXED",
+      "supersededBy": null,
+      "crossRefs": [
+        "swift-ownership-primitives/Sources/Ownership Transfer Primitives/Ownership.Transfer.Cell.swift",
+        "swift-ownership-primitives/Sources/Ownership Transfer Primitives/Ownership.Transfer.Storage.swift",
+        "swift-ownership-primitives/Audits/audit.md"
       ]
     }
   ],

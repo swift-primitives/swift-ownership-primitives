@@ -79,18 +79,19 @@ extension Ownership.Transfer.Storage where T: ~Copyable {
         init(_ box: Ownership.Transfer._Box<T>) {
             self._box = box
         }
+    }
+}
 
-        /// Atomically stores a value.
-        ///
-        /// - Parameter value: The value to store.
-        /// - Precondition: Must be called exactly once across all token copies.
-        ///   Second call traps with a clear error message.
-        // NOTE: Kept in body per [API-IMPL-008] exception — extending
-        // `Storage.Token` with `where T: ~Copyable` causes constraint-poisoning
-        // and a cross-target symbol-mangling mismatch at link time.
-        public func store(_ value: consuming T) {
-            _box.store(value)
-        }
+// MARK: - Token Store
+
+extension Ownership.Transfer.Storage.Token where T: ~Copyable {
+    /// Atomically stores a value.
+    ///
+    /// - Parameter value: The value to store.
+    /// - Precondition: Must be called exactly once across all token copies.
+    ///   Second call traps with a clear error message.
+    public func store(_ value: consuming T) {
+        _box.store(value)
     }
 }
 
