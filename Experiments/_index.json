@@ -1,0 +1,59 @@
+{
+  "$schema": "https://swift-institute.org/schemas/experiments-index-v1.json",
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-04-23",
+  "title": "Experiments Index",
+  "blurb": "Ownership primitives experiments — empirical anchors for the `Ownership.Borrow` / `Ownership.Inout` / `Ownership.Unique` / `Ownership.Slot` / `Ownership.Transfer.*` family.\n\nFor cross-primitive investigations (Ownership + Property + Buffer + Identity), see `/Users/coen/Developer/swift-primitives/Experiments/`.",
+  "scope": "swift-ownership-primitives",
+  "experiments": [
+    {
+      "directory": "inout-value-accessor-copyability-split",
+      "displayName": "inout-value-accessor-copyability-split",
+      "purpose": "Verify the V12 Ownership.Inout.value accessor split in isolation — `get + nonmutating _modify` for Copyable Value, `_read + nonmutating _modify` for ~Copyable Value. Confirms both paths route nested method-call mutations through the shared pointer (CoW-preserving) and the `get` path releases pure reads from the coroutine lifetime chain.",
+      "date": "2026-04-23",
+      "toolchain": "Apple Swift 6.3.1 (swiftlang-6.3.1.1.2)",
+      "status": "CONFIRMED",
+      "statusDetail": null,
+      "statusRaw": "CONFIRMED",
+      "supersededBy": null,
+      "crossRefs": [
+        "swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Inout.swift",
+        "swift-primitives/Experiments/property-view-lifetime-escape-reproduction",
+        "HANDOFF-property-view-ownership-inout-lifetime-chain.md"
+      ]
+    },
+    {
+      "directory": "borrow-inout-stdlib-parity",
+      "displayName": "borrow-inout-stdlib-parity",
+      "purpose": "Verify Ownership.Borrow / Ownership.Inout cover the SE-0519 stdlib Borrow<T> / Inout<T> shape (the four public inits and the `.value` accessor) on production Swift 6.3.1 before SE-0507 BorrowAndMutateAccessors ships stable. Formalizes the audit trail in `Audits/audit.md` under \"Legacy — Consolidated 2026-04-08\".",
+      "date": "2026-04-23",
+      "toolchain": "Apple Swift 6.3.1 (swiftlang-6.3.1.1.2)",
+      "status": "CONFIRMED",
+      "statusDetail": null,
+      "statusRaw": "CONFIRMED",
+      "supersededBy": null,
+      "crossRefs": [
+        "swift-ownership-primitives/Audits/audit.md",
+        "swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Borrow.swift",
+        "swift-ownership-primitives/Sources/Ownership Primitives/Ownership.Inout.swift"
+      ]
+    }
+  ],
+  "crossRefExperiments": [
+    {
+      "directory": "../../swift-primitives/Experiments/ownership-borrow-protocol-unification",
+      "note": "Cross-primitive (Identity + Ownership) — tests whether Viewable can unify with Ownership.Borrow.`Protocol` via associatedtype defaulting. Lives in the swift-primitives superrepo because multiple primitives participate.",
+      "status": "CONFIRMED"
+    },
+    {
+      "directory": "../../swift-primitives/Experiments/property-view-ownership-inout-factoring",
+      "note": "Cross-primitive (Property + Identity + Ownership) — establishes the Tagged<Tag, Ownership.Inout<Base>> composition shape used by Property.View.",
+      "status": "CONFIRMED"
+    },
+    {
+      "directory": "../../swift-primitives/Experiments/property-view-lifetime-escape-reproduction",
+      "note": "Cross-primitive (Property + Buffer + Identity + Ownership) — isolates the lifetime-escape failure that drove the V12 fix. Companion to `inout-value-accessor-copyability-split` (the fix shape).",
+      "status": "CONFIRMED"
+    }
+  ]
+}
