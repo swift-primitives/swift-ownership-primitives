@@ -9,9 +9,9 @@
     {
       "file": "ownership-types-usage-and-justification.md",
       "displayName": "ownership-types-usage-and-justification.md",
-      "topic": "Pre-0.1.0 per-type usage inventory and design evaluation. Surveys the ecosystem (swift-primitives, swift-standards, swift-foundations, swift-institute/Experiments) for consumers of each `Ownership.*` type, evaluates whether region-based isolation (SE-0430 sending + ~Sendable SE-0518) obsoletes any of them, and recommends DEPRECATE for `Ownership.Transfer.Storage` and `Ownership.Transfer.Box` (zero real consumers), KEEP with docstring narrowing for `Ownership.Unique` / `Ownership.Transfer.Cell` / `Ownership.Mutable`, DEFER `Ownership.Mutable.Unchecked` → `~Sendable` post-SE-0518, and KEEP all others.",
+      "topic": "Pre-0.1.0 per-type evaluation on merits + naming review + completeness analysis. Reframes the earlier usage-centric v1.0.0 draft (SUPERSEDED within this document's changelog) to evaluate each Ownership type by its unique position in the 5-axis lattice (lifetime × mutability × ownership-multiplicity × sync × copyability), not by adoption count. Package is positioned as total for ownership. Recommends naming actions: rename Transfer.Box → Transfer.Erased (Cluster A, high priority — diametric collision with Rust Box<T>); rename Slot.Store result → Slot.Outcome (Cluster E, low cost); optional Transfer direction rename (Cluster B: Cell/Storage → Outgoing/Incoming) and Unique → Box (Cluster C, requires Cluster A). Identifies two completeness gaps (inbound AnyObject-zero-alloc transfer, inbound type-erased transfer) visible under the direction-symmetry rename. @unchecked Sendable breakdown: Category A (Slot, _Box, Box.Pointer) and B (Unique, Retained) are sound; D (Shared) is a compiler-limitation workaround; only Category C (Mutable.Unchecked) is the class region-based isolation (SE-0518 ~Sendable) replaces — already DEFERRED in the audit.",
       "status": "RECOMMENDATION",
-      "statusDetail": null,
+      "statusDetail": "v2.0.0 — merit + completeness + naming",
       "statusRaw": "RECOMMENDATION",
       "tier": 2,
       "scope": "cross-package"

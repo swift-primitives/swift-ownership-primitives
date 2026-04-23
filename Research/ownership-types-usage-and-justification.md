@@ -1,8 +1,8 @@
-# Ownership Types — Usage and Justification
+# Ownership Types — Merits, Completeness, and Naming
 
 <!--
 ---
-version: 1.0.0
+version: 2.0.0
 last_updated: 2026-04-23
 status: RECOMMENDATION
 tier: 2
@@ -10,23 +10,38 @@ scope: cross-package
 ---
 -->
 
+## Changelog
+
+- **v2.0.0 (2026-04-23)** — Reframed per principal direction: evaluate each
+  type on **merits** (unique contract in the ownership space), not ecosystem
+  usage. The package is positioned as **total** for ownership — every
+  sensible ownership contract should be covered. Added naming review
+  (are the names what an experienced Swift engineer would expect?) and
+  completeness analysis (is the set total given the domain?). The
+  v1.0.0 DEPRECATE verdicts for `Transfer.Storage` and `Transfer.Box`
+  are **reversed** — usage absence is not grounds for removal when the
+  type occupies a distinct position in the ownership lattice. Usage
+  counts relocated to an appendix for reference.
+
+- **v1.0.0 (2026-04-23)** — Initial usage-based evaluation; SUPERSEDED.
+
 ## Context
 
-Before tagging `swift-ownership-primitives` 0.1.0, the package author asked:
-*"for each ownership type, inventory usage across the ecosystem and evaluate
-whether we even SHOULD provide such ownership type. The `@unchecked Sendable`
-types are suspicious — we should primarily rely on region-based isolation of
-`Sendable` / `unchecked Sendable`."*
+Before tagging `swift-ownership-primitives` 0.1.0, the package author asked for:
 
-This is a legitimate pre-tag question: 0.1.0 cements API surface that is
-expensive to remove later. Types that duplicate stdlib primitives or that
-exist only because `sending` + region-based isolation (SE-0430) wasn't in
-the language at the time they were designed are prime candidates for
-deprecation before they become entrenched.
+1. A **merit-based** per-type evaluation (does the type occupy a unique,
+   principled position in the ownership space?).
+2. A **completeness check** — the package should be *total* for the
+   ownership domain; gaps should be identified.
+3. A **naming review** — is each name what a seasoned Swift engineer would
+   expect when coming to the type fresh?
 
-Provenance context: several of these types were **moved** from
-`swift-reference-primitives` to `swift-ownership-primitives` per the doc
-comment at `swift-reference-primitives/Sources/Reference Primitives/Reference.swift:74–80`:
+Plus a specific concern: the `@unchecked Sendable` types are suspicious —
+region-based isolation (SE-0430 `sending`, SE-0518 `~Sendable`) should
+cover what they cover. Are they still necessary on their merits?
+
+Provenance: several types were relocated from `swift-reference-primitives`
+per that package's Reference.swift doc:
 
 | Old name | New name |
 |----------|----------|
@@ -35,558 +50,744 @@ comment at `swift-reference-primitives/Sources/Reference Primitives/Reference.sw
 | `Reference.Slot` | `Ownership.Slot` |
 | `Reference.Transfer` | `Ownership.Transfer` |
 
-So the evaluation is partly a second chance to reconsider designs that
-were accepted elsewhere and are now centralised here.
+The 0.1.0 tag freezes these names; pre-tag is the last cheap moment
+to adjust.
 
 ## Question
 
 For each type currently shipped in `swift-ownership-primitives`:
 
-1. **Inventory**: which packages (outside this one) actually use it, and how?
-2. **Alternative**: could Swift 6's region-based isolation (`sending` +
-   `Sendable`) + existing stdlib primitives (`Mutex`, `AsyncStream`,
-   `~Copyable` parameter annotations) cover the same use cases?
-3. **Verdict**: KEEP / NARROW / DEPRECATE / MOVE — with rationale.
+1. **Merit**: does the type hold down a unique, principled position in the
+   ownership space, distinct from every other type in the package and
+   from stdlib primitives?
+2. **Name**: is the name what a seasoned Swift engineer would reach for?
+3. **Completeness**: taken as a set, does the package cover the full
+   ownership domain? What's missing?
+
+## The Ownership Space — Axes
+
+Before evaluating individual types, enumerate the axes that partition
+the domain:
+
+| Axis | Values |
+|------|--------|
+| **Lifetime** | Scoped-to-source · Heap-owned (independent) · Transferred (one-shot) |
+| **Mutability** | Read-only · Mutable |
+| **Ownership multiplicity** | Exclusive (single owner) · Shared (ARC-multi) |
+| **Thread-sync** | None (intra-isolation) · Immutability (Sendable by construction) · Atomic / CAS · Caller-asserted external |
+| **Copyability of wrapper** | `Copyable` · `~Copyable` · Reference type |
+
+Every type in the package occupies one point in this 5-axis lattice. A
+*total* package covers every principled point; redundant types share a
+point with another; missing types leave gaps.
+
+The "principled" qualifier matters: not every 5-tuple needs a type —
+some are incoherent (e.g. "scoped + shared + mutable + no sync" would
+require time-travel), some are stdlib responsibilities (`Mutex`,
+`Sendable`-by-inference, `Optional`).
 
 ## Analysis
 
-### Inventory methodology
+### 1. `Ownership.Borrow` — KEEP, name CORRECT
 
-`grep -rE "Ownership\.<Type>"` across:
-- `/Users/coen/Developer/swift-primitives/` (superrepo + sibling packages)
-- `/Users/coen/Developer/swift-standards/`
-- `/Users/coen/Developer/swift-foundations/`
-- `/Users/coen/Developer/swift-institute/Experiments/`
+**Merit — position held**: Scoped-to-source · Read-only · Exclusive
+(though `Copyable` wrapper permits in-scope forks) · No sync
+(intra-isolation) · `Copyable` wrapper.
 
-Excluded: swift-ownership-primitives itself, `.build/`, `_index.json`,
-Research/Reflections docs (doc references don't count as usage).
+No other type in the package or stdlib holds this position on production
+Swift 6.3.1. SE-0519 `Borrow<T>` (SwiftStdlib 6.4) will share the
+position once it ships stable; the ecosystem `Ownership.Borrow` uses
+`UnsafeRawPointer` storage explicitly because `Builtin.Borrow<Value>`
+is stdlib-private.
 
-**Counts are call-site files, not call-site counts.** A single file using
-`Ownership.Shared` in 20 places counts as 1.
+**Region-based-isolation alternative**: `borrowing Value` parameter. Covers
+the scoped-borrow-as-parameter case, not the scoped-borrow-as-stored-field
+case that `Ownership.Borrow` serves (see `swift-property-primitives`'
+`Property.View.Read` — stores `Tagged<Tag, Ownership.Borrow<Base>>` as a
+field).
 
----
+**Name**: `Borrow` is what SE-0519 chose, what Rust chose (`&T`), what
+every surveyed literature calls it. Unambiguous; the name an experienced
+Swift engineer would expect.
 
-### 1. `Ownership.Borrow` — KEEP
-
-**Usage**: 3 direct conformers + 1 major structural consumer.
-
-| Consumer | Shape |
-|----------|-------|
-| `swift-tagged-primitives` | `Tagged+Ownership.Borrow.Protocol.swift` — Tagged's transparent forwarding to the underlying type's Borrow |
-| `swift-string-primitives` | `String.Borrowed.swift` — conforms to `Ownership.Borrow.`Protocol`` |
-| `swift-path-primitives` | `Path.Borrowed.swift` — same |
-| `swift-property-primitives` | `Property.View.Read` family stores `Tagged<Tag, Ownership.Borrow<Base>>` as its canonical read-side reference shape |
-
-**Alternative considered**: raw `UnsafePointer<Value>` + hand-written `@_lifetime`
-annotations on every call site. That was the predecessor; moving to
-`Ownership.Borrow` cut every consumer's `@_lifetime` bookkeeping.
-
-Stdlib SE-0519 `Borrow<T>` is the eventual replacement but (a) ships on
-SwiftStdlib 6.4 (not yet stable) and (b) stores `Builtin.Borrow<Value>`,
-which we can't use outside stdlib. The `UnsafeRawPointer`-backed
-`Ownership.Borrow` is the production-toolchain bridge until SE-0507
-(`BorrowAndMutateAccessors`) lands stable — at which point the `_read`
-coroutine inside `Ownership.Borrow.value` becomes a `borrow` accessor and
-the type survives.
-
-**Verdict**: KEEP. Core SE-0519 bridge. Consumers cannot be written without it
-on production 6.3.1. Deprecation path is structural (swap `_read` → `borrow`),
-not API-breaking.
+**Name verdict**: CORRECT.
+**Merit verdict**: KEEP.
 
 ---
 
-### 2. `Ownership.Inout` — KEEP
+### 2. `Ownership.Inout` — KEEP, name CORRECT
 
-**Usage**: 2 direct consumers, both structural.
+**Merit — position held**: Scoped-to-source · Mutable · Exclusive
+(enforced by `~Copyable` on the wrapper) · No sync · `~Copyable` wrapper.
 
-| Consumer | Shape |
-|----------|-------|
-| `swift-tagged-primitives` | `Tagged.swift` — Tagged's mutating forwarding |
-| `swift-property-primitives` | `Property.View` family stores `Tagged<Tag, Ownership.Inout<Base>>` — the canonical mutable-side reference shape |
+Mirror of `Borrow` on the mutable axis. Same scoped-field-storage
+justification — `inout Base` parameters cannot be stored.
 
-Both consumers consume 10+ call-site instances each. The Property.View family
-is the ecosystem-wide fluent-accessor primitive and its shape is frozen by
-property's 0.1.0 plan.
+**Region-based-isolation alternative**: `inout Value` parameter. Same
+parameter-vs-stored-field split as Borrow.
 
-**Alternative considered**: `inout Base` parameter. Inout parameters are not
-storable (cannot be a field) — the Property.View family explicitly needs a
-storable field, which is why `Ownership.Inout<Base>` exists.
+**Name**: `Inout` is Swift's keyword for the concept. SE-0519 uses it.
+An experienced Swift engineer seeing `Ownership.Inout<T>` immediately
+recognises "mutable reference bound to a source, like `inout` but
+storable".
 
-`sending Base` won't help here — the View keeps a reference, not a transferred
-value.
-
-**Verdict**: KEEP. Same argument as Borrow. V12 accessor split (this package's
-`get` + `nonmutating _modify` for `Copyable` `Value`, `_read` + `nonmutating _modify`
-for `~Copyable`) is the toolchain workaround until SE-0507 lands.
+**Name verdict**: CORRECT.
+**Merit verdict**: KEEP.
 
 ---
 
-### 3. `Ownership.Unique` — KEEP (NARROWLY)
+### 3. `Ownership.Unique` — KEEP, name QUESTION
 
-**Usage**: 1 call-site file outside this package (`swift-reference-primitives/Sources/Reference Primitives/Reference.swift` — the doc table mentioning the rename).
+**Merit — position held**: Heap-owned · Mutable (through
+`withMutableValue`) · Exclusive (enforced by `~Copyable` wrapper) · No
+sync (Sendable when `Value: Sendable` — exclusive ownership subsumes
+sync) · `~Copyable` wrapper.
 
-Real consumer count: **effectively zero** outside the rename documentation.
+Unique position. The only other candidate is "plain `~Copyable` container
+with inline allocation" — but that's a DIY pattern per type, not a
+reusable primitive. `Ownership.Unique` is the *named* abstraction for
+"heap-owned exclusive `~Copyable` cell with deterministic deinit". Rust
+ships it as `Box<T>`; C++ as `std::unique_ptr`; Swift stdlib as… nothing
+(the closest is `ManagedBuffer`, but that requires subclassing).
 
-The package has no downstream consumer today that constructs an `Ownership.Unique`
-directly. The type exists as the "heap-allocated exclusive owner" slot in the
-taxonomy (Swift's analogue of Rust's `Box<T>`) and sits in the doc alongside
-`Shared` / `Mutable`.
+**Region-based-isolation alternative**: none. `sending` covers
+transferring a value across boundaries; it does not provide heap
+placement. Orthogonal concern.
 
-**Alternative considered**:
+**Name**: `Unique` describes the **ownership contract** (exclusive
+ownership). This is consistent with Rust's `Unique<T>` (the unstable
+stdlib primitive) and with C++'s `std::unique_ptr`. But the more common
+colloquialism is:
 
-| Alternative | Fits when |
-|-------------|-----------|
-| Plain `~Copyable` struct with allocation inside `init` | When the type has a single use site and you control the layout |
-| `ManagedBuffer` subclass | When you need manual class-backed heap allocation |
-| `Ownership.Shared` (ARC-shared immutable) | When one owner is not required |
-| `Ownership.Mutable` (ARC-shared mutable) | When mutation through multiple refs is required |
+| Option | Evoked by | Clarity | Tradition |
+|--------|-----------|---------|-----------|
+| `Ownership.Unique` (current) | Describes the contract: single-owner | Clear once understood; "Unique" is jargon-lite | Rust stdlib (unstable), C++ partial |
+| `Ownership.Box` | Describes storage: heap box | Very clear; Rust's stable name | Rust (`Box<T>`); many engineers will reach here first |
+| `Ownership.Owner` | Describes the role | Overlaps generic English | Weak |
+| `Ownership.Heap` | Describes where it lives | Clear but awkward ("use a Heap of") | Weak |
 
-Direct stdlib alternative: none. Swift does not provide a `Box<T>` for `~Copyable`
-`T` with exclusive ownership + deterministic deinit. `ManagedBuffer` is the nearest
-but requires class subclassing.
+Argument for `Ownership.Box`: experienced Swift engineers who have
+touched Rust will reach for `Box` when they want heap-backed exclusive
+ownership. `Unique` requires a docstring read to confirm the same thing.
 
-**Region-based isolation question**: does `sending Value` + region transfer cover
-"exclusive heap ownership"? No — `sending` is about crossing an isolation boundary
-with a value, not about where the value lives. `Ownership.Unique` is about heap
-placement.
+Argument against `Ownership.Box`: the package already has
+`Ownership.Transfer.Box` (type-erased transfer). Two "Box" types in the
+same namespace is confusing; one of them would have to rename.
 
-**Verdict**: KEEP, but NARROW — the docstring should discourage use in favour
-of direct `~Copyable` containers when allocation is the consumer's concern.
-Unique is the right answer for "I need a heap-backed exclusive cell I can
-`take()` from" — a genuinely narrow niche. Zero-usage today isn't grounds for
-removal because the type is load-bearing semantically (it completes the
-ownership-mode taxonomy the docstring table advertises); the question is
-whether the doc needs to soft-promote alternatives for common cases.
+If `Transfer.Box` renames (it arguably should — see #11 below) to
+something like `Transfer.Erased`, then `Ownership.Box` frees up for the
+Rust-style heap-owned cell, and the package reads more naturally to the
+largest set of Swift engineers.
 
-**Recommended action**: soften the docstring to guide readers away from Unique
-for the 80% case (direct `~Copyable` container > Unique-wrapping), keep the
-type.
+**Name verdict**: CONSIDER rename `Unique` → `Box` if and only if
+`Transfer.Box` renames first.
 
----
-
-### 4. `Ownership.Shared` — KEEP, but QUESTION @unchecked
-
-**Usage**: 13 files across the ecosystem (8 primitives sites, 4 foundations, 1
-institute).
-
-Real consumers include:
-
-| Consumer | Use |
-|----------|-----|
-| `swift-pool-primitives` | `Pool.Acquire.swift`, `Pool.Bounded.Destructor.swift`, `Pool.Bounded.Creation.swift`, `Pool.Bounded.Policy.swift` (Pool internals) |
-| `swift-async-primitives` | `Async.Mutex+Deque.swift` |
-| `swift-loader-primitives` | `Loader.Error.swift` |
-| `swift-tests` / `swift-institute` research | Referenced in `sink-concurrent-sharing-pattern.md` |
-
-Real need: a heap-shared immutable cell for a `~Copyable & Sendable` value,
-useful when the value is expensive to construct and multiple owners need a
-stable reference without copying.
-
-**`@unsafe @unchecked Sendable`** — Category D / SP-4 per [MEM-SAFE-024]. The
-class has `let value: Value` (immutable) with `Value: Sendable`; the compiler
-*should* be able to infer `Sendable`, but `~Copyable` generics in class storage
-block the inference.
-
-**Alternative considered**:
-
-1. **Region-based `sending`**: does not apply — Shared is for multi-owner sharing,
-   not one-shot transfer.
-2. **Plain `Sendable` final class**: cannot; the `~Copyable` generic blocks
-   inference (per existing doc comment).
-3. **Drop `~Copyable` from the Value constraint**: narrower than today — consumers
-   relying on storing `~Copyable` values would lose. Unclear if any do, but the
-   constraint is cheap to keep.
-4. **Move to `swift-reference-primitives`**: already came FROM there. Not a win.
-
-**Region-based-isolation verdict**: the `@unchecked Sendable` on `Shared` is
-**not** a region-isolation issue — it's a `Sendable`-inference issue specific
-to `~Copyable` generics in class storage. When Swift resolves that, the
-conformance becomes checked `Sendable` with no API change.
-
-**Verdict**: KEEP. The `@unchecked` is a structural-workaround Category D
-(SP-4), not a design smell. Docstring already documents the inference gap.
-Add a revisit-when-fixed anchor.
+**Merit verdict**: KEEP.
 
 ---
 
-### 5. `Ownership.Mutable` — KEEP, SCOPE NARROW
+### 4. `Ownership.Shared` — KEEP, name CONSIDER
 
-**Usage**: 19 files across the ecosystem (14 foundations, 3 primitives, 2
-institute).
+**Merit — position held**: Heap-owned · Read-only · Shared (ARC-multi)
+· Sync via immutability · Reference type (`final class`), `~Copyable`
+`Value`.
 
-14 of those are concentrated in a single package (`swift-foundations/swift-markdown-html-render`)
-for the `Markdown.Rendering.Frame` / `Render.Context+Capturing` rendering stack,
-where a mutable heap-shared context is needed for frame accumulation.
+Unique position. `Ownership.Mutable` is the mutable sibling; no other
+type in the package is immutable+ARC-shared.
 
-Other consumers:
-- `swift-cache-primitives` — `Cache.Storage.swift`
-- `swift-async-primitives` — `Async.Channel.Bounded.Storage.swift`
+**Region-based-isolation alternative**: none. `sending` is for transfer,
+not sharing. A `final class` with `let value: T` is the hand-rolled
+equivalent, but Sendable inference blocks on `~Copyable` generic
+parameters today — so consumers would write `@unchecked Sendable`
+themselves. `Ownership.Shared` concentrates that assertion.
 
-Real need: a heap-shared **mutable** cell without synchronization, used inside
-a single isolation domain.
+**`@unsafe @unchecked Sendable` analysis**: Category D / SP-4 per
+[MEM-SAFE-024] — the class IS structurally Sendable (immutable payload,
+`Value: Sendable` required), but `~Copyable` generics block the
+compiler's inference. When Swift fixes that, the conformance becomes
+checked `Sendable` with zero API change. The `@unchecked` is a **
+compiler-workaround annotation**, not a design smell.
 
-**`Ownership.Mutable` itself is NOT `Sendable`** — by design. Only
-`Ownership.Mutable.Unchecked` (the explicit opt-in wrapper) is
-`@unsafe @unchecked Sendable`.
+**Name**: "Shared" describes the ownership multiplicity (shared among
+multiple owners). But `Ownership.Mutable` is ALSO shared (ARC
+multi-owner). The asymmetry — one name emphasises *sharing*, the other
+*mutability* — is a real ambiguity.
 
-**Region-based-isolation verdict for the non-Unchecked form**: `Mutable` is
-not an @unchecked-Sendable smell; it's the principled non-Sendable
-counterpart to `Shared`. The design policy ("no general-purpose mutable
-reference wrapper is Sendable unless it provides synchronization or
-actor isolation by construction") aligns with the user's stated preference.
+Alternatives:
 
-**Alternative considered**:
+| Naming scheme | Immutable | Mutable | Clarity |
+|---------------|-----------|---------|---------|
+| Current | `Shared` | `Mutable` | Asymmetric — both are shared |
+| Explicit pair | `Shared.Immutable` | `Shared.Mutable` | Symmetric; adds a layer of nesting; Mutable.Unchecked becomes `Shared.Mutable.Unchecked` |
+| Drop "Shared" | `Immutable` | `Mutable` | Symmetric; but `Immutable` is too generic |
+| Rust-style | `Rc` | `RcMut` | Unfamiliar to Swift-first readers |
+| Const + Mutable | `Const` | `Mutable` | Swift doesn't use "const"; also asymmetric (Const ≠ immutable class reference) |
 
-1. **`Mutex<Value>` from stdlib `Synchronization`**: provides mutable shared
-   state WITH synchronization. Use when cross-isolation access is needed.
-   `Mutable` is for within-isolation sharing where synchronization would be
-   wasted.
-2. **Actor + stored property**: provides cross-isolation mutable shared state
-   via actor reentrancy. Use when the sharer naturally lives inside an actor.
-3. **Reference type with `@_spi`-gated mutation**: not a real alternative.
+The Explicit pair (`Shared.Immutable` / `Shared.Mutable` / `Shared.Mutable.Unchecked`)
+is the cleanest. It would be a 0.1.0 API-shape change from today.
 
-**Region-based-isolation doesn't help here** — `sending` transfers regions;
-`Mutable` is intentionally about NOT crossing regions.
+Counter: `Shared` + `Mutable` is the pattern inherited from
+`Reference.Box` + `Reference.Indirect`. The rename to `Shared` + `Mutable`
+happened when the types moved into `Ownership`. Another rename pre-0.1.0
+is possible but has a diminishing-returns feel.
 
-**Verdict**: KEEP. Docstring could be clearer that `Mutable` is only for
-**intra-isolation** shared mutable state — for cross-isolation use, point
-at `Mutex` or an actor.
+**Name verdict**: CONSIDER reshaping to `Shared.Immutable` / `Shared.Mutable`
+for symmetry. Higher effort than other name considerations in this
+research because it affects all 13 current consumers of `Shared` + 19 of
+`Mutable`. Leaving as-is is also acceptable — the current asymmetric
+names have precedent and downstream consumers; the asymmetry is a
+readability wart, not a correctness issue.
 
-**Follow-up**: consider whether the concentration of 14 of 19 consumers in
-a single foundation package (`markdown-html-render`) suggests the type is
-being used where a local domain-specific solution would be clearer. This
-is a downstream concern, not a 0.1.0 blocker.
-
----
-
-### 6. `Ownership.Mutable.Unchecked` — DEFER + SHRINK USAGE
-
-**Usage**: no direct consumers outside this package's own tests.
-
-The type exists as an explicit `@unchecked Sendable` opt-in over
-`Ownership.Mutable`, per [MEM-SAFE-024] Category C (thread-confined,
-caller-asserted).
-
-**Region-based-isolation verdict**: Category C is precisely the class the
-audit skill flags for migration to `~Sendable` (SE-0518). The type's
-entire purpose — "I promise external synchronization; let me cross a
-`@Sendable` boundary" — is the exact thing `~Sendable` + scoped `unsafe`
-transfer sites are designed for.
-
-**Alternative when SE-0518 stabilises**:
-- Consumers who today wrap their non-Sendable state in
-  `Ownership.Mutable.Unchecked` would instead mark the state `~Sendable` at
-  its type declaration, and each transfer site would use an explicit
-  `unsafe` expression (or a helper that contains the assertion).
-- The current wrapper becomes a grep-able escape-hatch that migrates to
-  inline unsafe assertions when `~Sendable` ships.
-
-**Verdict**: DEFER (as already flagged in audit finding #5). Once
-`~Sendable` stabilises:
-- Deprecate `Ownership.Mutable.Unchecked` with a migration note.
-- Provide a migration example in DocC.
-
-**For 0.1.0**: keep the type. The DEFERRED status is acknowledged; no
-consumer use today, so deprecation later costs nothing.
+**Merit verdict**: KEEP.
 
 ---
 
-### 7. `Ownership.Slot` — KEEP
+### 5. `Ownership.Mutable` — KEEP, name CONSIDER (paired with #4)
 
-**Usage**: 16 files (14 primitives, 2 institute).
+**Merit — position held**: Heap-owned · Mutable · Shared (ARC-multi) ·
+No sync (NOT Sendable by design) · Reference type (`final class`),
+`~Copyable` `Value`.
 
-Real consumers:
-- `swift-pool-primitives` — `Pool.Bounded.Entry.swift`, `Pool.Bounded.swift`
-  (core pool-cell implementation)
-- `swift-async-primitives` — `Async.Channel.Bounded.Storage.swift`,
-  `Async.Channel.Bounded.State.swift`, `Async.Channel.Bounded.Receiver.swift`
-  (bounded channel implementation)
-- `swift-institute/Experiments/inout-noncopyable-optional-closure-capture`
+Unique position. The mutable sibling of `Shared`. Explicitly non-Sendable
+— the design philosophy is "mutable-shared-without-synchronization is
+intra-isolation only; cross-isolation needs a `Mutex` or actor".
 
-This is the one @unchecked Sendable type that's genuinely load-bearing: the
-bounded-channel implementation uses `Ownership.Slot` directly, and Pool.Bounded.Entry
-uses it for pool-entry cycling.
+**Region-based-isolation alternative**:
+- For **intra-isolation** multi-ref mutable state: stdlib has no analog.
+  A `final class` with `var value: T` works but loses the policy nudge
+  toward non-Sendable-by-default.
+- For **cross-isolation** multi-ref mutable state: use `Mutex<T>` (stdlib
+  `Synchronization`). Mutable is intentionally the wrong tool for that
+  case.
 
-**`@unsafe @unchecked Sendable`** — Category A (atomic-synchronized) per
-[MEM-SAFE-024]. The class owns an `Atomic<UInt8>` state machine; access is
-serialized by CAS.
+**Name**: "Mutable" — see discussion under #4.
 
-**Region-based-isolation verdict**: Category A is the case where `@unchecked
-Sendable` is the **correct** answer — the class is its own synchronization
-mechanism. Region-based isolation + `sending` cannot replace it because the
-slot supports **reusable** cycling (empty ↔ full ↔ empty ↔ full), not a
-one-shot transfer. An AsyncChannel is the closest functional alternative but
-has heavier state (continuations, back-pressure).
-
-**Alternative considered**:
-
-1. **`Mutex<Optional<Value>>`**: provides a lockable slot. Cost: lock
-   contention on uncontended paths (Slot's CAS is contention-free on the
-   empty→full and full→empty transitions). Different performance profile.
-2. **`AsyncChannel`**: handles bounded single-slot transfer but involves
-   async continuations. Heavier for synchronous producer/consumer.
-3. **Raw `Atomic<Int>` + `UnsafeMutablePointer<Value>`**: what Slot is, hand-rolled.
-
-**Verdict**: KEEP. Genuinely load-bearing; `@unchecked` is correct; no
-alternative offers the same sync-on-CAS profile.
+**Name verdict**: CONSIDER pair-rename with `Shared` for symmetry.
+**Merit verdict**: KEEP.
 
 ---
 
-### 8. `Ownership.Transfer.Cell` — KEEP (NARROW)
+### 6. `Ownership.Mutable.Unchecked` — KEEP (BUT PLAN FOR SE-0518), name CORRECT
 
-**Usage**: 3 files in `swift-foundations`:
+**Merit — position held**: Heap-owned · Mutable · Shared (ARC-multi) ·
+Sync via caller assertion · Reference wrapper, wrapping `Ownership.Mutable`.
 
-| File | Use |
-|------|-----|
-| `swift-foundations/Experiments/async-let-noncopyable-transfer/Sources/main.swift` | Experimental use |
-| `swift-foundations/swift-kernel/Sources/Kernel Thread/Kernel.Thread.spawn.swift` | Passing a value to a thread spawn |
-| `swift-foundations/swift-io/Benchmarks/io-bench/IO Performance Tests/Channel.swift` | Benchmark fixture |
+Unique position — the explicit `@unchecked Sendable` opt-in for the
+non-Sendable `Mutable` wrapper. Category C per [MEM-SAFE-024].
 
-Real production consumer: `Kernel.Thread.spawn` (1 site).
+**Region-based-isolation alternative**: this IS the class of use that
+SE-0518 `~Sendable` is designed to replace. When `~Sendable` stabilises,
+the pattern becomes: mark the state `~Sendable` directly, and use
+explicit `unsafe` at each transfer site. `Ownership.Mutable.Unchecked`
+concentrates that `unsafe` assertion in a wrapper type today.
 
-Design: "pass an existing `~Copyable` value through a `@Sendable` escaping
-closure, consume it exactly once on the other side via an atomic token."
+**Name**: `Unchecked` is Swift's conventional suffix for "bypasses
+compiler checking" (e.g., stdlib's `Swift.Unchecked` conversions). Nested
+inside `Ownership.Mutable`, the qualified name reads
+`Ownership.Mutable.Unchecked` — clear.
 
-**Region-based-isolation verdict**: this is exactly what `sending` in
-Swift 6 covers — `func spawn<T: Sendable>(...) sending T` or the
-`~Copyable sending` variant lets the value be passed across the
-`@Sendable` boundary.
-
-However — `Kernel.Thread.spawn` runs the closure on an OS thread, not a
-Swift Task. `sending` works at Task / isolation boundaries; OS threads
-spawned via `pthread_create` don't participate in Swift 6's region
-isolation. The Transfer.Cell token-with-CAS model is the equivalent for
-the pthread case.
-
-**Alternative considered**:
-
-1. **`sending T` parameter**: works for Swift Tasks + actor boundaries, not
-   pthread spawns.
-2. **`Mutex<Optional<T>>` + manual join**: works but needs external
-   coordination (thread.join → read).
-3. **`Ownership.Slot<T>` + `move.in` before spawn**: functionally equivalent,
-   just Slot under a different name. Slot is more general (reusable).
-
-**Verdict**: KEEP, but NARROW in docstring: position Transfer.Cell
-specifically as the **pthread / OS-thread transfer** case. For Swift Task
-boundaries, recommend `sending` parameters directly.
+**Name verdict**: CORRECT.
+**Merit verdict**: KEEP at 0.1.0. Plan deprecation path when SE-0518
+stabilises: DocC migration note → `@available(*, deprecated)` → removal.
 
 ---
 
-### 9. `Ownership.Transfer.Storage` — DEPRECATE
+### 7. `Ownership.Slot` — KEEP, name CORRECT
 
-**Usage**: **zero** direct call sites outside this package.
+**Merit — position held**: Heap-owned · Mutable · Reusable (cycles
+between empty and full) · Atomic sync (state machine) · Reference type,
+`~Copyable` `Value`.
 
-Design: inverse of Transfer.Cell — the consumer pre-allocates empty storage
-and ships the store-capable token to a producer, who deposits the value,
-and the consumer retrieves after.
+Unique position. The reusable atomic single-value channel/slot. Rust's
+closest is `Cell<T>` (interior-mutability, single-thread) + atomic work
+queues (thread-safe). Swift stdlib has no direct analog; `AsyncChannel`
+is heavier.
 
-**Region-based-isolation verdict**: the `sending` return-value shape in
-Swift 6 (`-> sending T`) covers most of this. A function returning
-`sending T` from an actor-isolated context gives the caller a value
-transferred into its region.
+**Region-based-isolation alternative**: none for the reusable-slot case.
+`sending` is one-shot; `Slot` is reusable. `AsyncChannel` also works but
+requires async context + continuations.
 
-Actual use cases for Storage would need to involve pthread-style producers
-that can't return values directly. Transfer.Cell already covers that case
-by flipping the direction. Having both Cell and Storage duplicates the
-transfer primitive along a direction axis that ~never matters in practice —
-the grep confirms: nobody uses Storage.
+**`@unsafe @unchecked Sendable` analysis**: Category A (synchronized
+via `Atomic<UInt8>` state machine + release/acquire publication). This
+is the **correct** use of `@unchecked` per [MEM-SAFE-024] — the class
+IS its own synchronization mechanism.
 
-**Alternative considered**:
+**Name**: `Slot` evokes "one slot that can be filled or empty" — exactly
+the semantic. No ambiguity with other slot-like concepts in Swift
+stdlib.
 
-1. **Transfer.Cell in reverse**: use a captured Cell the producer writes to
-   via mutation... actually doesn't work because Cell is one-shot constructor.
-2. **Transfer.Cell with inverted roles**: let the consumer hold the cell, let
-   the producer ship a value into it... functionally similar, but Storage
-   already exists for that.
-3. **`Ownership.Slot<T>`**: reusable version; covers same pattern with
-   extra capacity.
-4. **`AsyncChannel` / `AsyncStream`**: structured-concurrency equivalent.
-
-**Verdict**: DEPRECATE in 0.1.0 — document the type as "historical; use
-`Transfer.Cell` + inverted roles or `Ownership.Slot` instead." Removal
-proper can happen in 0.2.0 after any latent consumers surface.
-
-Actual removal plan could be as simple as removing the type from the
-public API and collapsing `_Box`'s Storage path, since Cell and Storage
-share `_Box` internally.
+**Name verdict**: CORRECT.
+**Merit verdict**: KEEP.
 
 ---
 
-### 10. `Ownership.Transfer.Retained` — KEEP (LOAD-BEARING)
+### 8. `Ownership.Slot.Move` — KEEP, name OK-BUT-DEBATABLE
 
-**Usage**: 6 files across foundations (`swift-executors`, `swift-testing`,
-`swift-io`).
+**Merit — position held**: Fluent accessor for the trapping
+store/take pair. Not a standalone type — provides `slot.move.in(_)` and
+`slot.move.out`.
 
-All real consumers:
+**Name**: `Move` captures the one-way transfer (value moves into, value
+moves out of). Alternatives:
 
-| File | Use |
-|------|-----|
-| `swift-executors/Sources/Executors/Executor.Scheduled.swift` | Scheduling executor |
-| `swift-executors/Sources/Executors/Kernel.Thread.Executor.Completion.swift` | Completion-thread handoff |
-| `swift-executors/Sources/Executors/Kernel.Thread.Executor.swift` | Core thread-executor |
-| `swift-executors/Sources/Executors/Kernel.Thread.Executor.Stealing.Worker.swift` | Work-stealing worker |
-| `swift-executors/Sources/Executors/Kernel.Thread.Executor.Polling.swift` | Polling executor |
-| `swift-testing/Sources/Testing/Testing.Discovery.swift` | Test discovery |
+| Option | Reads as |
+|--------|----------|
+| `Slot.Move` (current) | `slot.move.in(x)` / `slot.move.out` — evokes "moving a value" |
+| `Slot.Exchange` | `slot.exchange.in(x)` — evokes CAS/atomic exchange |
+| `Slot.Transfer` | `slot.transfer.in(x)` — overlaps with `Ownership.Transfer` |
 
-Design: zero-allocation transfer of `AnyObject` across pthread boundaries
-via `Unmanaged.passRetained(_:).toOpaque()` + balanced retain.
+Current is fine; `Exchange` would be more precise about the atomic
+nature but `Move` is more natural at call sites.
 
-**Region-based-isolation verdict**: same argument as Transfer.Cell — pthread
-boundaries don't participate in region isolation. `sending T: AnyObject`
-would work for Task boundaries, but the Executor infrastructure runs on
-pthreads by construction (those OS threads ARE the executor).
-
-`Transfer.Retained` is the zero-allocation variant when `T: AnyObject`:
-skips the Cell's heap box by using `Unmanaged` directly. This is a real
-performance argument in the executor hot path.
-
-**Alternative considered**:
-
-1. **Transfer.Cell<T: AnyObject>**: works, but costs the box allocation. For
-   executor internals this is non-trivial.
-2. **Manual `Unmanaged` at call sites**: what Retained wraps. Unscoped; every
-   call site re-derives safety.
-3. **`nonisolated(unsafe)` + raw pointer**: same shape, no type safety.
-
-**Verdict**: KEEP. Genuinely load-bearing for executor performance; zero-alloc
-justifies the narrow AnyObject-only surface.
+**Name verdict**: OK.
+**Merit verdict**: KEEP.
 
 ---
 
-### 11. `Ownership.Transfer.Box` — DEPRECATE
+### 9. `Ownership.Slot.Store` — KEEP, name QUESTION (duplicate verb)
 
-**Usage**: 1 real file (`swift-io` benchmarks) + 2 in swift-institute
-experiments (one is mine from the workaround revalidation).
+**Merit — position held**: Result enum for the total `slot.store(_)`
+operation. `.stored` vs `.occupied(Value)`.
 
-Real production consumer: **zero**.
+**Name**: `Store` is the name of the OPERATION (`slot.store(x)`) AND the
+RESULT TYPE (`Slot.Store` enum). That's the overloading that Swift
+conventions call out:
 
-Design: type-erased boxing via `UnsafeMutableRawPointer` + closure-based
-destroy function (per the [DOC-045] WORKAROUND note — the closure
-can't be a thin function pointer due to a Swift 6.3.1 compiler limitation).
+- `slot.store(x)` — verb.
+- `switch slot.store(x) { case .stored: … case .occupied: … }` — the
+  result type named `Store`.
 
-**Region-based-isolation verdict**: Box exists for opaque-pointer
-boundaries (C APIs taking `void*` context). That's a very narrow use case
-that doesn't come up in Swift-only code. For Swift-to-Swift transfer,
-Transfer.Cell handles it with a typed token.
+Parallel structure exists (`.store(x) -> .Store`) but can confuse.
 
-**Alternative considered**:
+Alternatives:
 
-1. **Direct `Unmanaged` + `toOpaque()` / `fromOpaque()`**: what Box wraps
-   internally. Unscoped but standard for C-interop.
-2. **Transfer.Cell with typed token**: works when both sides are Swift.
-3. **`CVaArgRepresentable` / `UnsafeMutableRawPointer.allocate`**: lower-level.
+| Option | Reads as |
+|--------|----------|
+| `Slot.Store` (current) | `slot.store(x) -> Slot.Store` — noun-verb-noun |
+| `Slot.Outcome` | `slot.store(x) -> Slot.Outcome` — single noun for result |
+| `Slot.Store.Result` | `slot.store(x) -> Slot.Store.Result` — nested under Store |
+| `Slot.Store.Outcome` | Same pattern, different leaf |
+| `Slot.Stored` (past participle) | `slot.store(x) -> Slot.Stored` — describes "what happened" |
 
-**Verdict**: DEPRECATE in 0.1.0 — no production consumer, significant
-surface area (Header + Pointer + make/take/destroy statics). The
-type-erased-opaque-pointer use case is narrow enough that per-consumer
-`Unmanaged` is probably cleaner than a shared primitive.
+The stdlib has parallel constructions — `Atomic.compareExchange` returns
+a tuple, not a named type. But where a named result is needed, the
+convention is the past-participle (`Slot.Stored`) or a disambiguating
+noun (`Slot.Outcome`, `Slot.StoreResult`).
 
-If a real consumer surfaces later, Box can return — but at 0.1.0 it's
-pure speculation.
+**Name verdict**: CONSIDER rename `Slot.Store` → `Slot.Outcome` or
+`Slot.Stored` to break the verb/noun collision.
+
+**Merit verdict**: KEEP.
 
 ---
 
-## Summary
+### 10. `Ownership.Transfer` (namespace enum) — KEEP, name CORRECT
 
-| Type | Usage | @unchecked status | 0.1.0 Verdict |
-|------|-------|-------------------|---------------|
-| `Ownership.Borrow` | 4 consumers, load-bearing | No (Copyable) | KEEP |
-| `Ownership.Inout` | 2 consumers, load-bearing | No (`~Copyable`) | KEEP |
-| `Ownership.Unique` | 0 real consumers today | Category B (sound) | KEEP narrowly — soften docstring |
-| `Ownership.Shared` | 13 files across ecosystem | Category D / SP-4 (sound) | KEEP — revisit when `~Copyable` generics unblock `Sendable` inference |
-| `Ownership.Mutable` | 19 files (14 in one package) | Not Sendable | KEEP — clarify intra-isolation scope in docstring |
-| `Ownership.Mutable.Unchecked` | 0 real consumers | Category C (opt-in) | **DEFER** — migrate to `~Sendable` (SE-0518) post-stabilisation |
-| `Ownership.Slot` | 16 files, pool + channel core | Category A (atomic) | KEEP — correct @unchecked use |
-| `Ownership.Transfer.Cell` | 1 real consumer (Kernel.Thread.spawn) | Uses @unchecked _Box | KEEP — narrow docstring to pthread case |
-| `Ownership.Transfer.Storage` | **0 real consumers** | Uses @unchecked _Box | **DEPRECATE** — remove in 0.2.0 |
-| `Ownership.Transfer.Retained` | 6 files, executor infra | Category B (sound) | KEEP |
-| `Ownership.Transfer.Box` | **0 real consumers** | @unchecked Pointer | **DEPRECATE** — remove in 0.2.0 |
+**Merit — position held**: Namespace for one-shot cross-boundary ownership
+transfer primitives.
 
-### @unchecked Sendable breakdown
+**Name**: `Transfer` is the canonical term for "ownership moves across a
+boundary" in Rust (`std::move`), Swift 6 (SE-0430 `sending`), operating
+systems (thread hand-off). No ambiguity.
 
-| Category | Instances | Action |
-|----------|-----------|--------|
-| A (synchronized) | Slot, _Box, Box.Pointer | KEEP — correct per [MEM-SAFE-024] |
-| B (ownership transfer) | Unique (conditional), Retained | KEEP — sound; `~Copyable` + exclusive ownership |
-| C (thread-confined, caller-asserted) | Mutable.Unchecked | DEFER → `~Sendable` post-SE-0518 |
-| D (structural workaround, SP-4 non-Sendable generic) | Shared | KEEP with revisit-when-fixed anchor |
+**Name verdict**: CORRECT.
+**Merit verdict**: KEEP.
 
-The user's concern — "we should primarily rely on region-based isolation" — is
-addressed: none of the KEEP-verdict `@unchecked Sendable` instances are
-Category C (the one class `~Sendable` + scoped `unsafe` would replace).
-Category A (`Slot`, `_Box`, `Box.Pointer`) and Category B (`Unique`, `Retained`)
-have internal synchronization or `~Copyable` exclusive-ownership contracts
-that region-based isolation does not replace.
+---
 
-### Proposed actions for 0.1.0 tag
+### 11. `Ownership.Transfer.Cell` — KEEP, name CONSIDER (paired with #12)
 
-1. **DEPRECATE** `Ownership.Transfer.Storage` — no real consumers, covered by
-   `Transfer.Cell` + `Slot`.
-2. **DEPRECATE** `Ownership.Transfer.Box` — no real production consumers;
-   the use case is narrow enough that per-consumer `Unmanaged` is cleaner.
-3. **DOCSTRING NARROWING** on `Ownership.Unique` (soft-promote direct
-   `~Copyable` containers), `Ownership.Transfer.Cell` (position as
-   pthread-transfer, not Task-transfer), `Ownership.Mutable` (intra-isolation
-   scope).
-4. **DEFER** `Ownership.Mutable.Unchecked` → `~Sendable` migration path
-   documented; no 0.1.0 change.
-5. **KEEP EVERYTHING ELSE** at current shape.
+**Merit — position held**: One-shot transfer · Outbound direction (value
+exists, ship it out) · `~Copyable` wrapper with `Copyable` token.
 
-### Alternative: keep Storage + Box as a no-cost hedge
+Unique position along the direction axis. The namespace table:
 
-The opposite choice — keep Storage and Box even with zero consumers today —
-costs:
-- Larger public API surface frozen at 0.1.0 (harder to evolve).
-- DocC / README have to document types nobody uses.
-- Consumers scanning the API inventory see more than they need.
+| Direction | Type |
+|-----------|------|
+| Outbound (value exists, consumer takes) | `Transfer.Cell` |
+| Inbound (slot exists, producer stores) | `Transfer.Storage` |
+| Outbound specialisation for AnyObject | `Transfer.Retained` |
+| Outbound type-erased | `Transfer.Box` |
 
-Benefits:
-- Zero risk that a pre-tag consumer we haven't found loses their type.
-- No deprecation churn later.
+**Region-based-isolation alternative**: `sending T` parameter covers
+Swift-Task boundaries. Does NOT cover pthread boundaries (OS threads
+spawned outside Swift's concurrency runtime). The Transfer.* family is
+for the latter case.
 
-The grep-based inventory is confident enough (0 hits across 4 superrepos)
-that the risk of a hidden consumer is low. Recommend the DEPRECATE path.
+**Name**: `Cell` is ambiguous across languages:
 
-### Alternative: remove without deprecation period
+| Cell in | Means |
+|---------|-------|
+| Rust | Interior mutability (non-atomic, single-thread) |
+| This package | One-shot outbound transfer across `@Sendable` |
+| Spreadsheet metaphor | A slot of data |
 
-Would also work — no consumer → no break. But deprecation is the polite
-default, and 0.1.0 can ship with `@available(*, deprecated, message: "...")`
-on Storage and Box, with proper removal in 0.2.0.
+A Swift engineer coming from Rust might expect `Cell` to mean interior
+mutability and be surprised. But an engineer without Rust baggage sees
+it as "a cell with a value inside; take it out on the other side" —
+which matches.
+
+Alternative names:
+
+| Option | Reads as |
+|--------|----------|
+| `Transfer.Cell` (current) | `Transfer.Cell(value)` |
+| `Transfer.Outgoing` | `Transfer.Outgoing(value)` — direction-named, symmetric with `Incoming` |
+| `Transfer.Send` | `Transfer.Send(value)` — action-named |
+| `Transfer.Envelope` | `Transfer.Envelope(value)` — metaphor for boundary-crossing |
+
+The symmetry win is `Outgoing` / `Incoming` if `Storage` also renames
+(see #12). Today's asymmetry — `Cell` and `Storage` don't pair at the
+name level — is a real readability wart.
+
+**Name verdict**: CONSIDER rename `Cell` → `Outgoing` if and only if
+`Storage` renames to `Incoming`. Paired rename or no rename.
+
+**Merit verdict**: KEEP.
+
+---
+
+### 12. `Ownership.Transfer.Storage` — KEEP, name QUESTION (pair with #11)
+
+**Merit — position held**: One-shot transfer · Inbound direction (slot
+exists, producer deposits a value) · `~Copyable` wrapper with `Copyable`
+token.
+
+Unique position — the INVERSE direction of `Transfer.Cell`. Zero ecosystem
+usage today (per the v1.0.0 inventory) but merit is independent of
+adoption: the inbound direction exists in the ownership lattice, and if
+a consumer needs "create a value inside a pthread and pick it up after
+the thread joins," this is the type they want.
+
+**Region-based-isolation alternative**: `sending T` return value from a
+Task or actor method covers the equivalent direction, but requires
+structured concurrency. For pthread-style "spawn, then join, then read"
+patterns, `Transfer.Storage` is the direct tool.
+
+**Name**: "Storage" is generic — it could describe any heap storage.
+The fact that it's an **inbound transfer** slot is NOT evoked by the name.
+
+Alternatives:
+
+| Option | Reads as |
+|--------|----------|
+| `Transfer.Storage` (current) | Too generic |
+| `Transfer.Incoming` | Direction-named; symmetric with `Outgoing` |
+| `Transfer.Receive` | Action-named; symmetric with `Send` |
+| `Transfer.Inbox` | Metaphor-named; symmetric with... `Outbox`? |
+| `Transfer.ReverseCell` | Clarifies relationship but clunky |
+
+**Name verdict**: RENAME `Storage` → something directionally paired
+with `Cell` (or paired rename of both). Current name fails the "what do
+you expect?" test — an engineer seeing `Ownership.Transfer.Storage`
+cannot guess the direction.
+
+**Merit verdict**: KEEP. The inverse-direction position is real and
+should be filled; the name just needs fixing.
+
+---
+
+### 13. `Ownership.Transfer.Retained` — KEEP, name CORRECT-IN-DOMAIN
+
+**Merit — position held**: One-shot transfer · Outbound · AnyObject
+specialisation · Zero-allocation (uses `Unmanaged.passRetained`).
+
+Unique position — the AnyObject-specialised, zero-alloc outbound
+transfer. Distinct from `Transfer.Cell` by the heap-allocation cost
+(Cell uses ARC-box; Retained uses `Unmanaged`).
+
+**Region-based-isolation alternative**: `sending T: AnyObject` for Task
+boundaries. For pthread boundaries, `Unmanaged` is the raw mechanism;
+`Retained` is the typed wrapper.
+
+**Name**: `Retained` matches Swift stdlib's vocabulary around `Unmanaged`
+(`passRetained` / `takeRetainedValue`). An engineer seeing the name
+immediately knows it's about manual retain balance — correct intuition.
+
+**Name verdict**: CORRECT (within the Swift `Unmanaged` vocabulary
+cluster).
+
+**Merit verdict**: KEEP. Zero-alloc specialisation is a genuine
+performance argument in executor hot paths.
+
+---
+
+### 14. `Ownership.Transfer.Box` — KEEP, name INCORRECT (rename strongly recommended)
+
+**Merit — position held**: One-shot transfer · Type-erased (no generic
+parameter on the slot) · For opaque-pointer interop (C `void*` context
+pointers).
+
+Unique position — the type-erasure specialisation of the Transfer family.
+Distinct from `Cell` because the consumer side doesn't know `T` (opaque
+pointer scenarios).
+
+**Region-based-isolation alternative**: raw `Unmanaged.toOpaque()` +
+`fromOpaque()`. That's lower-level. `Transfer.Box` wraps it into an
+ownership-aware type.
+
+**Name**: `Box` is heavily overloaded:
+
+| Box in | Means |
+|--------|-------|
+| Rust | **Heap-owned exclusive cell** (Rust's `Box<T>`) |
+| This package | **Type-erased transfer slot** |
+| English metaphor | "Putting a value in a box" — ambiguous |
+
+The Rust meaning is diametric to the current use: Rust's `Box<T>` is
+what THIS package calls `Ownership.Unique`. Calling our type-erased
+transfer slot `Box` invites the exact misreading.
+
+Alternatives:
+
+| Option | Reads as |
+|--------|----------|
+| `Transfer.Box` (current) | Confuses with Rust's Box |
+| `Transfer.Erased` | Describes the type-erasure |
+| `Transfer.Opaque` | Describes opacity (C-interop) |
+| `Transfer.VoidPointer` | Overly literal |
+| `Transfer.Anonymous` | Describes the type-anonymity |
+
+`Transfer.Erased` is the cleanest. It says what the type is (erased),
+doesn't collide with Rust's `Box`, and if `Ownership.Unique` later
+renames to `Ownership.Box` (per #3), no conflict arises.
+
+**Name verdict**: RENAME `Transfer.Box` → `Transfer.Erased`.
+
+**Merit verdict**: KEEP.
+
+---
+
+## Completeness Analysis
+
+Does the package cover the full ownership domain? Enumerate the
+principled points in the 5-axis lattice:
+
+| Lifetime | Mutability | Ownership | Sync | Copyability | Covered by |
+|----------|-----------|-----------|------|-------------|------------|
+| Scoped | Read-only | Exclusive (within scope) | None | Copyable wrapper | ``Borrow`` |
+| Scoped | Mutable | Exclusive | None | `~Copyable` wrapper | ``Inout`` |
+| Heap-owned | Mutable | Exclusive | None (Sendable by owner-uniqueness) | `~Copyable` wrapper | ``Unique`` |
+| Heap-owned | Read-only | Shared (ARC) | Immutability | Reference | ``Shared`` |
+| Heap-owned | Mutable | Shared (ARC) | None (intra-isolation) | Reference | ``Mutable`` |
+| Heap-owned | Mutable | Shared (ARC) | Caller-asserted | Reference wrapper | ``Mutable.Unchecked`` |
+| Heap-owned | Reusable | Atomic-cycled | Atomic | Reference | ``Slot`` |
+| Transferred | Mutable | Outbound · any `~Copyable` | Atomic CAS | `~Copyable` wrapper | ``Transfer.Cell`` |
+| Transferred | Mutable | Inbound · any `~Copyable` | Atomic CAS | `~Copyable` wrapper | ``Transfer.Storage`` |
+| Transferred | Mutable | Outbound · `AnyObject` specialisation | Unmanaged retain | `~Copyable` wrapper | ``Transfer.Retained`` |
+| Transferred | Mutable | Outbound · type-erased | Closure-erased | Reference wrapper | ``Transfer.Box`` |
+
+### Gaps
+
+Candidates for inclusion and their verdicts:
+
+| Candidate | Why it could belong | Verdict |
+|-----------|---------------------|---------|
+| Transferred · Inbound · AnyObject specialisation | Mirror of `Transfer.Retained` on the inbound axis | **Gap** — could add `Transfer.Storage.Retained` (or `Incoming.Retained` under the rename scheme) for zero-alloc inbound class transfer |
+| Transferred · Inbound · type-erased | Mirror of `Transfer.Box` on the inbound axis | **Gap** — could add `Transfer.Erased` inbound |
+| Pinned ownership | Rust has `Pin<T>` for address-stable values | **Not needed** — Swift's stdlib types are inherently pinned when lifetime-managed by the compiler; no user-facing pinning concept exists |
+| Lazily-initialised shared | `Ownership.Lazy` for deferred construction | **Not ownership** — belongs in a separate package or is just `let x = { ... }()` |
+| Copy-on-write wrapper | `Ownership.CoW<T>` | **Not here** — CoW is a value-type concern (class-backed storage with `isKnownUniquelyReferenced`), not ownership. Probably `swift-copy-on-write-primitives` if wanted. |
+| Weak / Unowned reference | `Weak<T>`, `Unowned<T>` | **Not here** — lives in `swift-reference-primitives`. That package explicitly owns non-owning references. |
+| Lock-protected shared mutable | `Ownership.Locked<T>` | **Not here** — stdlib `Mutex<T>` covers it |
+
+**Two genuine gaps** if we want total coverage:
+
+1. **Inbound-AnyObject zero-alloc transfer** — mirror of `Transfer.Retained`
+   for the consumer-creates-slot direction. Today's Storage covers this
+   generically but not with `Unmanaged`-zero-alloc.
+2. **Inbound type-erased transfer** — mirror of `Transfer.Box` for the
+   consumer-creates-slot direction.
+
+Both are narrow but complete the symmetry of the Transfer family. 0.1.0
+could ship without them; 0.2.0 could fill them when (and if) a consumer
+surfaces.
+
+Note: these gaps become MORE visible under the `Outgoing` / `Incoming`
+rename scheme. Today's asymmetric names hide the gap; naming for
+symmetry makes it obvious.
+
+### Claims not to make
+
+The package does NOT cover:
+
+- **Weak / unowned / non-owning**: `swift-reference-primitives` territory.
+- **Lazy / memoized**: separate concern.
+- **Lock-protected shared mutable**: stdlib `Mutex` covers it.
+
+These are correctly out of scope.
+
+## Naming Summary
+
+| Type | Current name | Verdict | Recommended action |
+|------|--------------|---------|-------------------|
+| `Ownership.Borrow` | `Borrow` | CORRECT | none |
+| `Ownership.Inout` | `Inout` | CORRECT | none |
+| `Ownership.Unique` | `Unique` | DEBATE | rename to `Box` if and only if `Transfer.Box` is renamed first (see below) |
+| `Ownership.Shared` | `Shared` | DEBATE (asymmetric with `Mutable`) | optional pair-rename to `Shared.Immutable` / `Shared.Mutable` / `Shared.Mutable.Unchecked` |
+| `Ownership.Mutable` | `Mutable` | DEBATE | pair-rename with `Shared` |
+| `Ownership.Mutable.Unchecked` | `Unchecked` | CORRECT | none (plan deprecation for SE-0518) |
+| `Ownership.Slot` | `Slot` | CORRECT | none |
+| `Ownership.Slot.Move` | `Move` | OK | none |
+| `Ownership.Slot.Store` | `Store` | QUESTION | CONSIDER rename to `Slot.Outcome` or `Slot.Stored` to break the verb/noun collision |
+| `Ownership.Transfer` | `Transfer` | CORRECT | none |
+| `Ownership.Transfer.Cell` | `Cell` | DEBATE | pair-rename `Cell` / `Storage` → `Outgoing` / `Incoming` for direction clarity |
+| `Ownership.Transfer.Storage` | `Storage` | INCORRECT (too generic, not directionally evocative) | pair-rename per above |
+| `Ownership.Transfer.Retained` | `Retained` | CORRECT (in Swift `Unmanaged` vocabulary) | optional rename under direction scheme: `Outgoing.Retained` |
+| `Ownership.Transfer.Box` | `Box` | INCORRECT (collides with Rust's heap-owned Box) | **rename to `Transfer.Erased`** (strong recommendation) |
+
+### Rename clusters (decide as groups)
+
+**Cluster A: Transfer.Box rename (high-priority standalone)**:
+- `Transfer.Box` → `Transfer.Erased`
+- Motivation: the name `Box` has a diametric meaning in Rust (heap-owned
+  exclusive cell = our `Unique`). Calling our type-erased slot `Box`
+  invites misreading.
+- Cost: rename one type in one target. Downstream consumers: zero
+  direct (per v1.0.0 inventory). Low blast radius.
+- **Recommended**.
+
+**Cluster B: Transfer direction rename (optional, higher blast radius)**:
+- `Transfer.Cell` → `Transfer.Outgoing`
+- `Transfer.Storage` → `Transfer.Incoming`
+- `Transfer.Retained` → `Transfer.Outgoing.Retained` (nested)
+- Motivation: expose the direction in the name; make the inbound/outbound
+  pairing visible; set up for adding `Incoming.Retained` and
+  `Incoming.Erased` later to fill the completeness gaps.
+- Cost: renames 3+ types, affects 1 real consumer (`Kernel.Thread.spawn`)
+  + executor files (`Executor.Scheduled`, etc.) via `Retained`.
+- Benefit: the name asymmetry Storage vs Cell disappears; the Transfer
+  family becomes a coherent outbound/inbound-by-AnyObject/~Copyable/erased
+  matrix.
+- **Recommended if the user wants the rename effort**.
+
+**Cluster C: Unique → Box rename (only after Cluster A)**:
+- `Ownership.Unique` → `Ownership.Box`
+- Motivation: Rust-level familiarity; `Box<T>` is the most common name
+  for heap-owned exclusive cell in cross-language Swift literature.
+- Precondition: Cluster A must ship first (otherwise `Ownership.Box`
+  ambiguous with `Transfer.Box`).
+- Cost: zero direct downstream consumers (v1.0.0 inventory) but the
+  type IS in the doc table everyone reads.
+- **Optional**.
+
+**Cluster D: Shared / Mutable symmetry rename (optional, highest blast radius)**:
+- `Ownership.Shared` → `Ownership.Shared.Immutable`
+- `Ownership.Mutable` → `Ownership.Shared.Mutable`
+- `Ownership.Mutable.Unchecked` → `Ownership.Shared.Mutable.Unchecked`
+- Motivation: both types are ARC-shared; the only distinguishing axis
+  is mutability, so the names should read that way.
+- Cost: biggest — affects 13 + 19 + ~0 = 32+ call sites across the ecosystem.
+- **Not recommended for 0.1.0** — diminishing returns vs Cluster A/B.
+
+**Cluster E: Slot.Store result rename (low impact, optional)**:
+- `Ownership.Slot.Store` (result enum) → `Ownership.Slot.Outcome`
+  (or `Ownership.Slot.Stored`)
+- Motivation: break the `slot.store(_) -> Slot.Store` verb/noun collision.
+- Cost: tiny — the result enum is only mentioned in `Slot.Store` pattern
+  matches.
+- **Optional**.
 
 ## Outcome
 
 **Status**: RECOMMENDATION.
 
-Recommended pre-0.1.0 actions:
+### Revised verdict (supersedes v1.0.0)
 
-1. Add `@available(*, deprecated, message: "Use Ownership.Transfer.Cell with inverted roles, or Ownership.Slot for reusable single-value transfer.")` to `Ownership.Transfer.Storage` public surface.
-2. Add `@available(*, deprecated, message: "No production consumers; use Unmanaged directly for C-interop opaque-pointer contexts.")` to `Ownership.Transfer.Box` public surface.
-3. Soften docstrings per action #3 above.
-4. Record the `~Sendable` migration plan for `Mutable.Unchecked` in the package's DocC philosophy article or README.
+**Keep every type**. The package is positioned as total for ownership,
+and each type holds a unique position in the 5-axis lattice. Usage
+absence (`Transfer.Storage`, `Transfer.Box`) is not grounds for removal
+when the type fills a distinct position — the package exists to make
+the ownership domain queryable by SHAPE, not by current uptake.
 
-The principal retains the decision; this research lays out the evidence.
-Deprecation is reversible (remove the `@available` if a consumer surfaces);
-inclusion at 0.1.0 is less reversible (removal breaks the API).
+### @unchecked Sendable verdict
+
+The user's concern is addressed:
+
+- **Category A (synchronized)**: `Slot`, `_Box`, `Box.Pointer` — correct
+  `@unchecked` use per [MEM-SAFE-024]. Region-based isolation cannot
+  replace internal atomic synchronization.
+- **Category B (ownership transfer)**: `Unique`, `Retained` — `~Copyable`
+  exclusive ownership is its own sync mechanism. Not replaceable.
+- **Category C (thread-confined, caller-asserted)**: `Mutable.Unchecked`
+  — this IS the class replaceable by SE-0518 `~Sendable` + scoped
+  `unsafe`. DEFER until `~Sendable` stabilises; then deprecate with a
+  migration path.
+- **Category D (structural workaround)**: `Shared` — the `@unchecked`
+  is a `~Copyable`-generic-inference-gap workaround, not a design
+  smell. Revisit when Swift's type checker catches up.
+
+Only **Category C** is a region-based-isolation alternative. The rest
+are structural or synchronisation-internal.
+
+### Naming actions to consider
+
+Ordered by cost/benefit (highest-value first):
+
+1. **`Transfer.Box` → `Transfer.Erased`** (Cluster A). Diametric
+   collision with Rust. Low blast radius. Recommended.
+2. **`Slot.Store` (result enum) → `Slot.Outcome`** (Cluster E). Low cost.
+3. **Transfer direction rename** (Cluster B): `Cell` → `Outgoing`,
+   `Storage` → `Incoming`, `Retained` → `Outgoing.Retained`. Surfaces the
+   completeness gaps (inbound-Retained, inbound-Erased) and improves
+   symmetry.
+4. **`Unique` → `Box`** (Cluster C). Depends on Cluster A. Familiar to
+   Rust-touched Swift engineers.
+5. **`Shared` / `Mutable` symmetry** (Cluster D). Defer.
+
+### Completeness gaps
+
+Two narrow gaps if the package is to be truly total:
+
+1. Inbound zero-alloc AnyObject transfer (mirror of `Transfer.Retained`).
+2. Inbound type-erased transfer (mirror of `Transfer.Box`).
+
+Both would require the `Incoming.*` namespace from Cluster B. Until
+Cluster B is adopted, the gaps are visible-but-awkward-to-fill.
+
+**For 0.1.0**: recommend Cluster A + Cluster E as no-regret name fixes.
+Clusters B/C/D are optional style improvements that can ship post-0.1.0
+if appetite exists.
+
+## Appendix: usage inventory (v1.0.0 data)
+
+Retained for reference. Usage counts do NOT drive the v2.0.0 verdicts.
+
+| Type | File count (non-own-package) |
+|------|------------------------------|
+| `Borrow` | 4 direct + 1 structural |
+| `Inout` | 2 structural |
+| `Unique` | 1 (backward-compat doc) |
+| `Shared` | 13 files |
+| `Mutable` | 19 files (14 in one package) |
+| `Mutable.Unchecked` | 0 |
+| `Slot` | 16 files |
+| `Transfer.Cell` | 3 files (1 real consumer) |
+| `Transfer.Storage` | 0 |
+| `Transfer.Retained` | 6 files (executor infra) |
+| `Transfer.Box` | 0 |
+
+Grep scope: swift-primitives/, swift-standards/, swift-foundations/,
+swift-institute/Experiments/. Files in .build/, Research/, _index.json
+excluded.
 
 ## References
 
-- Swift Evolution SE-0519 — Builtin Borrow and Inout (SwiftStdlib 6.4)
+- Swift Evolution SE-0519 — Builtin Borrow and Inout
 - Swift Evolution SE-0507 — BorrowAndMutateAccessors
 - Swift Evolution SE-0430 — `sending` regions
 - Swift Evolution SE-0518 — `~Sendable`
-- `swift-institute/Research/ownership-borrow-protocol-unification.md`
-- `swift-institute/Research/self-projection-default-pattern.md`
-- `swift-institute/Research/noncopyable-ecosystem-state.md`
-- `swift-institute/Research/tilde-sendable-semantic-inventory.md`
+- Rust `std::boxed::Box<T>` — heap-owned exclusive cell
+- Rust `std::cell::Cell<T>` — interior mutability (non-atomic)
+- Rust `std::sync::atomic` — reusable atomic cells
+- `swift-reference-primitives/Sources/Reference Primitives/Reference.swift` — documents the Reference → Ownership rename
+- `swift-institute/Research/noncopyable-ecosystem-state.md` — current state of ~Copyable patterns
 - [MEM-SAFE-024] Sendable Category classification (memory-safety skill)
-- swift-reference-primitives/Sources/Reference Primitives/Reference.swift — the doc table documenting the Reference → Ownership rename.
+- [API-NAME-001] Nest.Name pattern (code-surface skill)
 
 ## Provenance
 
-Commissioned by the package author 2026-04-23 pre-0.1.0 tag. Inventory
-produced by `grep -rE "Ownership\.<Type>"` across
-/Users/coen/Developer/swift-primitives/, swift-standards/,
-swift-foundations/, swift-institute/Experiments/. Counts are file-level
-(not call-site-level); files in .build/, _index.json, Research/, and
-Reflections/ excluded.
+Commissioned 2026-04-23 pre-0.1.0 tag. v2.0.0 reframes the v1.0.0
+usage-centric evaluation to merit+completeness+naming per principal
+direction: "judge them on their merits; the package should be total for
+ownership; get feedback on whether names are what's expected."
