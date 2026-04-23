@@ -94,15 +94,19 @@ extension Ownership.Transfer {
         public init(_ ptr: UnsafeRawPointer) {
             unsafe (self.raw = UnsafeMutableRawPointer(mutating: ptr))
         }
+    }
+}
 
-        /// Takes ownership of the retained object, decrementing the retain count.
-        ///
-        /// This method consumes `self`, ensuring it can only be called once.
-        ///
-        /// - Returns: The retained object. The caller now owns this reference.
-        @inlinable
-        public consuming func take() -> T {
-            unsafe Unmanaged<T>.fromOpaque(UnsafeRawPointer(raw)).takeRetainedValue()
-        }
+// MARK: - Take
+
+extension Ownership.Transfer.Retained {
+    /// Takes ownership of the retained object, decrementing the retain count.
+    ///
+    /// This method consumes `self`, ensuring it can only be called once.
+    ///
+    /// - Returns: The retained object. The caller now owns this reference.
+    @inlinable
+    public consuming func take() -> T {
+        unsafe Unmanaged<T>.fromOpaque(UnsafeRawPointer(raw)).takeRetainedValue()
     }
 }

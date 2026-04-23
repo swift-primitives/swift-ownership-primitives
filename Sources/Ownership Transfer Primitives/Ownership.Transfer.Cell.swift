@@ -76,6 +76,9 @@ extension Ownership.Transfer.Cell where T: ~Copyable {
         /// - Returns: The stored value.
         /// - Precondition: Must be called exactly once across all token copies.
         ///   Second call traps with a clear error message.
+        // NOTE: Kept in body per [API-IMPL-008] exception — extending
+        // `Cell.Token` with `where T: ~Copyable` causes constraint-poisoning
+        // and a cross-target symbol-mangling mismatch at link time.
         public func take() -> T {
             _box.take()
         }
