@@ -5,7 +5,18 @@
   "title": "Research Index",
   "blurb": "swift-ownership-primitives has no in-package research documents at 0.1.0. Every ownership-relevant design decision crosses at least one other primitive (Identity / Tagged, Property, Buffer, or a capability-lift pattern), so the canonical research lives in the ecosystem-wide corpus at `/Users/coen/Developer/swift-institute/Research/` and the superrepo corpus at `/Users/coen/Developer/swift-primitives/Research/`. This index carries pointers, not copies. Package-specific research (if any is authored post-0.1.0) will be promoted here per the research-process skill.",
   "scope": "swift-ownership-primitives (swift-primitives)",
-  "documents": [],
+  "documents": [
+    {
+      "file": "ownership-types-usage-and-justification.md",
+      "displayName": "ownership-types-usage-and-justification.md",
+      "topic": "Pre-0.1.0 per-type usage inventory and design evaluation. Surveys the ecosystem (swift-primitives, swift-standards, swift-foundations, swift-institute/Experiments) for consumers of each `Ownership.*` type, evaluates whether region-based isolation (SE-0430 sending + ~Sendable SE-0518) obsoletes any of them, and recommends DEPRECATE for `Ownership.Transfer.Storage` and `Ownership.Transfer.Box` (zero real consumers), KEEP with docstring narrowing for `Ownership.Unique` / `Ownership.Transfer.Cell` / `Ownership.Mutable`, DEFER `Ownership.Mutable.Unchecked` → `~Sendable` post-SE-0518, and KEEP all others.",
+      "status": "RECOMMENDATION",
+      "statusDetail": null,
+      "statusRaw": "RECOMMENDATION",
+      "tier": 2,
+      "scope": "cross-package"
+    }
+  ],
   "crossRefDocuments": [
     {
       "path": "../../../swift-institute/Research/ownership-borrow-protocol-unification.md",
