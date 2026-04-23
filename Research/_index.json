@@ -1,21 +1,95 @@
 {
   "$schema": "https://swift-institute.org/schemas/research-index-v1.json",
   "schemaVersion": "1.0.0",
-  "generatedAt": "2026-04-18",
+  "generatedAt": "2026-04-23",
   "title": "Research Index",
-  "blurb": "",
+  "blurb": "swift-ownership-primitives has no in-package research documents at 0.1.0. Every ownership-relevant design decision crosses at least one other primitive (Identity / Tagged, Property, Buffer, or a capability-lift pattern), so the canonical research lives in the ecosystem-wide corpus at `/Users/coen/Developer/swift-institute/Research/` and the superrepo corpus at `/Users/coen/Developer/swift-primitives/Research/`. This index carries pointers, not copies. Package-specific research (if any is authored post-0.1.0) will be promoted here per the research-process skill.",
   "scope": "swift-ownership-primitives (swift-primitives)",
-  "documents": [
+  "documents": [],
+  "crossRefDocuments": [
     {
-      "file": "audit.md",
-      "displayName": "audit.md",
-      "topic": "Consolidated audit (legacy: audit-borrow-inout-stdlib-parity.md)",
-      "date": "2026-04-08",
-      "status": "AUDIT",
-      "statusDetail": null,
-      "statusRaw": "AUDIT",
-      "tier": null,
-      "scope": null
+      "path": "../../../swift-institute/Research/ownership-borrow-protocol-unification.md",
+      "topic": "Canonical protocol shape for `Ownership.Borrow.`Protocol`` — associatedtype `Borrowed` defaults to the sibling generic struct over `Self`. Frozen DECISION landed in commit `b3eb11b`.",
+      "status": "DECISION",
+      "tier": 2,
+      "scope": "cross-package"
+    },
+    {
+      "path": "../../../swift-institute/Research/ownership-borrow-protocol-unification-implementation-plan.md",
+      "topic": "Ecosystem-wide implementation plan for the `Ownership.Borrow.`Protocol`` unification. IMPLEMENTED 2026-04-23 across 7 sub-repos; zero residual `.View` references on the cascade surface.",
+      "status": "IMPLEMENTED",
+      "tier": 2,
+      "scope": "cross-package"
+    },
+    {
+      "path": "../../../swift-institute/Research/self-projection-default-pattern.md",
+      "topic": "Generalises the `Ownership.Borrow.`Protocol`` associatedtype-defaulting shape to other self-projection namespaces. The Borrow application is the first empirical ecosystem instance.",
+      "status": "RECOMMENDATION",
+      "tier": 2,
+      "scope": "cross-package"
+    },
+    {
+      "path": "../../../swift-institute/Research/capability-lift-pattern.md",
+      "topic": "Capability-lift pattern — the `associatedtype default = Namespace<Self>` shape that `Ownership.Borrow.`Protocol`` uses.",
+      "status": "RECOMMENDATION",
+      "tier": 2,
+      "scope": "cross-package"
+    },
+    {
+      "path": "../../../swift-institute/Research/capability-lift-pattern-academic-foundations.md",
+      "topic": "Academic references grounding the capability-lift pattern.",
+      "status": "ANALYSIS",
+      "tier": 2,
+      "scope": "cross-package"
+    },
+    {
+      "path": "../../../swift-institute/Research/feature-flags-addressable-borrowinout.md",
+      "topic": "Feature-flag choices around `BorrowAndMutateAccessors` (SE-0507) — the future state that makes `Ownership.Borrow._read` / `Ownership.Inout._modify` coroutines obsolete.",
+      "status": "SUPERSEDED",
+      "tier": 2,
+      "scope": "cross-package"
+    },
+    {
+      "path": "../../../swift-institute/Research/noncopyable-peek-escapable.md",
+      "topic": "Motivates `Ownership.Borrow<~Escapable>` and the raw-address init path used for ~Escapable peek.",
+      "status": "ANALYSIS",
+      "tier": 2,
+      "scope": "cross-package"
+    },
+    {
+      "path": "../../../swift-institute/Research/transfer-cell-cancellation-propagation.md",
+      "topic": "`Ownership.Transfer.Cell` cancellation-propagation semantics under structured concurrency.",
+      "status": "ANALYSIS",
+      "tier": 2,
+      "scope": "cross-package"
+    },
+    {
+      "path": "../../../swift-institute/Research/noncopyable-closure-capture-relaxation.md",
+      "topic": "~Copyable closure-capture interactions that affect Ownership-type usage in `@Sendable` closures.",
+      "status": "ANALYSIS",
+      "tier": 2,
+      "scope": "cross-package"
+    },
+    {
+      "path": "../../../swift-institute/Research/noncopyable-ecosystem-state.md",
+      "topic": "Consolidated current state of ~Copyable patterns across the ecosystem (supersedes `noncopyable-ownership-transfer-patterns.md`).",
+      "status": "DECISION",
+      "tier": 2,
+      "scope": "cross-package"
+    },
+    {
+      "path": "../../../swift-primitives/Research/yielding-vs-returning-lifetime-models.md",
+      "topic": "Coroutine-yielding vs plain-return lifetime models — informs the V12 `Ownership.Inout.value` accessor split (`get` + `_modify` for Copyable `Value`; `_read` + `_modify` for ~Copyable).",
+      "status": "ANALYSIS",
+      "tier": 2,
+      "scope": "cross-package"
+    },
+    {
+      "path": "../../../swift-primitives/Research/nested-view-vs-borrowed-naming.md",
+      "topic": "Naming conventions for nested view / borrowed types that affect `Ownership.Borrow` / `Ownership.Inout` adoption sites.",
+      "status": "ANALYSIS",
+      "tier": 2,
+      "scope": "cross-package"
     }
   ]
 }

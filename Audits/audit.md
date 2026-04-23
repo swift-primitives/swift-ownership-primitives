@@ -90,3 +90,83 @@ Ecosystem context: the `swift-institute/Research/ownership-borrow-protocol-unifi
 **Implementation + naming audit**
 
 CLEAN - no findings
+
+---
+
+## 0.1.0 Release Readiness — 2026-04-23
+
+### Scope
+
+Pre-tag checklist per the `AUDIT-0.1.0-release-readiness.md` brief, Phase 3. Verifies the package is ready to cut `0.1.0` subject to the CI / make-public gate.
+
+### Checks
+
+| # | Item | Status | Detail |
+|---|------|--------|--------|
+| 1 | `Package.swift` metadata: tools-version `6.3.1`, platforms `v26`, `swiftLanguageModes: [.v6]` | ✓ | |
+| 1a | No `// TODO` / `// FIXME` in `Sources/` | ✓ | `grep -rnE 'TODO\|FIXME' Sources/` returns empty |
+| 1b | No `@_spi` / `@_implementationOnly` / `@_unsafeSelfDependentResult` in `Sources/` | ✓ | `grep -rnE '@_spi\|@_implementationOnly\|@_unsafeSelfDependentResult' Sources/` returns empty |
+| 2 | `LICENSE.md` present, Apache 2.0 | ✓ | |
+| 3 | README install snippet matches the about-to-cut tag (`.package(url: ..., from: "0.1.0")`) | ✓ | Narrow-variant products listed per [MOD-015] |
+| 3a | No CI badge on README (workflows currently disabled; per [README-004] failing badges are forbidden) | ✓ | README ships with `Development Status` badge only |
+| 4 | CI green across the 4 matrix jobs + docs job | **DEFERRED** | Gated by repo visibility — the three workflows (CI / Swift Format / SwiftLint) are `state: disabled_manually` on GitHub since 2026-03-04, and GHA billing on the account needs attention. Post-public: enable workflows → watch CI → approve tag. |
+| 5 | `Research/_index.json` + `Experiments/_index.json` internally consistent | ✓ | Research index carries pointers to 12 ecosystem-wide cross-refs (10 in `swift-institute/Research/`, 2 in `swift-primitives/Research/`). Experiments index lists 3 in-package experiments (inout-value-accessor-copyability-split, borrow-inout-stdlib-parity, nested-in-generic-extension-target-boundary) + 3 cross-ref pointers to superrepo-level experiments. |
+| 6 | `Audits/_index.json` | ✓ | Created 2026-04-23; points at `audit.md` with status `ACTIVE` (1 OPEN, 2 DEFERRED). |
+| 7 | No `.DS_Store` in tree | ✓ | Removed; `.gitignore` covers it. |
+| 8 | `.gitignore` covers `.build/`, `DerivedData/`, `.DS_Store`, docs intermediates | ✓ | |
+| 9 | Tag plan: `0.1.0` as first tag on `main` | **STAGED — DO NOT EXECUTE WITHOUT AUTHORIZATION** | See below. |
+
+### Staged tag command
+
+Do not run until the principal explicitly authorizes (per `feedback_no_public_or_tag_without_explicit_yes`). The command below is for reference:
+
+```bash
+# Run from swift-ownership-primitives/ working tree
+git tag -a 0.1.0 -m "$(cat <<'EOF'
+swift-ownership-primitives 0.1.0
+
+First public release. Ships safe ownership references for ~Copyable / ~Escapable
+values — Ownership.Borrow, Ownership.Inout, Ownership.Unique,
+Ownership.Slot, and the Ownership.Transfer.* family — on production
+Swift 6.3.1, paralleling SE-0519 stdlib Borrow / Inout on toolchains
+where BorrowAndMutateAccessors (SE-0507) has not yet landed.
+
+12 library products per [MOD-015] primary decomposition:
+
+  - Ownership Namespace — bare `public enum Ownership {}`
+  - Ownership Primitives Core — internal — Ownership.Transfer sub-namespace
+  - Ownership Borrow Primitives — Ownership.Borrow + Protocol typealias
+  - Ownership Inout Primitives — Ownership.Inout (V12 accessor split)
+  - Ownership Unique Primitives — Ownership.Unique + .Unique+Copyable
+  - Ownership Shared Primitives — Ownership.Shared
+  - Ownership Mutable Primitives — Ownership.Mutable + Mutable.Unchecked
+  - Ownership Slot Primitives — Ownership.Slot + Slot.Move + Slot.Store
+  - Ownership Transfer Primitives — Cell + Storage + Retained + _Box
+  - Ownership Transfer Box Primitives — type-erased Box
+  - Ownership Primitives Standard Library Integration — Optional<~Copyable>.take()
+  - Ownership Primitives — umbrella (re-exports every variant)
+
+Tests: 84 pass in 33 suites. Clean audit with 1 OPEN (takeIfStored
+compound name — deferred to a post-0.1.0 follow-up) and 2 DEFERRED
+(Category C ~Sendable migration pending SE-0518; stdlib
+@_unsafeSelfDependentResult pending SE-0507).
+EOF
+)"
+# Verify:
+git tag -l
+git show 0.1.0
+# Push (only after CI is green and principal authorizes):
+# git push origin 0.1.0
+```
+
+### Remaining gates (outside this session)
+
+1. Make the repo public (user action).
+2. Re-enable the three workflows on GitHub (CI / Swift Format / SwiftLint).
+3. Resolve GHA billing so the matrix jobs can run.
+4. Watch CI complete green across all 4 matrix jobs + docs job.
+5. Principal authorization: reply with explicit "YES DO NOW TAG 0.1.0" (or equivalent) — then run the staged command above and optionally `git push origin 0.1.0`.
+
+### Summary
+
+**Release-readiness status: READY subject to CI gate.** All source-, test-, docs-, and metadata-level checks pass; the only outstanding work is external to this session (visibility flip + CI + principal tag approval).
