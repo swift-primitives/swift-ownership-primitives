@@ -92,19 +92,30 @@ extension Ownership.Inout where Value: ~Copyable {
 // MARK: - Value Access
 
 extension Ownership.Inout where Value: ~Copyable {
-    /// The referenced value.
+    /// The referenced value (noncopyable case).
     ///
-    /// Provides in-place read and write access to the underlying value
-    /// through the stored pointer. Uses `_read`/`nonmutating _modify`
-    /// coroutines until `borrow`/`mutate` accessors (SE-0507,
-    /// `BorrowAndMutateAccessors`) ship in a production compiler.
-    ///
-    /// `nonmutating _modify` provides interior mutability per [IMPL-071]:
-    /// the pointer itself is `let` — mutation goes through to the pointee.
-    /// Exclusivity is guaranteed by `~Copyable` on the `Inout` struct.
+    /// Coroutine-based access preserves in-place ~Copyable reads/writes without
+    /// moving the value through the pointer. `nonmutating _modify` provides
+    /// interior mutability per [IMPL-071].
     @inlinable
     public var value: Value {
         _read { yield unsafe _pointer.pointee }
+        nonmutating _modify { yield unsafe &_pointer.pointee }
+    }
+}
+
+extension Ownership.Inout where Value: Copyable {
+    /// The referenced value (copyable case).
+    ///
+    /// `get` returns a copy, avoiding the lifetime tagging that a `_read`
+    /// coroutine imposes on the yielded value. `nonmutating _modify`
+    /// preserves in-place writeback so CoW semantics (`base.value.pop.front()`
+    /// etc.) continue to fire through the pointer. The rejected `get + set`
+    /// split broke CoW because `set` writebacks did not trigger for nested
+    /// method-call mutations — `_modify` does.
+    @inlinable
+    public var value: Value {
+        get { unsafe _pointer.pointee }
         nonmutating _modify { yield unsafe &_pointer.pointee }
     }
 }
