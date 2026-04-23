@@ -56,15 +56,15 @@ extension Ownership.Transfer.Box {
     /// requirements. The destroy function takes the base pointer and offset
     /// to locate and deinitialize the payload.
     ///
-    /// ## Why Closure (Future: Replace with Thin Function Pointer)
-    /// The closure captures `T` and `E` type information needed for proper
-    /// deinitialization. Ideally we'd use `@convention(thin)` function pointers
-    /// with `unsafeBitCast` to erase the generic signature, eliminating the
-    /// closure allocation. However:
-    /// - Swift 6.2.3 crashes when `unsafeBitCast`ing generic thin function pointers
-    /// - Static witness-per-specialization patterns are blocked by Swift restrictions
-    ///
-    /// Revisit when the compiler bug is fixed.
+    // WORKAROUND: `destroyPayload` is a heap-allocating closure instead of a
+    //             `@convention(thin)` function pointer.
+    // WHY: `@convention(thin)` + `unsafeBitCast` on generic function pointers
+    //      crashes Swift 6.2.3; static witness-per-specialization is blocked
+    //      by Swift's restrictions on generic contexts.
+    // WHEN TO REMOVE: when a toolchain accepts the bitcast shape and the
+    //                 witness-per-specialization pattern compiles.
+    // TRACKING: no canonical swiftlang/swift issue yet; revalidate on each
+    //           toolchain bump via the swift-6.3-fix-status memory.
     @safe
     fileprivate struct Header {
         /// Function to destroy the payload given base pointer and offset.
@@ -99,6 +99,7 @@ extension Ownership.Transfer.Box {
     ///
     /// - Not a general-purpose pointer wrapper.
     public struct Pointer: @unsafe @unchecked Sendable {
+        @unsafe
         public let raw: UnsafeMutableRawPointer
         @unsafe
         public init(_ raw: UnsafeMutableRawPointer) { unsafe (self.raw = raw) }

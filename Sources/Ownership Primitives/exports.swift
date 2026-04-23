@@ -10,19 +10,19 @@
 //
 // ===----------------------------------------------------------------------===//
 
-/// Re-export policy for Ownership Primitives.
-///
-/// Ownership Primitives re-exports Pointer Primitives, which in turn re-exports:
-/// - Memory Primitives
-/// - Index Primitives
-/// - Range Primitives
-/// - Identity Primitives
-/// - Hash Primitives
-/// - Comparison Primitives
-/// - Equation Primitives
-/// - Ordinal Primitives
-/// - Cardinal Primitives
-///
-/// Downstream packages importing Ownership Primitives gain access to this
-/// complete memory/pointer/ownership ecosystem. This is a deliberate convenience policy.
+// Umbrella — re-exports every variant module so `import Ownership_Primitives`
+// gives access to the full family. For narrower compile-time surface,
+// consumers SHOULD depend on specific variant products per [MOD-015]
+// primary decomposition.
 
+@_exported public import Ownership_Namespace
+@_exported public import Ownership_Primitives_Core
+@_exported public import Ownership_Borrow_Primitives
+@_exported public import Ownership_Inout_Primitives
+@_exported public import Ownership_Unique_Primitives
+@_exported public import Ownership_Shared_Primitives
+@_exported public import Ownership_Mutable_Primitives
+@_exported public import Ownership_Slot_Primitives
+@_exported public import Ownership_Transfer_Primitives
+@_exported public import Ownership_Transfer_Box_Primitives
+@_exported public import Ownership_Primitives_Standard_Library_Integration

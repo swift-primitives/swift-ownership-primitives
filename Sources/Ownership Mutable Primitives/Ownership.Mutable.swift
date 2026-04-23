@@ -66,45 +66,53 @@ extension Ownership {
         @usableFromInline
         var _value: Value
 
-        /// Direct access to the wrapped value.
-        ///
-        /// For `~Copyable` types, prefer `withValue(_:)` or `update(_:)` for
-        /// safer scoped access.
-        @inlinable
-        public var value: Value {
-            _read { yield _value }
-            _modify { yield &_value }
-        }
-
         /// Creates a mutable owner containing the given value.
         @inlinable
         public init(_ value: consuming Value) {
             self._value = value
         }
+    }
+}
 
-        /// Accesses the value for reading.
-        ///
-        /// - Parameter body: A closure that receives the value.
-        /// - Returns: The result of the closure.
-        /// - Throws: Rethrows any error thrown by the closure, preserving the exact error type.
-        @inlinable
-        public func withValue<Result, E: Error>(
-            _ body: (borrowing Value) throws(E) -> Result
-        ) throws(E) -> Result {
-            try body(_value)
-        }
+// MARK: - Value Access
 
-        /// Accesses the value for mutation.
-        ///
-        /// - Parameter body: A closure that receives an inout reference to the value.
-        /// - Returns: The result of the closure.
-        /// - Throws: Rethrows any error thrown by the closure, preserving the exact error type.
-        @inlinable
-        public func update<Result, E: Error>(
-            _ body: (inout Value) throws(E) -> Result
-        ) throws(E) -> Result {
-            try body(&_value)
-        }
+extension Ownership.Mutable where Value: ~Copyable {
+    /// Direct access to the wrapped value.
+    ///
+    /// For `~Copyable` types, prefer `withValue(_:)` or `update(_:)` for
+    /// safer scoped access.
+    @inlinable
+    public var value: Value {
+        _read { yield _value }
+        _modify { yield &_value }
+    }
+}
+
+// MARK: - Scoped Access
+
+extension Ownership.Mutable where Value: ~Copyable {
+    /// Accesses the value for reading.
+    ///
+    /// - Parameter body: A closure that receives the value.
+    /// - Returns: The result of the closure.
+    /// - Throws: Rethrows any error thrown by the closure, preserving the exact error type.
+    @inlinable
+    public func withValue<Result: ~Copyable, E: Error>(
+        _ body: (borrowing Value) throws(E) -> Result
+    ) throws(E) -> Result {
+        try body(_value)
+    }
+
+    /// Accesses the value for mutation.
+    ///
+    /// - Parameter body: A closure that receives an inout reference to the value.
+    /// - Returns: The result of the closure.
+    /// - Throws: Rethrows any error thrown by the closure, preserving the exact error type.
+    @inlinable
+    public func update<Result: ~Copyable, E: Error>(
+        _ body: (inout Value) throws(E) -> Result
+    ) throws(E) -> Result {
+        try body(&_value)
     }
 }
 
