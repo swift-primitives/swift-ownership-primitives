@@ -76,11 +76,11 @@ extension Ownership {
 
 // MARK: - Sendable
 
-extension Ownership.Unique: @unsafe @unchecked Sendable where Value: Sendable {}
+extension Ownership.Unique: @unsafe @unchecked Sendable where Value: ~Copyable & Sendable {}
 
 // MARK: - Core Operations
 
-extension Ownership.Unique {
+extension Ownership.Unique where Value: ~Copyable {
     /// Takes ownership of the value, leaving the owner empty.
     ///
     /// After calling `take()`, the owner no longer holds a value and `hasValue`
@@ -157,7 +157,7 @@ extension Ownership.Unique {
 
 // MARK: - Description
 
-extension Ownership.Unique {
+extension Ownership.Unique where Value: ~Copyable {
     /// A textual representation of the owner.
     public var description: String {
         if let storage = unsafe _storage {

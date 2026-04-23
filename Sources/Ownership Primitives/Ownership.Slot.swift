@@ -156,7 +156,7 @@ extension Ownership {
 
 // MARK: - State Inspection
 
-extension Ownership.Slot {
+extension Ownership.Slot where Value: ~Copyable {
     /// Whether the slot is empty.
     ///
     /// Note: The intermediate "initializing" state is not considered empty

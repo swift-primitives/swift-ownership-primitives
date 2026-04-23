@@ -155,6 +155,38 @@ extension OwnershipUniqueTests.EdgeCase {
         let descAfter = unique.description
         #expect(descAfter.contains("empty"))
     }
+
+    // MARK: - ~Copyable Value regression
+
+    @Test
+    func `take() works with ~Copyable Value`() {
+        struct Handle: ~Copyable { let fd: Int32 }
+        var cell = Ownership.Unique(Handle(fd: 3))
+        let hasV = cell.hasValue
+        #expect(hasV)
+        let taken = cell.take()
+        #expect(taken.fd == 3)
+        let hasV2 = cell.hasValue
+        #expect(!hasV2)
+    }
+
+    @Test
+    func `withValue works with ~Copyable Value`() {
+        struct Handle: ~Copyable { let fd: Int32 }
+        let cell = Ownership.Unique(Handle(fd: 5))
+        cell.withValue { handle in
+            #expect(handle.fd == 5)
+        }
+    }
+
+    @Test
+    func `withMutableValue works with ~Copyable Value`() {
+        struct Mutable: ~Copyable { var count: Int }
+        var cell = Ownership.Unique(Mutable(count: 0))
+        cell.withMutableValue { $0.count += 1 }
+        let taken = cell.take()
+        #expect(taken.count == 1)
+    }
 }
 
 // MARK: - Integration Tests

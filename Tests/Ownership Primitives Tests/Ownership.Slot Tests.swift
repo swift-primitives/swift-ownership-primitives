@@ -135,4 +135,20 @@ extension `Ownership Slot Tests`.Integration {
         }
         #expect(total == 100 * 101 / 2)
     }
+
+    @Test
+    func `isEmpty / isFull work with ~Copyable Value`() {
+        struct Handle: ~Copyable { let fd: Int32 }
+        let slot = Ownership.Slot<Handle>()
+        let empty = slot.isEmpty
+        let full = slot.isFull
+        #expect(empty)
+        #expect(!full)
+        slot.move.in(Handle(fd: 11))
+        let emptyAfterStore = slot.isEmpty
+        let fullAfterStore = slot.isFull
+        #expect(!emptyAfterStore)
+        #expect(fullAfterStore)
+        _ = slot.take()
+    }
 }
