@@ -1,0 +1,14 @@
+@Tutorials(name: "Ownership Primitives") {
+    @Intro(title: "Tutorials for Ownership Primitives") {
+        Hands-on walkthroughs for working with scoped ownership references
+        on `~Copyable` types.
+    }
+
+    @Chapter(name: "Getting Started") {
+        Wrap a `~Copyable` container in a safe mutable reference, read
+        through a scoped borrow, and consume an `Optional<~Copyable>` —
+        the core shape in under ten minutes.
+
+        @TutorialReference(tutorial: "doc:GettingStarted")
+    }
+}
