@@ -57,12 +57,4 @@
 /// - `Slot`: `@unchecked Sendable` because atomic state machine provides
 ///   synchronization. Safe publication via release/acquire on state transitions.
 /// - `Transfer`: Tokens are Sendable. Exactly-once semantics enforced atomically.
-///
-/// ## Relationship to Reference Primitives
-///
-/// `Ownership_Primitives` contains types that **own** values.
-/// `Reference_Primitives` contains types that **refer** to values without ownership:
-/// - `Reference.Weak`: Zeroing weak reference
-/// - `Reference.Unowned`: Unsafe unowned reference
-/// - `Reference.Sendability`: Sendability escape hatches
 public enum Ownership {}

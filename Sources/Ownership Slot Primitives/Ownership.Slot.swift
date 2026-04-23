@@ -70,20 +70,16 @@ extension Ownership {
     ///     print("Got resource: \(r)")
     /// }
     /// ```
-    @safe
+    ///
     /// ## Safety Invariant
     ///
     /// Atomic state machine (`Atomic<UInt8>` with release/acquire) protects
-    /// all mutable state. Publication protocol ensures stored value is
-    /// visible after CAS succeeds.
+    /// all mutable state. Publication protocol ensures a stored value is
+    /// visible on the take side after CAS succeeds.
     ///
-    /// ## Intended Use
-    ///
-    /// - Single-writer/single-reader ownership transfer channel.
-    ///
-    /// ## Non-Goals
-    ///
-    /// - Not a queue; exactly one value at a time.
+    /// `@unsafe @unchecked Sendable` per [MEM-SAFE-024] Category A
+    /// (synchronized); the internal atomic serializes all access.
+    @safe
     public final class Slot<Value: ~Copyable>: @unsafe @unchecked Sendable {
         // MARK: - State Machine
         //

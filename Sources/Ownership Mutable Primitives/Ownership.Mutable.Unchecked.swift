@@ -14,19 +14,22 @@ extension Ownership.Mutable where Value: ~Copyable {
     /// An unchecked-Sendable wrapper for `Mutable` that allows crossing
     /// concurrency boundaries with any value.
     ///
-    /// ## Safety
+    /// ## Safety Invariant
     ///
-    /// **This type bypasses the compiler's Sendable checking.**
+    /// **This type bypasses the compiler's Sendable checking.** The caller
+    /// promises external synchronization; the wrapper adds no runtime check.
+    /// Concurrent mutation WILL cause data races with no runtime trap and
+    /// silent corruption.
     ///
-    /// - **Single-consumer only.** Do not capture in multiple concurrent tasks.
-    /// - **NOT thread-safe.** You are responsible for ensuring proper synchronization.
-    /// - Concurrent mutation will cause data races (no runtime trap, silent corruption).
+    /// - Single-consumer only — do not capture in multiple concurrent tasks.
+    /// - NOT thread-safe — external synchronization (lock, actor, atomic) is
+    ///   the caller's responsibility.
     ///
-    /// ## Intended Use Cases
+    /// ## Intended Use
     ///
-    /// - Boxing non-Sendable async iterators for capture in `@Sendable` closures
-    /// - Single-writer patterns where the writer is the only accessor
-    /// - Actor-confined usage where the wrapper never escapes the actor
+    /// - Boxing non-Sendable async iterators for capture in `@Sendable` closures.
+    /// - Single-writer patterns where the writer is the only accessor.
+    /// - Actor-confined usage where the wrapper never escapes the actor.
     ///
     /// ## Example
     ///
@@ -44,20 +47,6 @@ extension Ownership.Mutable where Value: ~Copyable {
     /// Task { await box.mutable.value.next() }  // Race!
     /// Task { await box.mutable.value.next() }  // Race!
     /// ```
-    /// ## Safety Invariant
-    ///
-    /// Deliberately unchecked — the caller promises external synchronization.
-    /// This type bypasses the compiler's Sendable checking. Concurrent
-    /// mutation WILL cause data races (no runtime trap, silent corruption).
-    ///
-    /// ## Intended Use
-    ///
-    /// - Wrapping non-Sendable state for single-consumer async patterns
-    ///   where external synchronization is guaranteed.
-    ///
-    /// ## Non-Goals
-    ///
-    /// - NOT thread-safe. Concurrent mutation is undefined behavior.
     public struct Unchecked: @unsafe @unchecked Sendable {
         /// The wrapped `Mutable` instance.
         public let mutable: Ownership.Mutable<Value>

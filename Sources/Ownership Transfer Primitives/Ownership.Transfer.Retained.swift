@@ -52,20 +52,14 @@ extension Ownership.Transfer {
     ///
     /// Use `Retained` when you need zero-overhead class reference passing.
     /// Use `Cell` for general-purpose ownership transfer of any type.
-    @safe
+    ///
     /// ## Safety Invariant
     ///
-    /// `Retained` is `~Copyable` — opaque, single-consumption ownership token.
-    /// The stored `raw` is an ARC-retained pointer; `take()` balances the retain.
-    /// Single ownership prevents double-release.
-    ///
-    /// ## Intended Use
-    ///
-    /// - Zero-overhead class reference passing across isolation boundaries.
-    ///
-    /// ## Non-Goals
-    ///
-    /// - Not shareable; exactly-once consumption via `take()`.
+    /// `~Copyable` — opaque, single-consumption ownership token. The stored
+    /// `raw` is an ARC-retained pointer; `take()` balances the retain. Single
+    /// ownership prevents double-release. `@unsafe @unchecked Sendable` per
+    /// [MEM-SAFE-024] Category B (ownership transfer).
+    @safe
     public struct Retained<T: AnyObject>: ~Copyable, @unsafe @unchecked Sendable {
         /// Opaque bit representation of the retained pointer.
         /// This is NOT a pointer to be manipulated - it is an ownership token

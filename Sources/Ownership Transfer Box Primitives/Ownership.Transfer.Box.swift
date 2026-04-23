@@ -58,13 +58,17 @@ extension Ownership.Transfer.Box {
     ///
     // WORKAROUND: `destroyPayload` is a heap-allocating closure instead of a
     //             `@convention(thin)` function pointer.
-    // WHY: `@convention(thin)` + `unsafeBitCast` on generic function pointers
-    //      crashes Swift 6.2.3; static witness-per-specialization is blocked
-    //      by Swift's restrictions on generic contexts.
-    // WHEN TO REMOVE: when a toolchain accepts the bitcast shape and the
-    //                 witness-per-specialization pattern compiles.
-    // TRACKING: no canonical swiftlang/swift issue yet; revalidate on each
-    //           toolchain bump via the swift-6.3-fix-status memory.
+    // WHY: A closure returning `@convention(thin) (Ptr, Int) -> Void` whose
+    //      body captures a generic `T` (to call `.deinitialize(count: 1)`)
+    //      fails to compile with
+    //        `INTERNAL ERROR: feature not implemented: nontrivial thin
+    //         function reference`
+    //      on Apple Swift 6.3.1.
+    // WHEN TO REMOVE: when a toolchain accepts generic-capturing thin
+    //                 function references.
+    // TRACKING: swift-institute/Experiments/unsafe-bitcast-generic-thin-function-pointer/
+    //           (STILL PRESENT on 6.3.1, verified 2026-04-23). Revalidate on
+    //           each toolchain bump via the swift-6.3-fix-status memory.
     @safe
     fileprivate struct Header {
         /// Function to destroy the payload given base pointer and offset.
@@ -81,23 +85,17 @@ extension Ownership.Transfer.Box {
 extension Ownership.Transfer.Box {
     /// Sendable capability wrapper for boxed pointers.
     ///
-    /// This is the only `@unchecked Sendable` in the box internals.
-    /// It represents a capability to consume or destroy a box, and
-    /// concentrates the unsafe sendability at the boundary.
-    @safe
+    /// Represents a capability to consume or destroy a box, concentrating
+    /// the unsafe sendability at the boundary.
+    ///
     /// ## Safety Invariant
     ///
-    /// `Pointer` carries an `UnsafeMutableRawPointer` as an ownership-transfer
-    /// token. Sendability is the capability to consume or destroy the box
-    /// across threads.
-    ///
-    /// ## Intended Use
-    ///
-    /// - Boundary-concentrating unsafe sendability for boxed ownership transfer.
-    ///
-    /// ## Non-Goals
-    ///
-    /// - Not a general-purpose pointer wrapper.
+    /// Carries an `UnsafeMutableRawPointer` as an ownership-transfer token;
+    /// `@unsafe @unchecked Sendable` per [MEM-SAFE-024] Category A
+    /// (synchronization is external — the holder of a `Pointer` agrees to
+    /// invoke `take` / `destroy` exactly once). Not a general-purpose
+    /// pointer wrapper.
+    @safe
     public struct Pointer: @unsafe @unchecked Sendable {
         @unsafe
         public let raw: UnsafeMutableRawPointer

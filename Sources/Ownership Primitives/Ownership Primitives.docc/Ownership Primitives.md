@@ -19,6 +19,23 @@ Safe ownership references — `Borrow`, `Inout`, `Unique`, `Slot`, and the `Tran
 
 The package ships these as SE-0519-parallel primitives on toolchains where `BorrowAndMutateAccessors` (SE-0507) has not yet landed in stable form. Consumers use `Ownership.Inout` / `Ownership.Borrow` as storable, lifetime-bounded references — a shape that neither `inout` parameters (not storable) nor raw `Unsafe*Pointer` (no lifetime) supply.
 
+## Narrow-Import Decomposition
+
+`swift-ownership-primitives` is decomposed along the ownership-mode axis per `[MOD-015]` primary decomposition. Consumers import the specific variant they need, not the umbrella:
+
+| Use case | Narrow import |
+|----------|---------------|
+| Scoped read-only reference | `import Ownership_Borrow_Primitives` |
+| Scoped mutable reference | `import Ownership_Inout_Primitives` |
+| Heap-owned exclusive cell | `import Ownership_Unique_Primitives` |
+| ARC-shared immutable / mutable | `import Ownership_Shared_Primitives` / `Ownership_Mutable_Primitives` |
+| Reusable atomic slot | `import Ownership_Slot_Primitives` |
+| Cross-boundary transfer | `import Ownership_Transfer_Primitives` |
+| Type-erased boxed transfer | `import Ownership_Transfer_Box_Primitives` |
+| `Optional<~Copyable>.take()` | `import Ownership_Primitives_Standard_Library_Integration` |
+
+The umbrella `import Ownership_Primitives` is available for prototyping and tests — it `@_exported`-re-exports every variant. Release builds SHOULD use the narrow imports.
+
 @Row {
     @Column {
         ### Start hands-on

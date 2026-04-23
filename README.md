@@ -84,14 +84,31 @@ dependencies: [
 ]
 ```
 
+The package is a **primary decomposition** per [MOD-015] — consumers depend on the specific variant they use, not the umbrella. Pick the narrow product(s):
+
 ```swift
 .target(
     name: "App",
     dependencies: [
-        .product(name: "Ownership Primitives", package: "swift-ownership-primitives")
+        // Scoped references
+        .product(name: "Ownership Borrow Primitives", package: "swift-ownership-primitives"),
+        .product(name: "Ownership Inout Primitives", package: "swift-ownership-primitives"),
+        // Heap-owned cells
+        .product(name: "Ownership Unique Primitives", package: "swift-ownership-primitives"),
+        .product(name: "Ownership Shared Primitives", package: "swift-ownership-primitives"),
+        .product(name: "Ownership Mutable Primitives", package: "swift-ownership-primitives"),
+        // Reusable atomic slot
+        .product(name: "Ownership Slot Primitives", package: "swift-ownership-primitives"),
+        // Cross-boundary transfer family
+        .product(name: "Ownership Transfer Primitives", package: "swift-ownership-primitives"),
+        .product(name: "Ownership Transfer Box Primitives", package: "swift-ownership-primitives"),
+        // Optional<~Copyable>.take()
+        .product(name: "Ownership Primitives Standard Library Integration", package: "swift-ownership-primitives"),
     ]
 )
 ```
+
+The umbrella product `Ownership Primitives` is available for prototyping and tests — it re-exports every variant via `@_exported public import`. Release builds SHOULD depend on the narrow variants to minimize the consumer's compile-time surface.
 
 Requires Swift 6.3.1 and macOS 26 / iOS 26 / tvOS 26 / watchOS 26 / visionOS 26 (or the matching Linux / Windows toolchain).
 

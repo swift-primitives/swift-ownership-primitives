@@ -45,20 +45,15 @@ extension Ownership.Transfer {
     /// @unchecked Sendable because:
     /// - Atomic operations protect mutable state
     /// - Storage pointer access is serialized by atomic state transitions
-    @safe
-    @usableFromInline
+    ///
     /// ## Safety Invariant
     ///
     /// Atomic state machine (`Atomic<Int>` with acquiringAndReleasing CAS) +
     /// release/acquire publication protocol protects storage access.
-    ///
-    /// ## Intended Use
-    ///
-    /// - Internal ownership-transfer box for cross-thread handoff.
-    ///
-    /// ## Non-Goals
-    ///
-    /// - Not for direct use outside ownership-primitives.
+    /// `@unsafe @unchecked Sendable` per [MEM-SAFE-024] Category A
+    /// (synchronized).
+    @safe
+    @usableFromInline
     internal final class _Box<T: ~Copyable>: @unsafe @unchecked Sendable {
         // MARK: - State Machine
         //
