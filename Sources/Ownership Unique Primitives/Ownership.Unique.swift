@@ -37,8 +37,20 @@ extension Ownership {
     ///
     /// ## Sendable
     ///
-    /// `Unique` is `Sendable` when `Value: Sendable`. If you need to transfer
-    /// a non-Sendable value across isolation boundaries, use `Ownership.Transfer`.
+    /// `Unique` is `@unsafe @unchecked Sendable` when `Value: ~Copyable & Sendable`.
+    /// The `@unchecked` is required because the stored
+    /// `UnsafeMutablePointer<Value>?` is non-Sendable by stdlib design
+    /// (`@unsafe` conformance of `_Pointer`). The exclusive-ownership
+    /// contract + `~Copyable` wrapper make the concrete type safe to
+    /// transfer — only one thread can hold a `Unique<Value>` at a time —
+    /// so the conformance is sound. See
+    /// `swift-institute/Experiments/noncopyable-generic-sendable-inference/`
+    /// for the revalidation that isolates UnsafeMutablePointer (not the
+    /// `~Copyable` generic parameter) as the actual inference blocker on
+    /// Swift 6.3.1.
+    ///
+    /// If you need to transfer a non-Sendable value across isolation boundaries,
+    /// use `Ownership.Transfer`.
     @safe
     public struct Unique<Value: ~Copyable>: ~Copyable {
 

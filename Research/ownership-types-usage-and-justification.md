@@ -2,7 +2,7 @@
 
 <!--
 ---
-version: 2.0.0
+version: 2.1.0
 last_updated: 2026-04-23
 status: RECOMMENDATION
 tier: 2
@@ -11,6 +11,18 @@ scope: cross-package
 -->
 
 ## Changelog
+
+- **v2.1.0 (2026-04-23)** — Revalidated the "~Copyable generic blocks
+  Sendable inference" claim on Swift 6.3.1 via
+  `swift-institute/Experiments/noncopyable-generic-sendable-inference/`.
+  Finding: **FIXED** for `final class Shared<Value: ~Copyable & Sendable>`
+  with an immutable stored property — the compiler accepts plain
+  `Sendable`. `Ownership.Shared` is now spelled as checked `Sendable`
+  (no `@unchecked` escape hatch). For `Ownership.Unique`, the
+  `@unchecked` is still required, but the blocker is `UnsafeMutablePointer<Value>?`
+  storage (non-Sendable by stdlib `@unsafe` conformance), NOT the
+  `~Copyable` generic parameter — docstring corrected. Category D / SP-4
+  row removed from the @unchecked Sendable breakdown table.
 
 - **v2.0.0 (2026-04-23)** — Reframed per principal direction: evaluate each
   type on **merits** (unique contract in the ownership space), not ecosystem
@@ -201,12 +213,14 @@ equivalent, but Sendable inference blocks on `~Copyable` generic
 parameters today — so consumers would write `@unchecked Sendable`
 themselves. `Ownership.Shared` concentrates that assertion.
 
-**`@unsafe @unchecked Sendable` analysis**: Category D / SP-4 per
-[MEM-SAFE-024] — the class IS structurally Sendable (immutable payload,
-`Value: Sendable` required), but `~Copyable` generics block the
-compiler's inference. When Swift fixes that, the conformance becomes
-checked `Sendable` with zero API change. The `@unchecked` is a **
-compiler-workaround annotation**, not a design smell.
+**Sendable analysis (v2.1.0 — updated after revalidation)**: the
+originally-documented Category D / SP-4 classification — "class is
+structurally Sendable but `~Copyable` generic blocks the compiler's
+inference" — was **refuted on Swift 6.3.1** by
+`swift-institute/Experiments/noncopyable-generic-sendable-inference/`.
+The compiler accepts `final class Shared<Value: ~Copyable & Sendable>: Sendable`
+with `let value: Value` as plain, checked `Sendable`. The package now
+uses plain `Sendable` with no `@unchecked` escape hatch.
 
 **Name**: "Shared" describes the ownership multiplicity (shared among
 multiple owners). But `Ownership.Mutable` is ALSO shared (ARC
@@ -713,9 +727,9 @@ The user's concern is addressed:
   — this IS the class replaceable by SE-0518 `~Sendable` + scoped
   `unsafe`. DEFER until `~Sendable` stabilises; then deprecate with a
   migration path.
-- **Category D (structural workaround)**: `Shared` — the `@unchecked`
-  is a `~Copyable`-generic-inference-gap workaround, not a design
-  smell. Revisit when Swift's type checker catches up.
+- **Category D (structural workaround)**: empty. `Shared` was the
+  only instance in the v2.0.0 classification; v2.1.0 refuted the
+  underlying claim and `Shared` moved to plain checked `Sendable`.
 
 Only **Category C** is a region-based-isolation alternative. The rest
 are structural or synchronisation-internal.

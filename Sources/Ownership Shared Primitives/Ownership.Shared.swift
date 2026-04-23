@@ -15,9 +15,8 @@ extension Ownership {
     ///
     /// `Shared` provides reference semantics for value types via ARC, enabling:
     /// - Heap allocation for values that need stable identity
-    /// - Type erasure via `Unmanaged` + `UnsafeRawPointer`
     /// - Breaking recursive type definitions
-    /// - Storage for `~Copyable` types that need heap allocation
+    /// - Storage for `~Copyable` values that need heap allocation
     ///
     /// ## Ownership Model
     ///
@@ -26,15 +25,10 @@ extension Ownership {
     ///
     /// ## Sendable
     ///
-    /// `Shared` is `Sendable` when `Value: Sendable`. The value is immutable (`let`),
-    /// so sharing across isolation domains is safe.
-    ///
-    /// **Note:** This type uses `@unchecked Sendable` due to a Swift compiler
-    /// limitation where `~Copyable` generic parameters in class stored properties
-    /// prevent checked `Sendable` conformance inference. The type is structurally
-    /// safe: the stored `value` is immutable and requires `Value: Sendable`.
-    /// When this compiler limitation is resolved, this should be converted to
-    /// checked `Sendable` conformance.
+    /// `Shared` is checked `Sendable` when `Value: Sendable`. The value is
+    /// immutable (`let`) and the generic requires `Value: Sendable`, so the
+    /// compiler synthesises the conformance structurally — no `@unchecked`
+    /// escape hatch needed.
     ///
     /// ## Example
     ///
@@ -42,16 +36,8 @@ extension Ownership {
     /// let shared = Ownership.Shared(42)
     /// print(shared.value)  // 42
     /// ```
-    ///
-    /// ## Safety Invariant
-    ///
-    /// Holds an immutable `let value: Value` where `Value: Sendable`. The
-    /// value cannot be mutated after construction. `~Copyable` generic in
-    /// class storage blocks structural `Sendable` inference, so the
-    /// conformance is spelled `@unsafe @unchecked Sendable` per
-    /// [MEM-SAFE-024] Category D / SP-4.
     @safe
-    public final class Shared<Value: ~Copyable & Sendable>: @unsafe @unchecked Sendable {
+    public final class Shared<Value: ~Copyable & Sendable>: Sendable {
         /// The wrapped value.
         public let value: Value
 
