@@ -11,11 +11,11 @@
     )
 }
 
-Safe ownership references — `Borrow`, `Inout`, `Unique`, `Shared`, `Mutable`, `Slot`, `Latch`, and the `Transfer.*` family — for `~Copyable` / `~Escapable` values on production Swift 6.3.1.
+Safe ownership references — `Borrow`, `Inout`, `Unique`, `Shared`, `Mutable`, `Slot`, `Latch`, `Indirect`, and the `Transfer.*` family — for `~Copyable` / `~Escapable` / `Copyable` values on production Swift 6.3.1.
 
 ## Overview
 
-``Ownership`` is a namespace for types that carry an explicit ownership contract. `Borrow` and `Inout` are scoped references; `Unique` heap-owns an exclusive `~Copyable` cell; `Shared` and `Mutable` heap-share via ARC; `Slot` is a reusable atomic slot (cycles empty ↔ full); `Latch` is a one-shot atomic cell (terminal after take); the `Transfer.*` family transfers one-shot across `@Sendable` boundaries with Sendable tokens.
+``Ownership`` is a namespace for types that carry an explicit ownership contract. `Borrow` and `Inout` are scoped references; `Unique` heap-owns an exclusive `~Copyable` cell; `Shared` and `Mutable` heap-share via ARC; `Slot` is a reusable atomic slot (cycles empty ↔ full); `Latch` is a one-shot atomic cell (terminal after take); `Indirect` is a heap-allocated copy-on-write value cell; the `Transfer.*` family transfers one-shot across `@Sendable` boundaries with Sendable tokens.
 
 The package ships these as SE-0519-parallel primitives on toolchains where `BorrowAndMutateAccessors` (SE-0507) has not yet landed in stable form. Consumers use `Ownership.Inout` / `Ownership.Borrow` as storable, lifetime-bounded references — a shape that neither `inout` parameters (not storable) nor raw `Unsafe*Pointer` (no lifetime) supply.
 
@@ -31,6 +31,7 @@ The package ships these as SE-0519-parallel primitives on toolchains where `Borr
 | ARC-shared immutable / mutable | `import Ownership_Shared_Primitives` / `Ownership_Mutable_Primitives` |
 | Reusable atomic slot | `import Ownership_Slot_Primitives` |
 | One-shot atomic cell | `import Ownership_Latch_Primitives` |
+| Heap CoW value cell | `import Ownership_Indirect_Primitives` |
 | Cross-boundary transfer | `import Ownership_Transfer_Primitives` |
 | Type-erased boxed transfer | `import Ownership_Transfer_Box_Primitives` |
 | `Optional<~Copyable>.take()` | `import Ownership_Primitives_Standard_Library_Integration` |
@@ -94,6 +95,10 @@ The umbrella `import Ownership_Primitives` is available for prototyping and test
 ### One-Shot Atomic Cell
 
 - ``Ownership/Latch``
+
+### Copy-on-Write Value Cell
+
+- ``Ownership/Indirect``
 
 ### Cross-Boundary Transfer
 
