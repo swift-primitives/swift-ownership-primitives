@@ -158,10 +158,17 @@ extension `Ownership Transfer Tests`.`Erased Outgoing` {
     }
 
     @Test
-    func `destroy releases an unconsumed box without crashing`() {
-        struct Payload { var a: Int; var b: String }
-        let raw = unsafe Ownership.Transfer.Erased.Outgoing.make(Payload(a: 7, b: "payload"))
-        unsafe Ownership.Transfer.Erased.Outgoing.destroy(raw)
+    func `destroy runs the payload destructor and deallocates`() {
+        final class Sentinel {}
+        weak var probe: Sentinel?
+        do {
+            let instance = Sentinel()
+            probe = instance
+            let raw = unsafe Ownership.Transfer.Erased.Outgoing.make(instance)
+            unsafe Ownership.Transfer.Erased.Outgoing.destroy(raw)
+        }
+        // probe observes that destroy() released the +1 retain the box held.
+        #expect(probe == nil)
     }
 }
 
