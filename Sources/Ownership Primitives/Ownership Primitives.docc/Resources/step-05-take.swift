@@ -5,14 +5,11 @@ struct Request: ~Copyable {
     var timeout: Duration
 }
 
-var cell = Ownership.Unique(
+let cell = Ownership.Unique(
     Request(url: "https://example.com/status", timeout: .seconds(5))
 )
 
-cell.withMutableValue { request in
-    request.timeout = .seconds(30)
-}
-
-let owned = cell.take()
-precondition(!cell.hasValue)
+// consume() is consuming: it destroys the cell and returns the value.
+let owned = cell.consume()
+// cell no longer exists — accessing it here would be a compile-time error.
 // `owned` is the moved-out Request; the heap storage is deallocated.

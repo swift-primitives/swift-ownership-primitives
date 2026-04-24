@@ -10,6 +10,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+internal import Ownership_Latch_Primitives
+
 extension Ownership.Transfer {
     /// Heap cell for passing a ~Copyable value through an escaping boundary.
     ///
@@ -31,15 +33,13 @@ extension Ownership.Transfer {
     /// }
     /// ```
     public struct Cell<T: ~Copyable>: ~Copyable {
-        @usableFromInline
-        let _box: _Box<T>
+        private let _box: Ownership.Latch<T>
 
         /// Creates a cell containing the given value.
         ///
         /// - Parameter value: The value to store (ownership transferred).
-        @inlinable
         public init(_ value: consuming T) {
-            _box = _Box(value)
+            _box = Ownership.Latch(value)
         }
     }
 }
@@ -63,12 +63,10 @@ extension Ownership.Transfer.Cell where T: ~Copyable {
     /// - `take()` must be called exactly once across all copies
     /// - Calling `take()` twice (on any copy) traps with a clear error message
     public struct Token: Sendable {
-        /// Strong reference to the box. ARC manages lifetime.
-        @usableFromInline
-        let _box: Ownership.Transfer._Box<T>
+        /// Strong reference to the latch. ARC manages lifetime.
+        private let _box: Ownership.Latch<T>
 
-        @usableFromInline
-        init(_ box: Ownership.Transfer._Box<T>) {
+        init(_ box: Ownership.Latch<T>) {
             self._box = box
         }
     }
@@ -82,7 +80,6 @@ extension Ownership.Transfer.Cell.Token where T: ~Copyable {
     /// - Returns: The stored value.
     /// - Precondition: Must be called exactly once across all token copies.
     ///   Second call traps with a clear error message.
-    @inlinable
     public func take() -> T {
         _box.take()
     }
@@ -98,7 +95,6 @@ extension Ownership.Transfer.Cell where T: ~Copyable {
     /// and must be consumed by calling `take()` exactly once.
     ///
     /// - Returns: A Sendable token.
-    @inlinable
     public consuming func token() -> Token {
         Token(_box)
     }

@@ -13,75 +13,69 @@
 // MARK: - Ownership.Unique
 
 extension Ownership {
-    /// A unique-ownership heap box with deterministic deinitialization.
+    /// A heap-owned, exclusively-owned single-value cell.
     ///
-    /// `Unique` allocates and owns a single value on the heap, automatically
-    /// deallocating when destroyed. This is the Swift equivalent of Rust's `Box<T>`.
+    /// `Ownership.Unique<Value>` owns one heap-allocated value. The cell is
+    /// `~Copyable` — copies are forbidden — so the owner is guaranteed to be
+    /// unique at every point in the value's lifetime. On destruction, either
+    /// through `consume()` or normal scope-exit, the value is deinitialised
+    /// and the heap storage is deallocated.
     ///
-    /// ## Invariants
-    ///
-    /// - Storage is non-null while owned (nil only after `take()`)
-    /// - Memory is initialized while owned
-    /// - `deinit` deallocates if still owned
+    /// Institute rendering of Apple stdlib's `Swift.UniqueBox<Value: ~Copyable>`
+    /// (SE-0517, accepted March 2026). The compound-form `UniqueBox` name is
+    /// rendered here as the Nest.Name form `Ownership.Unique` per [API-NAME-001];
+    /// semantics and API surface mirror SE-0517.
     ///
     /// ## When to Use
     ///
-    /// - Need unique ownership with deterministic cleanup: `Ownership.Unique`
-    /// - Need shared immutable reference: `Ownership.Shared`
-    /// - Need shared mutable reference: `Ownership.Mutable`
-    ///
-    /// ## ~Copyable
-    ///
-    /// `Unique` is always `~Copyable` to prevent accidental heap allocations.
-    /// For `Copyable` values, use `duplicated()` for explicit deep copy.
+    /// - Heap placement of a `~Copyable` value with deterministic cleanup: this type.
+    /// - Shared immutable heap reference: ``Ownership/Shared``.
+    /// - Shared mutable heap reference (intra-isolation): ``Ownership/Mutable``.
+    /// - One-shot cross-boundary transfer: ``Ownership/Transfer``.
     ///
     /// ## Sendable
     ///
-    /// `Unique` is `@unsafe @unchecked Sendable` when `Value: ~Copyable & Sendable`.
-    /// The `@unchecked` is required because the stored
-    /// `UnsafeMutablePointer<Value>?` is non-Sendable by stdlib design
-    /// (`@unsafe` conformance of `_Pointer`). The exclusive-ownership
-    /// contract + `~Copyable` wrapper make the concrete type safe to
-    /// transfer — only one thread can hold a `Unique<Value>` at a time —
-    /// so the conformance is sound. See
-    /// `swift-institute/Experiments/noncopyable-generic-sendable-inference/`
-    /// for the revalidation that isolates UnsafeMutablePointer (not the
-    /// `~Copyable` generic parameter) as the actual inference blocker on
-    /// Swift 6.3.1.
+    /// `Ownership.Unique` is `@unsafe @unchecked Sendable` when
+    /// `Value: ~Copyable & Sendable`. The `@unchecked` is required because
+    /// the stored `UnsafeMutablePointer<Value>` is non-Sendable by stdlib
+    /// `@unsafe` conformance. The exclusive-ownership contract (enforced
+    /// by the `~Copyable` wrapper) plus Value's own Sendable guarantee make
+    /// the concrete type safe to transfer — only one thread can hold a
+    /// `Ownership.Unique<Value>` at a time — so the conformance is sound.
     ///
-    /// If you need to transfer a non-Sendable value across isolation boundaries,
-    /// use `Ownership.Transfer`.
+    /// ## Semantics vs. `Optional<Unique<Value>>`
+    ///
+    /// An `Ownership.Unique` instance always holds a value while it exists.
+    /// There is no observable "empty" state. Callers who need optional
+    /// ownership should use `Ownership.Unique<Value>?`. This matches
+    /// SE-0517's explicit design choice — empty state is rejected — and
+    /// eliminates the class of bugs from re-observing a taken cell.
     @safe
     public struct Unique<Value: ~Copyable>: ~Copyable {
 
         // MARK: - Stored Properties
 
-        /// Internal pointer storage. Nil after `take()` or `leak()`.
+        /// Heap-allocated pointer to the value. Always initialised while the
+        /// owner exists; `consume()` and `deinit` are the only exits.
         @usableFromInline
-        internal var _storage: UnsafeMutablePointer<Value>?
+        internal let _storage: UnsafeMutablePointer<Value>
 
         // MARK: - Initialization
 
-        /// Creates a unique owner by heap-allocating the given value.
+        /// Creates a unique heap-owner by allocating storage and moving
+        /// `initialValue` into it.
         ///
-        /// The value is moved into heap-allocated memory. The owner takes
-        /// responsibility for deallocating this memory when destroyed.
-        ///
-        /// - Parameter value: The value to own (consumed/moved).
+        /// - Parameter initialValue: The value to own (consumed / moved).
         @inlinable
-        public init(_ value: consuming Value) {
-            let storage = UnsafeMutablePointer<Value>.allocate(
-                capacity: 1
-            )
-            unsafe storage.initialize(to: value)
+        public init(_ initialValue: consuming Value) {
+            let storage = UnsafeMutablePointer<Value>.allocate(capacity: 1)
+            unsafe storage.initialize(to: initialValue)
             unsafe (self._storage = storage)
         }
 
         deinit {
-            if let storage = unsafe _storage {
-                unsafe storage.deinitialize(count: 1)
-                unsafe storage.deallocate()
-            }
+            unsafe _storage.deinitialize(count: 1)
+            unsafe _storage.deallocate()
         }
     }
 }
@@ -90,101 +84,87 @@ extension Ownership {
 
 extension Ownership.Unique: @unsafe @unchecked Sendable where Value: ~Copyable & Sendable {}
 
-// MARK: - Core Operations
+// MARK: - Primary Accessor
 
 extension Ownership.Unique where Value: ~Copyable {
-    /// Takes ownership of the value, leaving the owner empty.
+    /// Direct access to the owned value via yielding `_read` / `_modify`
+    /// coroutines.
     ///
-    /// After calling `take()`, the owner no longer holds a value and `hasValue`
-    /// returns `false`. The memory is deallocated.
+    /// `_read` yields a borrow; `_modify` yields an inout reference.
+    /// Pre-SE-0507 rendering of SE-0517's `var value: Value { borrow mutate }`.
     ///
-    /// - Returns: The owned value.
-    /// - Precondition: The owner has not already been emptied via `take()` or `leak()`.
+    /// Read access:
+    /// ```swift
+    /// let box = Ownership.Unique<Resource>(resource)
+    /// let id = box.value.id           // transitive borrow
+    /// print(box.value)                // borrowed print
+    /// ```
+    ///
+    /// Mutation:
+    /// ```swift
+    /// var box = Ownership.Unique<Counter>(Counter())
+    /// box.value.increment()           // _modify coroutine
+    /// ```
     @inlinable
-    public mutating func take() -> Value {
-        guard let storage = unsafe _storage else {
-            preconditionFailure("Ownership.Unique value has already been taken")
-        }
-        let value = unsafe storage.move()
-        unsafe storage.deallocate()
-        unsafe (_storage = nil)
-        return value
-    }
-
-    /// Executes a closure with borrowed access to the owned value.
-    ///
-    /// - Parameter body: A closure receiving a borrowed reference to the value.
-    /// - Returns: The closure's return value.
-    /// - Precondition: The owner has not been emptied via `take()` or `leak()`.
-    @inlinable
-    public borrowing func withValue<Result: ~Copyable, E: Swift.Error>(
-        _ body: (borrowing Value) throws(E) -> Result
-    ) throws(E) -> Result {
-        guard let storage = unsafe _storage else {
-            preconditionFailure("Ownership.Unique value has already been taken")
-        }
-        return try unsafe body(storage.pointee)
-    }
-
-    /// Executes a closure with mutable access to the owned value.
-    ///
-    /// - Parameter body: A closure receiving an inout reference to the value.
-    /// - Returns: The closure's return value.
-    /// - Precondition: The owner has not been emptied via `take()` or `leak()`.
-    @inlinable
-    public mutating func withMutableValue<Result: ~Copyable, E: Swift.Error>(
-        _ body: (inout Value) throws(E) -> Result
-    ) throws(E) -> Result {
-        guard let storage = unsafe _storage else {
-            preconditionFailure("Ownership.Unique value has already been taken")
-        }
-        return try unsafe body(&storage.pointee)
-    }
-
-    /// Returns the underlying pointer and prevents automatic cleanup.
-    ///
-    /// Use this for interop scenarios where ownership transfers elsewhere.
-    /// The caller is responsible for deinitialization and deallocation.
-    ///
-    /// - Returns: The mutable pointer to the value.
-    /// - Precondition: The owner has not already been emptied.
-    @inlinable
-    @unsafe
-    public mutating func leak() -> UnsafeMutablePointer<Value> {
-        guard let storage = unsafe _storage else {
-            preconditionFailure("Ownership.Unique value has already been taken")
-        }
-        unsafe (_storage = nil)
-        return unsafe storage
-    }
-
-    /// A Boolean indicating whether the owner still holds a value.
-    ///
-    /// Returns `false` after `take()` or `leak()` has been called.
-    @inlinable
-    public var hasValue: Bool {
-        unsafe (_storage != nil)
+    public var value: Value {
+        _read { yield unsafe _storage.pointee }
+        _modify { yield unsafe &_storage.pointee }
     }
 }
 
-// MARK: - Description
+// MARK: - Consume
 
 extension Ownership.Unique where Value: ~Copyable {
-    /// A textual representation of the owner.
-    public var description: String {
-        if let storage = unsafe _storage {
-            return unsafe "Ownership.Unique<\(Value.self)>(\(storage))"
-        } else {
-            return "Ownership.Unique<\(Value.self)>(empty)"
+    /// Consumes the cell, destroying it and returning its value.
+    ///
+    /// After `consume()` returns, the cell no longer exists. Attempting to
+    /// reference the consumed cell is a compile-time error. This mirrors
+    /// SE-0517's `consuming func consume() -> Value` exactly.
+    ///
+    /// ```swift
+    /// let box = Ownership.Unique<Resource>(resource)
+    /// let extracted = box.consume()    // box no longer exists
+    /// use(extracted)
+    /// ```
+    ///
+    /// - Returns: The owned value.
+    public consuming func consume() -> Value {
+        let value = unsafe _storage.move()
+        unsafe _storage.deallocate()
+        discard self
+        return value
+    }
+}
+
+// MARK: - Span Access
+
+extension Ownership.Unique where Value: ~Copyable {
+    /// A read-only `~Escapable` view over the owned value's storage.
+    ///
+    /// `Span<Value>` has `count == 1` — a single-element contiguous view
+    /// over the heap-allocated cell. Useful for interop with stdlib APIs
+    /// expecting contiguous-memory spans.
+    ///
+    /// Mirrors SE-0517's `var span: Span<Value> { get }`.
+    @inlinable
+    public var span: Span<Value> {
+        @_lifetime(borrow self)
+        borrowing get {
+            unsafe Span(_unsafeStart: _storage, count: 1)
         }
     }
 
-    /// A textual representation suitable for debugging.
-    public var debugDescription: String {
-        if let storage = unsafe _storage {
-            return unsafe "Ownership.Unique<\(Value.self)>(storage: \(storage))"
-        } else {
-            return "Ownership.Unique<\(Value.self)>(storage: nil)"
+    /// A mutable `~Escapable` view over the owned value's storage.
+    ///
+    /// `MutableSpan<Value>` has `count == 1` — a single-element mutable
+    /// contiguous view over the heap-allocated cell.
+    ///
+    /// Mirrors SE-0517's `var mutableSpan: MutableSpan<Value> { mutating get }`.
+    @inlinable
+    public var mutableSpan: MutableSpan<Value> {
+        @_lifetime(&self)
+        mutating get {
+            unsafe MutableSpan(_unsafeStart: _storage, count: 1)
         }
     }
 }

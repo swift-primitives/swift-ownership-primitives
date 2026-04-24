@@ -23,6 +23,7 @@
 @_exported public import Ownership_Shared_Primitives
 @_exported public import Ownership_Mutable_Primitives
 @_exported public import Ownership_Slot_Primitives
+@_exported public import Ownership_Latch_Primitives
 @_exported public import Ownership_Transfer_Primitives
 @_exported public import Ownership_Transfer_Box_Primitives
 @_exported public import Ownership_Primitives_Standard_Library_Integration

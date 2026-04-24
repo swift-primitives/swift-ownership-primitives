@@ -11,7 +11,7 @@ Zero-allocation cross-boundary transfer for `AnyObject` types.
 
 `Transfer.Retained<T: AnyObject>` uses `Unmanaged` retain counts to hold the reference across a `@Sendable` boundary, avoiding the heap indirection that ``Ownership/Transfer/Cell`` would introduce for class-typed values.
 
-The type is `~Copyable` (exactly-once), `@unsafe @unchecked Sendable`, and traps on double-take. On the receiving side, `take()` restores the strongly-held reference.
+The type is `~Copyable` (exactly-once), `@unsafe @unchecked Sendable`, and traps on double-consume. On the receiving side, `consume()` restores the strongly-held reference.
 
 ## Example
 
@@ -24,14 +24,14 @@ let conn = Connection()
 let retained = Ownership.Transfer.Retained(conn)
 
 Task.detached {
-    let received = retained.take()
+    let received = retained.consume()
     use(received)
 }
 ```
 
 ## Rationale
 
-For class types, `Cell` would box the reference inside additional heap storage — a needless indirection when the underlying representation is already a retain-counted pointer. `Retained` passes the `Unmanaged` directly and reclaims the strong reference on `take()`.
+For class types, `Cell` would box the reference inside additional heap storage — a needless indirection when the underlying representation is already a retain-counted pointer. `Retained` passes the `Unmanaged` directly and reclaims the strong reference on `consume()`.
 
 Use `Retained` when transferring classes across `@Sendable` boundaries; use ``Ownership/Transfer/Cell`` for struct / enum / `~Copyable` values.
 

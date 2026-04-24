@@ -26,56 +26,54 @@ extension OwnershipUniqueTests.Unit {
     @Test
     func `init heap-allocates value`() {
         let unique = Ownership.Unique<Int>(42)
-        unique.withValue { value in
-            #expect(value == 42)
-        }
+        #expect(unique.value == 42)
     }
 
     @Test
-    func `hasValue returns true after init`() {
+    func `value accessor reads via _read coroutine`() {
         let unique = Ownership.Unique<Int>(99)
-        #expect(unique.hasValue == true)
+        #expect(unique.value == 99)
     }
 
     @Test
-    func `withValue provides borrowed access`() {
-        let unique = Ownership.Unique<String>("Hello")
-        unique.withValue { value in
-            #expect(value == "Hello")
-        }
-    }
-
-    @Test
-    func `withMutableValue provides mutable access`() {
+    func `value accessor mutates via _modify coroutine`() {
         var unique = Ownership.Unique<Int>(10)
-        unique.withMutableValue { value in
-            value += 5
-        }
-        unique.withValue { value in
-            #expect(value == 15)
-        }
+        unique.value += 5
+        #expect(unique.value == 15)
     }
 
     @Test
-    func `take returns owned value`() {
-        var unique = Ownership.Unique<Int>(123)
-        let value = unique.take()
+    func `consume returns owned value and destroys cell`() {
+        let unique = Ownership.Unique<Int>(123)
+        let value = unique.consume()
+        // `unique` no longer exists after consume — compile-time error
+        // to reference it here, which IS the contract.
         #expect(value == 123)
     }
 
     @Test
-    func `hasValue returns false after take`() {
-        var unique = Ownership.Unique<Int>(42)
-        _ = unique.take()
-        #expect(!unique.hasValue == true)
+    func `clone returns independent owner (Copyable)`() {
+        let unique = Ownership.Unique<Int>(77)
+        let duplicated = unique.clone()
+        #expect(duplicated.consume() == 77)
+        #expect(unique.value == 77)  // original still owns its value
     }
 
     @Test
-    func `duplicated returns new owner with copy (Copyable)`() {
-        let unique = Ownership.Unique<Int>(77)
-        var duplicated = unique.duplicated()
-        #expect(duplicated.take() == 77)
-        #expect(unique.hasValue == true) // Original still has value
+    func `span provides read-only view with count 1`() {
+        let unique = Ownership.Unique<Int>(42)
+        let span = unique.span
+        #expect(span.count == 1)
+        #expect(span[0] == 42)
+    }
+
+    @Test
+    func `mutableSpan provides mutable view with count 1`() {
+        var unique = Ownership.Unique<Int>(10)
+        var span = unique.mutableSpan
+        #expect(span.count == 1)
+        span[0] = 20
+        #expect(unique.value == 20)
     }
 }
 
@@ -90,16 +88,12 @@ extension OwnershipUniqueTests.EdgeCase {
         }
 
         var unique = Ownership.Unique<Point>(Point(x: 1.0, y: 2.0))
-        unique.withValue { point in
-            #expect(point.x == 1.0)
-            #expect(point.y == 2.0)
-        }
+        #expect(unique.value.x == 1.0)
+        #expect(unique.value.y == 2.0)
 
-        unique.withMutableValue { point in
-            point.x = 3.0
-        }
+        unique.value.x = 3.0
 
-        let point = unique.take()
+        let point = unique.consume()
         #expect(point.x == 3.0)
         #expect(point.y == 2.0)
     }
@@ -112,79 +106,49 @@ extension OwnershipUniqueTests.EdgeCase {
         }
 
         let unique = Ownership.Unique<Counter>(Counter(10))
-        unique.withValue { counter in
-            #expect(counter.value == 10)
-        }
+        #expect(unique.value.value == 10)
     }
 
     @Test
     func `works with optional types`() {
         var unique = Ownership.Unique<Int?>(42)
-        unique.withValue { value in
-            #expect(value == 42)
-        }
+        #expect(unique.value == 42)
 
-        unique.withMutableValue { value in
-            value = nil
-        }
-
-        unique.withValue { value in
-            #expect(value == nil)
-        }
+        unique.value = nil
+        #expect(unique.value == nil)
     }
 
     @Test
     func `works with array types`() {
         var unique = Ownership.Unique<[Int]>([1, 2, 3])
-        unique.withMutableValue { array in
-            array.append(4)
-        }
-        unique.withValue { array in
-            #expect(array == [1, 2, 3, 4])
-        }
-    }
-
-    @Test
-    func `description shows state`() {
-        var unique = Ownership.Unique<Int>(42)
-        let descBefore = unique.description
-        #expect(descBefore.contains("Unique"))
-        #expect(!descBefore.contains("empty"))
-
-        _ = unique.take()
-        let descAfter = unique.description
-        #expect(descAfter.contains("empty"))
+        unique.value.append(4)
+        #expect(unique.value == [1, 2, 3, 4])
     }
 
     // MARK: - ~Copyable Value regression
 
     @Test
-    func `take() works with ~Copyable Value`() {
+    func `consume works with ~Copyable Value`() {
         struct Handle: ~Copyable { let fd: Int32 }
-        var cell = Ownership.Unique(Handle(fd: 3))
-        let hasV = cell.hasValue
-        #expect(hasV)
-        let taken = cell.take()
+        let cell = Ownership.Unique(Handle(fd: 3))
+        let taken = cell.consume()
         #expect(taken.fd == 3)
-        let hasV2 = cell.hasValue
-        #expect(!hasV2)
     }
 
     @Test
-    func `withValue works with ~Copyable Value`() {
+    func `value accessor works with ~Copyable Value via transitive borrow`() {
         struct Handle: ~Copyable { let fd: Int32 }
-        let cell = Ownership.Unique(Handle(fd: 5))
-        cell.withValue { handle in
-            #expect(handle.fd == 5)
-        }
+        let cell = Ownership.Unique(Handle(fd: 11))
+        // transitive borrow — reads .fd through _read yield
+        #expect(cell.value.fd == 11)
     }
 
     @Test
-    func `withMutableValue works with ~Copyable Value`() {
-        struct Mutable: ~Copyable { var count: Int }
-        var cell = Ownership.Unique(Mutable(count: 0))
-        cell.withMutableValue { $0.count += 1 }
-        let taken = cell.take()
+    func `value accessor mutates ~Copyable Value`() {
+        struct MutableHandle: ~Copyable { var count: Int }
+        var cell = Ownership.Unique(MutableHandle(count: 0))
+        cell.value.count += 1
+        let taken = cell.consume()
         #expect(taken.count == 1)
     }
 }
@@ -194,8 +158,8 @@ extension OwnershipUniqueTests.EdgeCase {
 extension OwnershipUniqueTests.Integration {
     @Test
     func `deinit deallocates memory`() {
-        // This test verifies that deinit runs without crashing
-        // Memory leak detection would require external tools
+        // Verifies that scope-exit deinit runs without crashing.
+        // Memory leak detection would require external tools.
         do {
             _ = Ownership.Unique<Int>(42)
             // Unique goes out of scope and should deallocate
@@ -208,64 +172,19 @@ extension OwnershipUniqueTests.Integration {
         var unique1 = Ownership.Unique<Int>(100)
         let unique2 = Ownership.Unique<Int>(200)
 
-        unique1.withMutableValue { $0 += 1 }
+        unique1.value += 1
 
-        unique1.withValue { #expect($0 == 101) }
-        unique2.withValue { #expect($0 == 200) }
+        #expect(unique1.value == 101)
+        #expect(unique2.value == 200)
     }
 
     @Test
-    func `nested withValue calls`() {
+    func `nested value reads via transitive borrow`() {
         let unique1 = Ownership.Unique<Int>(10)
         let unique2 = Ownership.Unique<Int>(20)
 
-        unique1.withValue { v1 in
-            unique2.withValue { v2 in
-                #expect(v1 + v2 == 30)
-            }
-        }
-    }
-
-    @Test
-    func `throwing closure in withValue`() throws {
-        struct TestError: Error {}
-
-        let unique = Ownership.Unique<Int>(42)
-
-        do {
-            try unique.withValue { value in
-                if value == 42 {
-                    throw TestError()
-                }
-            }
-            Issue.record("Should have thrown")
-        } catch is TestError {
-            // Expected
-        }
-
-        // Unique should still be valid after throw
-        #expect(unique.hasValue == true)
-    }
-
-    @Test
-    func `throwing closure in withMutableValue`() throws {
-        struct TestError: Error {}
-
-        var unique = Ownership.Unique<Int>(42)
-
-        do {
-            try unique.withMutableValue { value in
-                value = 100
-                throw TestError()
-            }
-        } catch is TestError {
-            // Expected
-        }
-
-        // Value should have been mutated before throw
-        unique.withValue { value in
-            #expect(value == 100)
-        }
+        let sum = unique1.value + unique2.value
+        #expect(sum == 30)
     }
 }
 
@@ -277,54 +196,54 @@ extension OwnershipUniqueTests.Performance {
         // Warmup
         for _ in 0..<10 {
             for _ in 0..<1000 {
-                var unique = Ownership.Unique<Int>(42)
-                _ = unique.take()
+                let unique = Ownership.Unique<Int>(42)
+                _ = unique.consume()
             }
         }
 
         // Measured
         for _ in 0..<100 {
             for _ in 0..<1000 {
-                var unique = Ownership.Unique<Int>(42)
-                _ = unique.take()
+                let unique = Ownership.Unique<Int>(42)
+                _ = unique.consume()
             }
         }
     }
 
     @Test
-    func `withValue access`() {
+    func `value read access`() {
         let unique = Ownership.Unique<Int>(42)
 
         // Warmup
         for _ in 0..<10 {
             for _ in 0..<10000 {
-                unique.withValue { _ = $0 }
+                _ = unique.value
             }
         }
 
         // Measured
         for _ in 0..<100 {
             for _ in 0..<10000 {
-                unique.withValue { _ = $0 }
+                _ = unique.value
             }
         }
     }
 
     @Test
-    func `withMutableValue access`() {
+    func `value mutate access`() {
         var unique = Ownership.Unique<Int>(0)
 
         // Warmup
         for _ in 0..<10 {
             for _ in 0..<10000 {
-                unique.withMutableValue { $0 += 1 }
+                unique.value += 1
             }
         }
 
         // Measured
         for _ in 0..<100 {
             for _ in 0..<10000 {
-                unique.withMutableValue { $0 += 1 }
+                unique.value += 1
             }
         }
     }

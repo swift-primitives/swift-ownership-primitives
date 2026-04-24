@@ -41,11 +41,11 @@ extension Ownership {
     /// let storage = Ownership.Transfer.Storage<MyType>()
     /// let storeToken = storage.token
     /// spawnThread { storeToken.store(createValue()) }
-    /// let value = storage.take()
+    /// let value = storage.consume()
     ///
     /// // Retained: zero-allocation class transfer
     /// let retained = Ownership.Transfer.Retained(myObject)
-    /// spawnThread { let obj = retained.take() }
+    /// spawnThread { let obj = retained.consume() }
     /// ```
     public enum Transfer {}
 }

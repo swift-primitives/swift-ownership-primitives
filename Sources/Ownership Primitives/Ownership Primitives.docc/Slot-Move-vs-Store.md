@@ -5,13 +5,13 @@
     @TitleHeading("Ownership Primitives")
 }
 
-``Ownership/Slot`` is a reusable atomic one-value slot with two API surfaces: a **total** surface returning results, and a **fluent** surface that traps on failure.
+``Ownership/Slot`` is a reusable atomic one-value slot with two API surfaces: a **total** surface returning `Value?`, and a **fluent** surface that traps on failure.
 
 ## Decision Matrix
 
 | Call site | API surface | When |
 |-----------|-------------|------|
-| Can observe and handle failure | `slot.store(_:)` / `slot.take()` (total) | Returning an `Optional` for "no value" or a `Store` result for "slot was occupied, got value back" |
+| Can observe and handle failure | `slot.store(_:)` / `slot.take()` (total) | Both return `Value?` — for `take()`, `.some(v)` is the value, `nil` means empty; for `store(_:)`, `nil` is success and `.some(v)` is the caller's value bounced back (shape mirrors stdlib `Dictionary.updateValue(_:forKey:)`) |
 | Pre-proved success (invariant, logic-gated) | `slot.move.in(_)` / `slot.move.out` (trapping) | Trapping surfaces a logic error inside the call site rather than propagating it as a value |
 
 Both surfaces operate on the same underlying state machine. The choice is about *how failure is expressed*, not *what is being done*.
@@ -31,21 +31,18 @@ An internal `initializing` state exists briefly between the CAS that reserves th
 
 ## Total API: `store(_:)` / `take()`
 
-Use when failure is an expected outcome. `store(_:)` returns `Ownership.Slot.Store`, which enumerates the possible results; `take()` returns `Value?`, where `nil` means the slot was empty.
+Use when failure is an expected outcome. Both return `Value?` — for `store(_:)`, `nil` means success and `.some(v)` is the caller's value bounced back unconsumed; for `take()`, `.some(v)` is the stored value and `nil` means the slot was empty.
 
 ```swift
 import Ownership_Primitives
 
 let slot = Ownership.Slot<Resource>()
 
-switch slot.store(resource) {
-case .stored:
-    // Value now in slot
-    break
-case .occupied(let returned):
+if let returned = slot.store(resource) {
     // Slot was already full; `returned` is the value we tried to store
     releaseElsewhere(returned)
 }
+// else: resource is now stored
 
 if let taken = slot.take() {
     use(taken)
@@ -87,5 +84,4 @@ Use `Slot` for reusable patterns. See <doc:Ownership-Transfer-Recipes> for the o
 
 - ``Ownership/Slot``
 - ``Ownership/Slot/Move``
-- ``Ownership/Slot/Store``
 - <doc:Ownership-Transfer-Recipes>

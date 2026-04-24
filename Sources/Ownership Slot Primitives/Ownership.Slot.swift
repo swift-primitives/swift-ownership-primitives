@@ -47,9 +47,12 @@ extension Ownership {
     ///
     /// ## Totality
     ///
-    /// Primary operations return results rather than trapping:
-    /// - `store(_:)` returns `Store` indicating success or returning the value
-    /// - `take()` returns `Value?`
+    /// Primary operations return `Value?` rather than trapping:
+    /// - `store(_:)` returns `nil` on success, or the caller's value bounced
+    ///   back if the slot was occupied. Shape mirrors stdlib
+    ///   `Dictionary.updateValue(_:forKey:)`: the `Optional` carries the
+    ///   value the operation did NOT consume.
+    /// - `take()` returns the stored value, or `nil` if empty.
     ///
     /// Trapping variants are available via `__unchecked` overloads for contexts
     /// where failure indicates a logic error.
@@ -59,11 +62,11 @@ extension Ownership {
     /// ```swift
     /// let slot = Ownership.Slot<Resource>()
     ///
-    /// switch slot.store(resource) {
-    /// case .stored:
-    ///     print("Resource stored")
-    /// case .occupied(let returned):
-    ///     print("Slot was full, got resource back")
+    /// if let returned = slot.store(resource) {
+    ///     // Slot was full — `returned` is the value we tried to store.
+    ///     releaseElsewhere(returned)
+    /// } else {
+    ///     // Resource is now stored.
     /// }
     ///
     /// if let r = slot.take() {

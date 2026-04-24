@@ -19,19 +19,20 @@ extension Ownership {
     /// - Multiple owners sharing access to the same underlying storage
     /// - Heap allocation for values that need stable identity
     ///
-    /// ## Access Patterns
+    /// ## Access
     ///
-    /// For `Copyable` values, direct property access is available:
+    /// Access goes through the `value` accessor, which yields a borrow on
+    /// read and an `inout` reference on mutation:
+    ///
     /// ```swift
     /// let mutable = Ownership.Mutable(42)
-    /// mutable.value += 1
+    /// print(mutable.value)          // _read coroutine: borrowed access
+    /// mutable.value += 1            // _modify coroutine: in-place mutation
     /// ```
     ///
-    /// For `~Copyable` values or when scoped access is preferred, use closures:
-    /// ```swift
-    /// mutable.withValue { print($0) }
-    /// mutable.update { $0 += 1 }
-    /// ```
+    /// For `~Copyable` values, transitive borrow through `value` is the
+    /// only legal read path — the coroutine yields a borrow that cannot
+    /// be stored past the access expression.
     ///
     /// ## Thread Safety
     ///
@@ -42,11 +43,11 @@ extension Ownership {
     ///
     /// `Mutable` is **not** `Sendable` by design. It is an identity-sharing mutable
     /// reference wrapper without synchronization. Sending it across isolation domains
-    /// would allow concurrent mutation without protection—a data race.
+    /// would allow concurrent mutation without protection — a data race.
     ///
     /// For use cases requiring capture of values in `@Sendable` closures (e.g., async
     /// iterator boxing), use ``Unchecked`` instead. This is an explicit opt-in to
-    /// bypass Sendable checking—you take responsibility for ensuring single-consumer
+    /// bypass Sendable checking — you take responsibility for ensuring single-consumer
     /// or externally-synchronized access.
     ///
     /// **Policy:** No general-purpose mutable reference wrapper in this module is
@@ -77,42 +78,15 @@ extension Ownership {
 // MARK: - Value Access
 
 extension Ownership.Mutable where Value: ~Copyable {
-    /// Direct access to the wrapped value.
+    /// Direct access to the wrapped value via yielding `_read` / `_modify`
+    /// coroutines.
     ///
-    /// For `~Copyable` types, prefer `withValue(_:)` or `update(_:)` for
-    /// safer scoped access.
+    /// `_read` yields a borrow; `_modify` yields an inout reference.
+    /// Pre-SE-0507 rendering of `var value: Value { borrow mutate }`.
     @inlinable
     public var value: Value {
         _read { yield _value }
         _modify { yield &_value }
-    }
-}
-
-// MARK: - Scoped Access
-
-extension Ownership.Mutable where Value: ~Copyable {
-    /// Accesses the value for reading.
-    ///
-    /// - Parameter body: A closure that receives the value.
-    /// - Returns: The result of the closure.
-    /// - Throws: Rethrows any error thrown by the closure, preserving the exact error type.
-    @inlinable
-    public func withValue<Result: ~Copyable, E: Error>(
-        _ body: (borrowing Value) throws(E) -> Result
-    ) throws(E) -> Result {
-        try body(_value)
-    }
-
-    /// Accesses the value for mutation.
-    ///
-    /// - Parameter body: A closure that receives an inout reference to the value.
-    /// - Returns: The result of the closure.
-    /// - Throws: Rethrows any error thrown by the closure, preserving the exact error type.
-    @inlinable
-    public func update<Result: ~Copyable, E: Error>(
-        _ body: (inout Value) throws(E) -> Result
-    ) throws(E) -> Result {
-        try body(&_value)
     }
 }
 

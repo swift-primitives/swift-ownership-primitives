@@ -5,15 +5,21 @@
     @TitleHeading("Ownership Primitives")
 }
 
-A unique-ownership heap cell with deterministic deinitialization.
+A heap-owned, exclusively-owned single-value cell.
 
 ## Overview
 
-`Ownership.Unique<Value>` heap-allocates a single `~Copyable` value and owns it exclusively. The type is always `~Copyable` to prevent accidental duplication and double-free; for `Copyable` `Value`, a `duplicated()` extension provides explicit deep-copy semantics.
+`Ownership.Unique<Value>` heap-allocates a single value and owns it
+exclusively. The type is always `~Copyable` — copies are forbidden —
+so the owner is guaranteed to be unique at every point in the value's
+lifetime. On destruction (either via ``Ownership/Unique/consume()`` or
+scope-exit `deinit`), the value is deinitialised and the heap storage
+is deallocated.
 
-Memory is deallocated at `deinit` unless explicitly released via `leak()`. Access is through `withValue` (borrowing) or `withMutableValue` (inout); `take()` moves the value out and empties the cell.
-
-`Unique` is `Sendable` when `Value: Sendable` — the exclusive ownership model means there is no sharing to synchronize.
+This is the Institute's Nest.Name rendering of Apple stdlib's
+`Swift.UniqueBox<Value: ~Copyable>` (SE-0517, accepted March 2026). The
+compound-form `UniqueBox` name is expressed here as `Ownership.Unique`
+per `[API-NAME-001]`; semantics and API surface mirror SE-0517.
 
 ## Example
 
@@ -29,13 +35,32 @@ var cell = Ownership.Unique(
     Request(url: "https://example.com", timeout: .seconds(5))
 )
 
-cell.withMutableValue { $0.timeout = .seconds(30) }
-let owned = cell.take()      // cell.hasValue == false after this
+cell.value.timeout = .seconds(30)         // _modify coroutine
+let owned = cell.consume()                 // cell no longer exists
 ```
+
+## No Empty State
+
+An `Ownership.Unique` instance always holds a value while it exists.
+There is no observable "empty" state. Callers who need optional
+ownership should use `Ownership.Unique<Value>?`:
+
+```swift
+var maybe: Ownership.Unique<Resource>? = Ownership.Unique(resource)
+if let cell = maybe.take() {                // consume the Optional's payload
+    let value = cell.consume()
+    use(value)
+}
+// maybe is now nil; there is no "empty Unique" to re-observe.
+```
+
+This matches SE-0517's design choice and eliminates the class of bugs
+from re-observing a taken cell.
 
 ## Rationale
 
-`Unique` is the Swift equivalent of Rust's `Box<T>`: one owner, heap storage, deterministic cleanup. It replaces the common manual pattern:
+`Ownership.Unique` is the named primitive for "own this value on the
+heap with deterministic cleanup". It replaces the common manual pattern:
 
 ```swift
 let storage = UnsafeMutablePointer<T>.allocate(capacity: 1)
@@ -43,9 +68,18 @@ storage.initialize(to: value)
 // ... every exit path: storage.deinitialize(count: 1); storage.deallocate()
 ```
 
-with a single `@safe`, `~Copyable` struct. The storage is `nil` only after `take()` / `leak()`; all other operations are precondition-checked against the "empty" state.
+with a single `@safe`, `~Copyable` struct whose `init` allocates and
+whose `deinit` / `consume()` reliably deallocates.
 
-`leak()` is the explicit escape hatch for interop cases where ownership transfers out of Swift (e.g., passing to a C API that takes raw ownership). The caller becomes responsible for deinitialization and deallocation.
+## Sendable
+
+`Ownership.Unique` is `@unsafe @unchecked Sendable` when
+`Value: ~Copyable & Sendable`. The `@unchecked` is required because
+the stored `UnsafeMutablePointer<Value>` is non-Sendable by stdlib
+`@unsafe` conformance. The exclusive-ownership contract enforced by
+the `~Copyable` wrapper plus `Value`'s own Sendable guarantee make the
+concrete type safe to transfer — only one thread can hold an
+`Ownership.Unique<Value>` at a time — so the conformance is sound.
 
 ## Topics
 
@@ -53,19 +87,22 @@ with a single `@safe`, `~Copyable` struct. The storage is `nil` only after `take
 
 - ``Ownership/Unique/init(_:)``
 
-### Scoped Access
+### Direct Access
 
-- ``Ownership/Unique/withValue(_:)``
-- ``Ownership/Unique/withMutableValue(_:)``
+- ``Ownership/Unique/value``
 
-### Move Out
+### Span Access
 
-- ``Ownership/Unique/take()``
-- ``Ownership/Unique/leak()``
+- ``Ownership/Unique/span``
+- ``Ownership/Unique/mutableSpan``
 
-### State
+### Consume
 
-- ``Ownership/Unique/hasValue``
+- ``Ownership/Unique/consume()``
+
+### Deep Copy (Copyable Value)
+
+- ``Ownership/Unique/clone()``
 
 ## See Also
 

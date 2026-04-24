@@ -38,14 +38,10 @@ extension `Ownership Slot Tests`.Unit {
     }
 
     @Test
-    func `store(_:) on empty slot returns .stored`() {
+    func `store(_:) on empty slot returns nil`() {
         let slot = Ownership.Slot<Int>()
-        switch slot.store(42) {
-        case .stored:
-            #expect(slot.isFull)
-        case .occupied:
-            Issue.record("Expected .stored on an empty slot")
-        }
+        #expect(slot.store(42) == nil)
+        #expect(slot.isFull)
     }
 
     @Test
@@ -67,15 +63,14 @@ extension `Ownership Slot Tests`.Unit {
 
 extension `Ownership Slot Tests`.`Edge Case` {
     @Test
-    func `store(_:) on full slot returns .occupied with value back`() {
+    func `store(_:) on full slot bounces the value back`() {
         let slot = Ownership.Slot<Int>(1)
-        switch slot.store(2) {
-        case .stored:
-            Issue.record("Expected .occupied on a full slot")
-        case .occupied(let returned):
+        if let returned = slot.store(2) {
             #expect(returned == 2)
             // Originally stored 1 is still there
             #expect(slot.take() == 1)
+        } else {
+            Issue.record("Expected bounce-back on a full slot")
         }
     }
 
@@ -93,10 +88,7 @@ extension `Ownership Slot Tests`.`Edge Case` {
     func `store then take cycle leaves slot reusable`() {
         let slot = Ownership.Slot<Int>()
         for value in [1, 2, 3, 4] {
-            switch slot.store(value) {
-            case .stored: break
-            case .occupied: Issue.record("Expected reusable empty state")
-            }
+            #expect(slot.store(value) == nil)
             #expect(slot.take() == value)
         }
     }

@@ -10,6 +10,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+internal import Ownership_Latch_Primitives
+
 extension Ownership.Transfer {
     /// Storage for "create inside closure, retrieve after" pattern.
     ///
@@ -20,13 +22,13 @@ extension Ownership.Transfer {
     /// - `init()` allocates empty ARC-managed storage
     /// - `token` produces a Sendable token for storing
     /// - `token.store(_:)` stores the value (exactly once, enforced atomically)
-    /// - `take()` retrieves the stored value and consumes the storage
+    /// - `consume()` retrieves the stored value and destroys the storage
     ///
     /// ## Thread Safety
     /// Designed for single-producer/single-consumer with happens-before:
     /// - Producer calls `store()` inside thread
     /// - Join provides happens-before
-    /// - Consumer calls `take()` after join
+    /// - Consumer calls `consume()` after join
     ///
     /// Multiple copies of the token may exist (it's Copyable), but only one
     /// `store()` call will succeed. Additional calls trap deterministically.
@@ -39,16 +41,14 @@ extension Ownership.Transfer {
     ///     storeToken.store(createValue())
     /// }
     /// handle.join()
-    /// let value = storage.take()
+    /// let value = storage.consume()
     /// ```
     public struct Storage<T: ~Copyable>: ~Copyable {
-        @usableFromInline
-        let _box: _Box<T>
+        private let _box: Ownership.Latch<T>
 
         /// Creates empty storage.
-        @inlinable
         public init() {
-            _box = _Box()
+            _box = Ownership.Latch()
         }
     }
 }
@@ -72,12 +72,10 @@ extension Ownership.Transfer.Storage where T: ~Copyable {
     /// - `store()` must be called exactly once across all copies
     /// - Calling `store()` twice (on any copy) traps with a clear error message
     public struct Token: Sendable {
-        /// Strong reference to the box. ARC manages lifetime.
-        @usableFromInline
-        let _box: Ownership.Transfer._Box<T>
+        /// Strong reference to the latch. ARC manages lifetime.
+        private let _box: Ownership.Latch<T>
 
-        @usableFromInline
-        init(_ box: Ownership.Transfer._Box<T>) {
+        init(_ box: Ownership.Latch<T>) {
             self._box = box
         }
     }
@@ -91,7 +89,6 @@ extension Ownership.Transfer.Storage.Token where T: ~Copyable {
     /// - Parameter value: The value to store.
     /// - Precondition: Must be called exactly once across all token copies.
     ///   Second call traps with a clear error message.
-    @inlinable
     public func store(_ value: consuming T) {
         _box.store(value)
     }
@@ -103,28 +100,30 @@ extension Ownership.Transfer.Storage where T: ~Copyable {
     /// Returns a token for storing a value.
     ///
     /// The token must be consumed by calling `store(_:)` exactly once.
-    /// This does NOT consume the storage - you still call `take()` afterward.
-    @inlinable
+    /// This does NOT consume the storage — you still call `consume()` afterward.
     public var token: Token {
         Token(_box)
     }
 
-    /// Retrieves the stored value and consumes the storage.
+    /// Destroys the storage and returns the stored value.
+    ///
+    /// Mirrors SE-0517's `consuming func consume() -> Value` pattern —
+    /// `consume()` destroys `self` and yields the owned value.
     ///
     /// - Returns: The stored value.
     /// - Precondition: `store()` must have been called exactly once.
-    @inlinable
-    public consuming func take() -> T {
+    public consuming func consume() -> T {
         _box.take()
     }
 
-    /// Retrieves the value if stored, otherwise returns nil.
+
+    /// Destroys the storage and returns the stored value if present,
+    /// otherwise returns nil.
     ///
     /// Use this for cleanup paths where storage may or may not have been filled.
     ///
     /// - Returns: The stored value if `store()` was called, nil otherwise.
-    @inlinable
-    public consuming func takeIfStored() -> T? {
+    public consuming func consumeIfStored() -> T? {
         _box.takeIfPresent()
     }
 }

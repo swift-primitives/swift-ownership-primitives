@@ -12,8 +12,8 @@ The ``Ownership/Transfer`` namespace provides exactly-once value transfer across
 | Starting state | Transfer type | Shape |
 |----------------|---------------|-------|
 | Value exists; pass it to the other side | ``Ownership/Transfer/Cell`` | `Cell(value)` → `cell.token()` → `token.take()` |
-| Create value inside a closure; retrieve on the originating side | ``Ownership/Transfer/Storage`` | `Storage<T>()` → `storage.token` → `token.store(value)` → `storage.take()` |
-| Zero-allocation transfer for `AnyObject` | ``Ownership/Transfer/Retained`` | `Retained(object)` → `token.take()` (no heap indirection) |
+| Create value inside a closure; retrieve on the originating side | ``Ownership/Transfer/Storage`` | `Storage<T>()` → `storage.token` → `token.store(value)` → `storage.consume()` |
+| Zero-allocation transfer for `AnyObject` | ``Ownership/Transfer/Retained`` | `Retained(object)` → `retained.consume()` (no heap indirection) |
 | Type-erased transfer through an opaque boundary | ``Ownership/Transfer/Box`` | For interop scenarios needing an erased slot |
 
 All variants provide **exactly-once** semantics. Tokens are `Copyable` — they can be captured in escaping closures. At most one `take()` / `store()` succeeds; subsequent operations trap or return the value back.
@@ -51,7 +51,7 @@ Task.detached {
     storeToken.store(work)    // exactly-once — deposits the value
 }
 
-let received = storage.take()   // on the originating side
+let received = storage.consume()   // on the originating side
 ```
 
 `Storage` is the inverse direction of `Cell`: the caller pre-allocates empty storage, ships the `store`-capable token to the producer, and retrieves the produced value afterwards. Use when the value is expensive or asynchronous to construct and shouldn't block the originating side.
@@ -67,7 +67,7 @@ let conn = Connection()
 let retained = Ownership.Transfer.Retained(conn)
 
 Task.detached {
-    let received = retained.take()
+    let received = retained.consume()
     use(received)
 }
 ```

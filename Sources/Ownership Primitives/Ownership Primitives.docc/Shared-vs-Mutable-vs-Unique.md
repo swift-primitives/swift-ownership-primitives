@@ -16,17 +16,17 @@ Pick a heap-owned cell by two questions: *do I need exclusive ownership or share
 | Shared owner, mutable payload | ``Ownership/Mutable`` | **Not `Sendable`** |
 | Shared owner, mutable payload, explicit `@unchecked Sendable` opt-in | ``Ownership/Mutable/Unchecked`` | `@unsafe @unchecked Sendable` |
 
-All four are heap-allocated. Unique carries a single owner through deinit cleanup; Shared and Mutable carry ARC-based multi-owner semantics through their `final class` backing.
+All four are heap-allocated. Unique carries a single owner through deinit cleanup (SE-0517 `UniqueBox` semantic); Shared and Mutable carry ARC-based multi-owner semantics through their `final class` backing.
 
 ## When to Use ``Ownership/Unique``
 
-`Unique` is the default when you want Rust's `Box<T>` shape: one value on the heap, one owner, automatic deallocation. The type is `~Copyable` — the compiler prevents accidental duplication and the resulting double-free risk. Ownership transfers by move; after `take()` or `leak()` the instance is empty.
+`Unique` is the default when you want the SE-0517 `UniqueBox<T>` shape: one value on the heap, one owner, automatic deallocation. The type is `~Copyable` — the compiler prevents accidental duplication and the resulting double-free risk. Ownership transfers by move; `consume()` destroys the cell and yields the value.
 
 Use `Unique` when:
 
 - You need heap storage for a `~Copyable` `Value` (e.g., a resource handle that can't be trivially copied).
 - You want deterministic cleanup at `deinit` without ARC overhead.
-- You intend to move the value out later via `take()`.
+- You intend to move the value out later via `consume()`.
 - You're transferring ownership into `Transfer.Cell` / `Transfer.Storage` once (see <doc:Ownership-Transfer-Recipes>).
 
 ## When to Use ``Ownership/Shared``

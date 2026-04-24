@@ -45,17 +45,17 @@ extension `Ownership Mutable Tests`.Unit {
     }
 
     @Test
-    func `withValue provides borrowed access`() {
+    func `value accessor supports read + transform`() {
         let mutable = Ownership.Mutable(7)
-        let read = mutable.withValue { $0 + 1 }
+        let read = mutable.value + 1
         #expect(read == 8)
         #expect(mutable.value == 7)
     }
 
     @Test
-    func `update provides mutating access`() {
+    func `value accessor supports in-place mutation`() {
         let mutable = Ownership.Mutable(0)
-        mutable.update { $0 = 99 }
+        mutable.value = 99
         #expect(mutable.value == 99)
     }
 }
@@ -64,36 +64,19 @@ extension `Ownership Mutable Tests`.Unit {
 
 extension `Ownership Mutable Tests`.`Edge Case` {
     @Test
-    func `works with ~Copyable Value — withValue read`() {
+    func `works with ~Copyable Value — transitive borrow read`() {
         struct Handle: ~Copyable { let fd: Int32 }
         let mutable = Ownership.Mutable(Handle(fd: 3))
-        let fd = mutable.withValue { handle -> Int32 in handle.fd }
-        #expect(fd == 3)
+        // transitive borrow through _read yield
+        #expect(mutable.value.fd == 3)
     }
 
     @Test
-    func `works with ~Copyable Value — update mutation`() {
+    func `works with ~Copyable Value — in-place mutation via _modify`() {
         struct Counter: ~Copyable { var count: Int }
         let mutable = Ownership.Mutable(Counter(count: 0))
-        mutable.update { $0.count += 5 }
-        let count = mutable.withValue { counter -> Int in counter.count }
-        #expect(count == 5)
-    }
-
-    @Test
-    func `throwing closure in update preserves typed error`() {
-        struct E: Error {}
-        let mutable = Ownership.Mutable(0)
-        do {
-            try mutable.update { (_: inout Int) throws(E) -> Void in
-                throw E()
-            }
-            Issue.record("Expected throw")
-        } catch is E {
-            // expected
-        } catch {
-            Issue.record("Unexpected error type: \(error)")
-        }
+        mutable.value.count += 5
+        #expect(mutable.value.count == 5)
     }
 }
 

@@ -37,5 +37,4 @@ The fluent form exists so call sites with established invariants don't need to w
 ## See Also
 
 - ``Ownership/Slot``
-- ``Ownership/Slot/Store``
 - <doc:Slot-Move-vs-Store>

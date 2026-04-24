@@ -25,7 +25,7 @@ extension Ownership.Transfer {
     /// ```swift
     /// let retained = Ownership.Transfer.Retained(self)
     /// spawnThread { [retained] in
-    ///     let executor = retained.take()
+    ///     let executor = retained.consume()
     ///     executor.runLoop()
     /// }
     /// ```
@@ -33,8 +33,8 @@ extension Ownership.Transfer {
     /// ## Ownership Model
     /// - `init(_:)` retains the object (+1 retain count)
     /// - Ownership is transferred to exactly one consumer
-    /// - `take()` must be called exactly once and consumes `self`
-    /// - After `take()`, the caller owns the object and is responsible for its lifetime
+    /// - `consume()` must be called exactly once and consumes `self`
+    /// - After `consume()`, the caller owns the object and is responsible for its lifetime
     ///
     /// ## Thread Safety
     /// `@unchecked Sendable` because it is an opaque, single-consumption ownership
@@ -43,8 +43,8 @@ extension Ownership.Transfer {
     /// single-consumption at compile time.
     ///
     /// ## Invariant
-    /// `take()` must be called exactly once. The `~Copyable` constraint makes
-    /// double-take unrepresentable.
+    /// `consume()` must be called exactly once. The `~Copyable` constraint makes
+    /// double-consume unrepresentable.
     ///
     /// ## Comparison with Ownership.Transfer.Cell
     /// - `Retained`: Zero allocation, `AnyObject` only, direct ARC manipulation
@@ -91,16 +91,19 @@ extension Ownership.Transfer {
     }
 }
 
-// MARK: - Take
+// MARK: - Consume
 
 extension Ownership.Transfer.Retained {
-    /// Takes ownership of the retained object, decrementing the retain count.
+    /// Consumes the transfer token and returns ownership of the retained object,
+    /// decrementing the unbalanced retain.
     ///
-    /// This method consumes `self`, ensuring it can only be called once.
+    /// Mirrors SE-0517's `consuming func consume() -> Value` pattern — `consume()`
+    /// destroys `self` and yields the owned value. The `~Copyable` constraint
+    /// makes double-consume unrepresentable.
     ///
     /// - Returns: The retained object. The caller now owns this reference.
     @inlinable
-    public consuming func take() -> T {
+    public consuming func consume() -> T {
         unsafe Unmanaged<T>.fromOpaque(UnsafeRawPointer(raw)).takeRetainedValue()
     }
 }

@@ -192,9 +192,9 @@ Parked per [AUDIT-017] — deferred investigations, naming decisions, and claims
 |---|---------|----------|------|----------|---------|--------|
 | A1 | Cluster A — `Transfer.Box` rename | MEDIUM | [API-NAME-001] | Ownership.Transfer.Box.swift:41 | `Transfer.Box` collides diametrically with Rust's `Box<T>` (= our `Ownership.Unique`). Rename to `Transfer.Erased`. Zero current consumers; low risk. **Recommended to land pre-0.1.0.** | DEFERRED — principal decision |
 | A2 | Cluster B — Transfer direction rename | MEDIUM | [API-NAME-002] | Transfer.Cell / Transfer.Storage / Transfer.Retained | The `Cell` / `Storage` pair doesn't read as a pair at the name level. Rename to `Outgoing` / `Incoming` (+ `Retained` → `Outgoing.Retained`) exposes direction symmetry and sets up clean gap-fill via `Incoming.Retained` / `Incoming.Erased`. Affects 1 real consumer (swift-kernel's `Thread.spawn`) + 6 executor sites (swift-executors). | DEFERRED — principal decision |
-| A3 | Cluster C — `Unique` → `Box` | MEDIUM | [API-NAME-001] | Ownership.Unique.swift | Rust-familiar name; `Box<T>` is the most-recognized name for heap-owned exclusive cell. Depends on Cluster A landing first. Zero direct consumers. | DEFERRED — principal decision |
+| A3 | Cluster C — `Unique` API → SE-0517 parity | MEDIUM | [API-NAME-001] | Ownership.Unique.swift | **RESOLVED 2026-04-24.** Original proposal (rename type to `Box`) SUPERSEDED by `Research/naming-box-ecosystem-survey.md` (v1.2.0): Apple explicitly rejected bare `Box` in SE-0517 and reserves it for a future CoW sibling. Experiments `unified-vs-two-type-box-design` + `nested-type-generic-escape` proved unified/nested approaches not viable. Final action: keep `Ownership.Unique` name (Institute rendering of SE-0517 `UniqueBox`); rewrite API to SE-0517 parity — `.take()` (mutating, leaves empty) → `.consume()` (consuming, destroys self); `.duplicated()` → `.clone()`; drop `.hasValue`, `.leak()`, `description`, `debugDescription`; add `var value { _read _modify }`; storage `UnsafeMutablePointer<Value>?` → non-optional `UnsafeMutablePointer<Value>`. 85 tests in 35 suites pass. | RESOLVED 2026-04-24 |
 | A4 | Cluster D — Shared/Mutable symmetry | LOW | [API-NAME-001] | Ownership.Shared / Ownership.Mutable / Mutable.Unchecked | Asymmetric names: both types are ARC-shared; only mutability differs. Pair-rename to `Shared.Immutable` / `Shared.Mutable` / `Shared.Mutable.Unchecked` would read symmetrically. 32+ external call sites — highest blast radius. | DEFERRED — likely not pre-0.1.0 |
-| A5 | Cluster E — `Slot.Store` result enum rename | LOW | [API-NAME-002] | Ownership.Slot.Store.swift:22 | Result enum `Slot.Store` collides verb/noun with the method `slot.store(_:)`. Rename to `Slot.Outcome` or `Slot.Stored`. Tiny blast. **Recommended to land pre-0.1.0.** | DEFERRED — principal decision |
+| A5 | Cluster E — `Slot.Store` result enum removal | LOW | [API-NAME-002] | was Ownership.Slot.Store.swift:22 | Result enum `Slot.Store` collided verb/noun with the method `slot.store(_:)`. **RESOLVED 2026-04-24 — removed entirely.** `store(_)` now returns `Value?` directly (Apple-idiomatic — mirrors stdlib `Dictionary.updateValue(_:forKey:)`). Zero external consumers of the enum cases per ecosystem sweep. 84/33 tests pass; swift-async + swift-pool build clean. Research: `Research/naming-slot-store-result-enum.md` v2.0.0 IMPLEMENTED. | RESOLVED 2026-04-24 |
 
 #### B — Completeness gaps (the "total package" principle)
 
@@ -259,12 +259,36 @@ Parked per [AUDIT-017] — deferred investigations, naming decisions, and claims
 
 ### Summary
 
-**26 findings total: 5 VALIDATED (workaround revalidations + V12-split cross-target proof + ~Copyable-generic-Sendable refutation), 0 RESOLVED, 6 OPEN (investigate post-0.1.0), 15 DEFERRED (pending principal choice or language evolution), 6 EXPLORATORY.**
+**26 findings total: 5 VALIDATED (workaround revalidations + V12-split cross-target proof + ~Copyable-generic-Sendable refutation), 2 RESOLVED (A5 — 2026-04-24; A3 — 2026-04-24), 6 OPEN (investigate post-0.1.0), 13 DEFERRED (pending principal choice or language evolution), 6 EXPLORATORY.**
+
+### Side-effect improvements from A3 landing (2026-04-24)
+
+After the A3 SE-0517 alignment on `Ownership.Unique`, an audit of the other heap-cell-adjacent types applied the same learnings:
+
+- **`Ownership.Mutable`**: dropped `withValue(_:)` and `update(_:)` closure shims — redundant with `var value { _read _modify }` accessor.
+- **`Ownership.Transfer.Storage`**: renamed `consuming func take()` → `consuming func consume()` and `consuming func takeIfStored()` → `consuming func consumeIfStored()` — SE-0517 vocabulary for "consuming self, yield value".
+- **`Ownership.Transfer.Retained`**: renamed `consuming func take()` → `consuming func consume()`. Initially kept as `take()` for Apple `Unmanaged.takeRetainedValue()` parallel, but the second review pass applied the principal's "perfect in isolation — don't accommodate downstream" guidance: internal consistency wins. All `consuming` extractors across the package now use `consume()`; non-consuming atomic extractors (`Slot.take`, `Cell.Token.take`, `Optional.take`) keep `take()`.
+- **`Ownership.Borrow`**, **`Ownership.Inout`**, **`Ownership.Shared`**, **`Ownership.Mutable.Unchecked`**, **`Ownership.Slot`**: audited, no changes — already aligned with the relevant subset of SE-0517 learnings.
+
+Final convention across the package:
+- `consume()` — `consuming func` that destroys `self` and yields its owned value (SE-0517 pattern)
+- `take()` — non-consuming atomic extractor on a Copyable container that stays usable (reusable or tokenized)
 
 ### Recommended next step
 
-Minimal-change path for 0.1.0: apply **A1 + A5** (low-risk rename clusters — `Transfer.Box` → `Transfer.Erased` and `Slot.Store` (result enum) → `Slot.Outcome`). Park everything else.
+Minimal-change path for 0.1.0 (was A1 + A5): A5 **RESOLVED** via enum removal
+on 2026-04-24; remaining minimal candidate is **A1** (`Transfer.Box` →
+`Transfer.Erased`) — zero blast radius, diametric collision with Rust Box.
 
-Totality-now path: apply **A1 + A5 + A2** (direction rename) **+ B1 + B2** (fill completeness gaps) **+ A3** (`Unique` → `Box`). Accept the coordinated downstream fix in swift-kernel (`Thread.spawn`) + swift-executors. Principal choice.
+Totality-now path: apply **A1 + A2** (direction rename) **+ B1 + B2**
+(fill completeness gaps) **+ A3** (`Unique` → `Box`). Accept the
+coordinated downstream fix in swift-kernel (`Thread.spawn`) + swift-executors.
+Principal choice.
 
-Companion research: `Research/ownership-types-usage-and-justification.md` (v2.1.0).
+Companion research:
+- `Research/ownership-types-usage-and-justification.md` (v2.1.0) — cross-type merit + naming
+- `Research/naming-transfer-box-to-erased.md` (A1 decision basis)
+- `Research/naming-slot-store-result-enum.md` (A5 — IMPLEMENTED 2026-04-24)
+- `Research/naming-unique-to-box.md` (A3 decision basis)
+- `Research/naming-transfer-direction-pair.md` (A2 decision basis)
+- `Research/naming-shared-mutable-symmetry.md` (A4 — recommend DEFER)

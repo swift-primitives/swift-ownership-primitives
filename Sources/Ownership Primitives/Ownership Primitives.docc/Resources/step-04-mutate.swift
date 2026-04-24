@@ -9,6 +9,5 @@ var cell = Ownership.Unique(
     Request(url: "https://example.com/status", timeout: .seconds(5))
 )
 
-cell.withMutableValue { request in
-    request.timeout = .seconds(30)
-}
+// Direct access via the _modify coroutine on `value`.
+cell.value.timeout = .seconds(30)

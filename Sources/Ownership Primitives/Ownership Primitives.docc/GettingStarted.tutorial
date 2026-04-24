@@ -37,12 +37,12 @@
     @Section(title: "Heap-own the value with `Ownership.Unique`") {
         @ContentAndMedia {
             `Ownership.Unique<Value>` heap-allocates a value and owns it
-            exclusively. Use `withMutableValue` for scoped mutation, `take`
-            to move the value out, and `hasValue` to check state.
+            exclusively. Use the `value` accessor for direct read/mutation,
+            or `consume()` to destroy the cell and extract the value.
 
             This replaces the manual `allocate` → `initialize(to:)` →
             `deinitialize(count:)` → `deallocate` pattern with a single
-            `@safe` struct.
+            `@safe` struct, mirroring SE-0517 `UniqueBox` semantics.
         }
 
         @Steps {
@@ -54,7 +54,7 @@
             }
 
             @Step {
-                Mutate through `withMutableValue`. The closure receives an
+                Mutate through `value`. The `_modify` coroutine yields an
                 `inout Request`; your mutations route through the owned
                 storage with full exclusivity.
 
@@ -62,9 +62,9 @@
             }
 
             @Step {
-                Move the value out with `take()`. The `Unique` is now empty
-                — `hasValue` returns `false`, and the heap storage has been
-                deallocated.
+                Extract the value with `consume()`. The cell is destroyed
+                at the `consume()` call site; attempting to reference it
+                afterwards is a compile-time error.
 
                 @Code(name: "main.swift", file: "step-05-take.swift")
             }

@@ -31,21 +31,21 @@ extension `Ownership Transfer Tests`.Unit {
     }
 
     @Test
-    func `Storage.token.store(_) then storage.take() round-trips`() {
+    func `Storage.token.store(_) then storage.consume() round-trips`() {
         let storage = Ownership.Transfer.Storage<Int>()
         storage.token.store(77)
-        #expect(storage.take() == 77)
+        #expect(storage.consume() == 77)
     }
 
     @Test
-    func `Retained take() returns the strong reference`() {
+    func `Retained consume() returns the strong reference`() {
         final class Node {
             let id: Int
             init(_ id: Int) { self.id = id }
         }
         let node = Node(5)
         let retained = Ownership.Transfer.Retained(node)
-        let taken = retained.take()
+        let taken = retained.consume()
         #expect(taken.id == 5)
     }
 }
@@ -70,7 +70,7 @@ extension `Ownership Transfer Tests`.`Edge Case` {
         let token = storage.token
         let _: () -> Void = { _ = token }
         token.store(99)
-        #expect(storage.take() == 99)
+        #expect(storage.consume() == 99)
     }
 
     @Test
@@ -97,7 +97,7 @@ extension `Ownership Transfer Tests`.Integration {
         replyToken.store(received * 2)
 
         // Consumer side — retrieves the produced value.
-        #expect(reply.take() == 84)
+        #expect(reply.consume() == 84)
     }
 
     @Test
@@ -105,7 +105,7 @@ extension `Ownership Transfer Tests`.Integration {
         final class Marker { let tag: Int; init(_ tag: Int) { self.tag = tag } }
         let marker = Marker(1)
         let retained = Ownership.Transfer.Retained(marker)
-        let received = retained.take()
+        let received = retained.consume()
         #expect(received === marker)
     }
 }
