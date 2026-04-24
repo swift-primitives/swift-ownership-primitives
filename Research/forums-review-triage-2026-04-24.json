@@ -1,0 +1,218 @@
+{
+  "source_simulation": "forums-review-simulation-2026-04-24.md",
+  "triage_date": "2026-04-24",
+  "rule": "FREVIEW-012",
+  "pre_classification_automated": true,
+  "final_classification_requires_human_review": true,
+  "posts": [
+    {
+      "post_number": 1,
+      "handle": "op-author",
+      "archetype_hint": "OP \u2014 angles: scope-motivation, naming, layering-modularity, ownership-memory, concurrency",
+      "anchors": {
+        "source_file": 0,
+        "test_file": 0,
+        "docc_catalog": 0,
+        "file_line": 0,
+        "backticked_type": 0,
+        "backticked_fn": 0,
+        "backticked_qualified": 12,
+        "se_crossref": 5,
+        "package_swift": 0,
+        "readme_ref": 0,
+        "_total": 17
+      },
+      "pre_classification": "op-follow-up"
+    },
+    {
+      "post_number": 2,
+      "handle": "reviewer-1",
+      "archetype_hint": "c1 \u2014 The general-purpose technical reviewer \u2014 angles: concurrency, type-system, evolution-process",
+      "anchors": {
+        "source_file": 0,
+        "test_file": 0,
+        "docc_catalog": 0,
+        "file_line": 2,
+        "backticked_type": 0,
+        "backticked_fn": 0,
+        "backticked_qualified": 2,
+        "se_crossref": 2,
+        "package_swift": 0,
+        "readme_ref": 1,
+        "_total": 7
+      },
+      "pre_classification": "load-bearing-candidate"
+    },
+    {
+      "post_number": 3,
+      "handle": "reviewer-9",
+      "archetype_hint": "c9 \u2014 The long-form deep-analysis essay reviewer \u2014 angles: evolution-process, concurrency, type-system",
+      "anchors": {
+        "source_file": 0,
+        "test_file": 0,
+        "docc_catalog": 0,
+        "file_line": 2,
+        "backticked_type": 1,
+        "backticked_fn": 0,
+        "backticked_qualified": 5,
+        "se_crossref": 5,
+        "package_swift": 0,
+        "readme_ref": 0,
+        "_total": 13
+      },
+      "pre_classification": "load-bearing-candidate"
+    },
+    {
+      "post_number": 4,
+      "handle": "reviewer-8",
+      "archetype_hint": "c8 \u2014 The SwiftPM / build-tooling / modularity reviewer \u2014 angles: layering-modularity, build-tooling",
+      "anchors": {
+        "source_file": 0,
+        "test_file": 0,
+        "docc_catalog": 0,
+        "file_line": 1,
+        "backticked_type": 0,
+        "backticked_fn": 0,
+        "backticked_qualified": 1,
+        "se_crossref": 0,
+        "package_swift": 2,
+        "readme_ref": 0,
+        "_total": 4
+      },
+      "pre_classification": "load-bearing-candidate"
+    },
+    {
+      "post_number": 5,
+      "handle": "reviewer-10",
+      "archetype_hint": "c10 \u2014 The heavy-quoting long-form authoritative reviewer \u2014 angles: evolution-process, type-system, concurrency",
+      "anchors": {
+        "source_file": 0,
+        "test_file": 0,
+        "docc_catalog": 0,
+        "file_line": 1,
+        "backticked_type": 1,
+        "backticked_fn": 0,
+        "backticked_qualified": 1,
+        "se_crossref": 1,
+        "package_swift": 0,
+        "readme_ref": 0,
+        "_total": 4
+      },
+      "pre_classification": "load-bearing-candidate"
+    },
+    {
+      "post_number": 6,
+      "handle": "reviewer-3",
+      "archetype_hint": "c3 \u2014 The closure/expression/syntax technical reviewer \u2014 angles: type-system, naming",
+      "anchors": {
+        "source_file": 0,
+        "test_file": 0,
+        "docc_catalog": 0,
+        "file_line": 2,
+        "backticked_type": 0,
+        "backticked_fn": 1,
+        "backticked_qualified": 0,
+        "se_crossref": 2,
+        "package_swift": 0,
+        "readme_ref": 0,
+        "_total": 5
+      },
+      "pre_classification": "load-bearing-candidate"
+    },
+    {
+      "post_number": 7,
+      "handle": "reviewer-4",
+      "archetype_hint": "c4 \u2014 The constructive Evolution-process reviewer \u2014 angles: evolution-process, naming",
+      "anchors": {
+        "source_file": 0,
+        "test_file": 0,
+        "docc_catalog": 0,
+        "file_line": 1,
+        "backticked_type": 1,
+        "backticked_fn": 0,
+        "backticked_qualified": 5,
+        "se_crossref": 4,
+        "package_swift": 0,
+        "readme_ref": 0,
+        "_total": 11
+      },
+      "pre_classification": "load-bearing-candidate"
+    },
+    {
+      "post_number": 8,
+      "handle": "reviewer-2",
+      "archetype_hint": "c2 \u2014 The ~Copyable / Sendable / protocol-shape reviewer \u2014 angles: concurrency, type-system, ownership-memory",
+      "anchors": {
+        "source_file": 0,
+        "test_file": 0,
+        "docc_catalog": 0,
+        "file_line": 1,
+        "backticked_type": 1,
+        "backticked_fn": 0,
+        "backticked_qualified": 0,
+        "se_crossref": 0,
+        "package_swift": 0,
+        "readme_ref": 0,
+        "_total": 2
+      },
+      "pre_classification": "partially-load-bearing-candidate"
+    },
+    {
+      "post_number": 9,
+      "handle": "reviewer-7",
+      "archetype_hint": "c7 \u2014 The init/deinit/lifecycle reviewer \u2014 angles: ownership-memory, naming",
+      "anchors": {
+        "source_file": 0,
+        "test_file": 0,
+        "docc_catalog": 0,
+        "file_line": 2,
+        "backticked_type": 0,
+        "backticked_fn": 0,
+        "backticked_qualified": 0,
+        "se_crossref": 0,
+        "package_swift": 0,
+        "readme_ref": 1,
+        "_total": 3
+      },
+      "pre_classification": "load-bearing-candidate"
+    },
+    {
+      "post_number": 10,
+      "handle": "reviewer-6",
+      "archetype_hint": "c6 \u2014 The Core-Team-aware process voice \u2014 angles: evolution-process, naming",
+      "anchors": {
+        "source_file": 0,
+        "test_file": 0,
+        "docc_catalog": 0,
+        "file_line": 2,
+        "backticked_type": 2,
+        "backticked_fn": 0,
+        "backticked_qualified": 4,
+        "se_crossref": 3,
+        "package_swift": 0,
+        "readme_ref": 1,
+        "_total": 12
+      },
+      "pre_classification": "load-bearing-candidate"
+    },
+    {
+      "post_number": 11,
+      "handle": "reviewer-5",
+      "archetype_hint": "c5 \u2014 The pointed -1 reviewer \u2014 angles: evolution-process, naming, scope-motivation",
+      "anchors": {
+        "source_file": 1,
+        "test_file": 0,
+        "docc_catalog": 0,
+        "file_line": 2,
+        "backticked_type": 0,
+        "backticked_fn": 0,
+        "backticked_qualified": 3,
+        "se_crossref": 0,
+        "package_swift": 0,
+        "readme_ref": 0,
+        "_total": 6
+      },
+      "pre_classification": "load-bearing-candidate"
+    }
+  ]
+}

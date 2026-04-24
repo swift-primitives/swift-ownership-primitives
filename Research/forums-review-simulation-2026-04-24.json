@@ -1,0 +1,56 @@
+{
+  "package": "swift-ownership-primitives",
+  "path": "/Users/coen/Developer/swift-primitives/swift-ownership-primitives",
+  "simulated_date": "2026-04-24",
+  "predicted_category": "related-projects",
+  "era_applied": "swift6-era",
+  "terminal_posture_detected": false,
+  "characterization": {
+    "layer": "Primitives (L1)",
+    "swift_files": 50,
+    "total_loc": 2764,
+    "public_decls": 79,
+    "noncopyable_types": 87,
+    "sendable_conformances": 27,
+    "unsafe_mentions": 126,
+    "target_count": 16,
+    "product_count": 14,
+    "platform_conditionals": 0,
+    "foundation_imports": 0
+  },
+  "angle_ranking": [
+    {"angle_id": "layering-modularity", "score": 78.68, "base_pct": 34.4, "era_multiplier": 1.173, "effective_base_pct": 40.35, "weight": 1.95},
+    {"angle_id": "naming", "score": 61.82, "base_pct": 28.6, "era_multiplier": 0.978, "effective_base_pct": 27.97, "weight": 2.21},
+    {"angle_id": "concurrency", "score": 54.27, "base_pct": 24.1, "era_multiplier": 1.126, "effective_base_pct": 27.14, "weight": 2.0},
+    {"angle_id": "ownership-memory", "score": 52.81, "base_pct": 11.6, "era_multiplier": 1.751, "effective_base_pct": 20.31, "weight": 2.6},
+    {"angle_id": "performance", "score": 30.30, "base_pct": 23.2, "era_multiplier": 1.306, "effective_base_pct": 30.30, "weight": 1.0},
+    {"angle_id": "type-system", "score": 28.84, "base_pct": 24.6, "era_multiplier": 0.977, "effective_base_pct": 24.03, "weight": 1.2},
+    {"angle_id": "evolution-process", "score": 27.80, "base_pct": 33.9, "era_multiplier": 0.82, "effective_base_pct": 27.80, "weight": 1.0},
+    {"angle_id": "scope-motivation", "score": 25.27, "base_pct": 27.2, "era_multiplier": 0.929, "effective_base_pct": 25.27, "weight": 1.0}
+  ],
+  "archetypes_used": [
+    {"cluster_id": 1, "label": "The general-purpose technical reviewer", "posts": [2]},
+    {"cluster_id": 2, "label": "The ~Copyable / Sendable / protocol-shape reviewer", "posts": [8]},
+    {"cluster_id": 3, "label": "The closure/expression/syntax technical reviewer", "posts": [6]},
+    {"cluster_id": 4, "label": "The constructive Evolution-process reviewer", "posts": [7]},
+    {"cluster_id": 5, "label": "The pointed -1 reviewer", "posts": [11]},
+    {"cluster_id": 6, "label": "The Core-Team-aware process voice", "posts": [10]},
+    {"cluster_id": 7, "label": "The init/deinit/lifecycle reviewer", "posts": [9]},
+    {"cluster_id": 8, "label": "The SwiftPM / build-tooling / modularity reviewer", "posts": [4]},
+    {"cluster_id": 9, "label": "The long-form deep-analysis essay reviewer", "posts": [3]},
+    {"cluster_id": 10, "label": "The heavy-quoting long-form authoritative reviewer", "posts": [5]}
+  ],
+  "posts": [
+    {"post_number": 1, "role": "OP", "opener_pattern": "direct-stance", "dominant_angles": ["scope-motivation", "naming", "layering-modularity", "ownership-memory", "concurrency"]},
+    {"post_number": 2, "persona_archetype_cluster": 1, "persona_archetype_label": "The general-purpose technical reviewer", "opener_pattern": "thanks", "closer_pattern": "question-to-author", "dominant_angles": ["concurrency", "type-system", "evolution-process"], "anchors": ["Ownership.swift:60", "Ownership.Mutable.swift:87"]},
+    {"post_number": 3, "persona_archetype_cluster": 9, "persona_archetype_label": "The long-form deep-analysis essay reviewer", "opener_pattern": "question", "closer_pattern": "question-to-author", "dominant_angles": ["evolution-process", "concurrency", "type-system"], "anchors": ["Ownership.Inout.swift:36", "Ownership.Transfer.Erased.Outgoing.swift:38"]},
+    {"post_number": 4, "persona_archetype_cluster": 8, "persona_archetype_label": "The SwiftPM / build-tooling / modularity reviewer", "opener_pattern": "direct-stance", "closer_pattern": "recommendation", "dominant_angles": ["layering-modularity", "build-tooling"], "anchors": ["Ownership.Mutable.swift:87"]},
+    {"post_number": 5, "persona_archetype_cluster": 10, "persona_archetype_label": "The heavy-quoting long-form authoritative reviewer", "opener_pattern": "direct-stance", "closer_pattern": "question-to-author", "dominant_angles": ["evolution-process", "type-system", "concurrency"], "anchors": ["Ownership.Transfer.Erased.Outgoing.swift:38"]},
+    {"post_number": 6, "persona_archetype_cluster": 3, "persona_archetype_label": "The closure/expression/syntax technical reviewer", "opener_pattern": "direct-stance", "closer_pattern": "recommendation", "dominant_angles": ["type-system", "naming"], "anchors": ["Ownership.Borrow.swift:45", "Ownership.Latch.swift:192"]},
+    {"post_number": 7, "persona_archetype_cluster": 4, "persona_archetype_label": "The constructive Evolution-process reviewer", "opener_pattern": "thanks", "closer_pattern": "question-to-author", "dominant_angles": ["evolution-process", "naming"], "anchors": ["Ownership.Mutable.Unchecked.swift:52"]},
+    {"post_number": 8, "persona_archetype_cluster": 2, "persona_archetype_label": "The ~Copyable / Sendable / protocol-shape reviewer", "opener_pattern": "apology-hedge", "closer_pattern": "question-to-author", "dominant_angles": ["concurrency", "type-system", "ownership-memory"], "anchors": ["Ownership.Slot+Take.swift:42"]},
+    {"post_number": 9, "persona_archetype_cluster": 7, "persona_archetype_label": "The init/deinit/lifecycle reviewer", "opener_pattern": "question", "closer_pattern": "recommendation", "dominant_angles": ["ownership-memory", "naming"], "anchors": ["Ownership.Transfer.swift:45", "__Ownership_Borrow_Protocol.swift:30"]},
+    {"post_number": 10, "persona_archetype_cluster": 6, "persona_archetype_label": "The Core-Team-aware process voice", "opener_pattern": "thanks", "closer_pattern": "withdraw-hedge", "dominant_angles": ["evolution-process", "naming"], "anchors": ["Ownership.Inout.swift:36", "Ownership.Transfer.Erased.Outgoing.swift:83"]},
+    {"post_number": 11, "persona_archetype_cluster": 5, "persona_archetype_label": "The pointed -1 reviewer", "opener_pattern": "direct-stance", "closer_pattern": "explicit-vote-shaped-prescription", "dominant_angles": ["evolution-process", "naming", "scope-motivation"], "anchors": ["Ownership.Transfer.Erased.Outgoing.swift:85", "Ownership.Mutable.Unchecked.swift:50"]}
+  ]
+}
