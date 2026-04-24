@@ -41,11 +41,55 @@ extension Ownership {
     /// are therefore available only when `Value: Escapable` (extensions
     /// constrained with `where Value: ~Copyable` — the `~Copyable`
     /// suppression does not re-suppress escapability).
+    ///
+    /// ## Dual-storage invariant
+    ///
+    /// `Borrow` holds two pieces of storage that together define its
+    /// semantics:
+    ///
+    /// - `_pointer` — a raw pointer to an initialized `Value`.
+    /// - `_owner` — an optional class reference that keeps the underlying
+    ///   allocation alive for the Borrow's lifetime.
+    ///
+    /// For `~Copyable Value`, `_owner` is always `nil`: the borrowing-parameter
+    /// calling convention forces indirect passing, so the caller's storage
+    /// address is already stable for the lifetime scope expressed by
+    /// `@_lifetime(borrow value)`.
+    ///
+    /// For `Copyable Value`, the borrowing convention may be trivial (by
+    /// register for types like `Int`), meaning no stable callee-side address
+    /// exists. `init(borrowing:)` therefore copies the value into a
+    /// class-owned heap allocation and stores a reference to the owner in
+    /// `_owner`; `Borrow`'s struct copies inherit the class reference via
+    /// ARC, and the owner's `deinit` frees the allocation when the last
+    /// `Borrow` referencing it is destroyed. The typed and raw-address
+    /// initializers leave `_owner = nil` — they promise the caller provided
+    /// a pointer whose lifetime is managed elsewhere.
     @safe
     public struct Borrow<Value: ~Copyable & ~Escapable>: ~Escapable {
 
         @usableFromInline
         let _pointer: UnsafeRawPointer
+
+        @usableFromInline
+        let _owner: AnyObject?
+
+        /// Designated internal initializer. All public inits delegate here.
+        ///
+        /// The lifetime of this `Borrow` is bound to `pointer`'s lifetime
+        /// scope. `owner`, when non-nil, is an ARC-managed heap buffer that
+        /// keeps the memory `pointer` points at alive for as long as any
+        /// `Borrow` referencing it exists; callers that supply a
+        /// caller-managed pointer pass `owner: nil`.
+        @inlinable
+        @_lifetime(borrow pointer)
+        internal init(
+            _pointer pointer: UnsafeRawPointer,
+            _owner owner: AnyObject?
+        ) {
+            unsafe (self._pointer = pointer)
+            self._owner = owner
+        }
 
         /// Canonical conformance path for the borrow-capability protocol.
         ///
@@ -54,6 +98,38 @@ extension Ownership {
         /// `__Ownership_Borrow_Protocol` (hoisted because SE-0404 prohibits
         /// protocol nesting inside a generic struct).
         public typealias `Protocol` = __Ownership_Borrow_Protocol
+    }
+}
+
+// MARK: - Owned Storage (Copyable Value path)
+
+/// Heap-allocated owner for the `Copyable` `Value` path of `Ownership.Borrow`.
+///
+/// Allocates a single-element buffer, copies `Value` into it at construction,
+/// and frees the buffer in `deinit`. `Ownership.Borrow` stores a reference
+/// to this class in its `_owner` field; the class reference is ARC-managed
+/// across Borrow copies, so the buffer survives as long as any `Borrow`
+/// referencing it is alive.
+///
+/// Only used by `Ownership.Borrow.init(borrowing:) where Value: Copyable`.
+/// The typed and `unsafeAddress:` inits pass through a caller-managed
+/// pointer and leave `_owner = nil`.
+@usableFromInline
+internal final class _Ownership_Borrow_OwnedBuffer<Value> {
+
+    @usableFromInline
+    let _pointer: UnsafeMutablePointer<Value>
+
+    @inlinable
+    init(copying value: consuming Value) {
+        self._pointer = unsafe UnsafeMutablePointer<Value>.allocate(capacity: 1)
+        unsafe self._pointer.initialize(to: value)
+    }
+
+    @inlinable
+    deinit {
+        unsafe _pointer.deinitialize(count: 1)
+        unsafe _pointer.deallocate()
     }
 }
 
@@ -73,17 +149,29 @@ extension Ownership.Borrow where Value: ~Copyable {
     @_lifetime(borrow pointer)
     public init(_ pointer: UnsafePointer<Value>) {
         unsafe (self._pointer = UnsafeRawPointer(pointer))
+        self._owner = nil
     }
 }
 
-// MARK: - Borrowing Construction
+// MARK: - Borrowing Construction (~Copyable Value path)
 
 extension Ownership.Borrow where Value: ~Copyable {
-    /// Creates a borrow reference from a borrowed value.
+    /// Creates a borrow reference from a borrowed `~Copyable` value.
     ///
     /// This mirrors stdlib `Borrow.init(_ value: borrowing Value)` and the
     /// ecosystem `Property.View.Read` borrowing-init pattern. Enables
     /// construction from any borrowing context without pointer exposure.
+    ///
+    /// For `~Copyable Value`, the borrowing calling convention is always
+    /// indirect: the parameter carries the caller's storage address, and
+    /// `withUnsafePointer(to:)` yields that address. The stored pointer is
+    /// valid for the lifetime scope declared by `@_lifetime(borrow value)`,
+    /// and `_owner` is `nil` because no owned copy exists.
+    ///
+    /// For `Copyable Value`, a separate overload in the `where Value: Copyable`
+    /// extension takes priority; it heap-allocates a copy because the
+    /// borrowing convention for trivial `Copyable` types may be by-register
+    /// (no stable callee address).
     ///
     /// Only available for `Escapable` `Value` — stdlib's
     /// `withUnsafePointer(to:)` does not support `~Escapable` values.
@@ -92,7 +180,44 @@ extension Ownership.Borrow where Value: ~Copyable {
     @inlinable
     @_lifetime(borrow value)
     public init(borrowing value: borrowing Value) {
-        unsafe (_pointer = withUnsafePointer(to: value) { UnsafeRawPointer($0) })
+        unsafe (self._pointer = withUnsafePointer(to: value) { UnsafeRawPointer($0) })
+        self._owner = nil
+    }
+}
+
+// MARK: - Borrowing Construction (Copyable Value path)
+
+extension Ownership.Borrow where Value: Copyable {
+    /// Creates a borrow reference from a `Copyable` value via a heap-owned copy.
+    ///
+    /// For `Copyable Value`, the borrowing calling convention may be trivial
+    /// (pass-by-register for types like `Int`). `withUnsafePointer(to: value)`
+    /// would then capture the callee's spill slot, which becomes invalid the
+    /// moment the `withUnsafePointer` frame unwinds — leaving `Borrow`
+    /// storing a dangling pointer. The optimizer is free to rematerialize
+    /// the (dangling) init on each `.value` read because `Borrow` is
+    /// `Copyable`, producing different garbage across reads.
+    ///
+    /// This overload bypasses the issue by copying `value` into a
+    /// class-owned heap buffer and storing a reference to the class in
+    /// `_owner`. The buffer lives as long as any `Borrow` referencing it
+    /// exists (ARC on the class reference), and the copy semantics of the
+    /// underlying `Value` guarantee read-stability: every subsequent read
+    /// via `.value` returns a value equal to the borrowed source.
+    ///
+    /// Cost: one heap allocation per `init(borrowing:)` call with `Copyable
+    /// Value`, plus ARC on `Borrow` copies. This is the price of preserving
+    /// the `init(borrowing:)` API for `Copyable Value` within the pre-SE-0519
+    /// toolchain surface; the overhead disappears once the package migrates
+    /// to stdlib `Borrow<T>` after SE-0519 stabilises.
+    ///
+    /// - Parameter value: The value to borrow. Copied into a heap buffer.
+    @inlinable
+    @_lifetime(borrow value)
+    public init(borrowing value: borrowing Value) {
+        let owner = _Ownership_Borrow_OwnedBuffer<Value>(copying: copy value)
+        unsafe (self._pointer = UnsafeRawPointer(owner._pointer))
+        self._owner = owner
     }
 }
 
@@ -117,6 +242,7 @@ extension Ownership.Borrow where Value: ~Copyable {
         borrowing owner: borrowing Owner
     ) {
         unsafe (self._pointer = UnsafeRawPointer(pointer))
+        self._owner = nil
     }
 }
 
@@ -144,6 +270,7 @@ extension Ownership.Borrow where Value: ~Copyable & ~Escapable {
         borrowing owner: borrowing Owner
     ) {
         unsafe (self._pointer = pointer)
+        self._owner = nil
     }
 }
 
