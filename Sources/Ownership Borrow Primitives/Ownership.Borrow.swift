@@ -177,7 +177,18 @@ extension Ownership.Borrow where Value: ~Copyable {
     /// `withUnsafePointer(to:)` does not support `~Escapable` values.
     ///
     /// - Parameter value: The value to borrow.
-    @inlinable
+    ///
+    /// NOTE: This init is intentionally NOT `@inlinable`. When `@inlinable`,
+    /// the Swift 6.3.1 / 6.4-dev optimizer inlines the body across module
+    /// boundaries and the `withUnsafePointer(to: borrowing value)` call
+    /// starts returning a callee-frame spill slot that dies when the
+    /// closure returns. The pre-WIP `Property.View.Read.init(borrowing Base)`
+    /// used the same pattern without `@inlinable` and passed release
+    /// tests; keeping this init non-inlinable preserves the cross-module
+    /// `@in_guaranteed` ABI path. See
+    /// `swift-institute/Experiments/borrow-pointer-storage-release-miscompile/`
+    /// and
+    /// `swift-institute/Audits/borrow-pointer-storage-release-miscompile.md`.
     @_lifetime(borrow value)
     public init(borrowing value: borrowing Value) {
         unsafe (self._pointer = withUnsafePointer(to: value) { UnsafeRawPointer($0) })
