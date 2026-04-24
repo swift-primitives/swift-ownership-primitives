@@ -158,13 +158,23 @@ extension Ownership.Borrow where Value: ~Copyable {
 extension Ownership.Borrow where Value: ~Copyable {
     /// Creates a borrow reference from a borrowed `~Copyable` value.
     ///
-    /// > Warning: Do NOT add `@inlinable` to this init. The Swift 6.3.1 /
-    /// > 6.4-dev release optimizer, when inlining this body across module
-    /// > boundaries, causes `withUnsafePointer(to: borrowing value)` to
-    /// > return a callee-frame spill slot that dies when the closure
-    /// > returns — `.value` reads then return garbage or trap with
-    /// > `EXC_BREAKPOINT`. Keeping the init non-`@inlinable` preserves
-    /// > the cross-module function-call boundary; inside the callee,
+    /// > Important: This init is sound for callers in a **different module**
+    /// > than `Ownership_Borrow_Primitives`. Same-module consumers
+    /// > (tests or additional sources within this module) will hit the
+    /// > Swift 6.3.1 / 6.4-dev release-mode miscompile where
+    /// > `withUnsafePointer(to: borrowing value)` returns a callee-frame
+    /// > spill slot that dies after the closure returns. Same-module
+    /// > consumers that need a borrow-shaped reference should instead
+    /// > call `withUnsafePointer(to: value)` at their own scope and pass
+    /// > the resulting `UnsafePointer<Value>` to
+    /// > `init(_ pointer: UnsafePointer<Value>)`. Cross-module consumers
+    /// > are the primary use case and this init is safe for them.
+    ///
+    /// > Warning: Do NOT add `@inlinable` to this init. `@inlinable`
+    /// > causes the Swift 6.3.1 / 6.4-dev optimizer to inline the body
+    /// > across module boundaries, reproducing the same-module miscompile
+    /// > everywhere. Keeping the init non-`@inlinable` preserves the
+    /// > cross-module function-call boundary; inside the callee,
     /// > `Builtin.addressOfBorrow(value)` observes the `@in_guaranteed`
     /// > indirect ABI and yields the caller's actual address. Evidence
     /// > and the minimal reproducer are at
