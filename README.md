@@ -2,17 +2,18 @@
 
 ![Development Status](https://img.shields.io/badge/status-active--development-blue.svg)
 
-Safe ownership references for `~Copyable` / `~Escapable` values — `Ownership.Borrow`, `Ownership.Inout`, `Ownership.Unique`, `Ownership.Slot`, and the `Ownership.Transfer.*` family — on production Swift 6.3.1.
+Safe ownership references and cells for `~Copyable` / `~Escapable` / `Copyable` values — fifteen primitives spanning scoped references, heap-owned cells, atomic slots, and cross-boundary transfer — on production Swift 6.3.1.
 
 ---
 
 ## Key Features
 
-- **Stdlib-parity borrows and inouts, today** — `Ownership.Borrow` and `Ownership.Inout` mirror SE-0519's `Borrow<T>` / `Inout<T>` (SwiftStdlib 6.4) with `@safe` conformance and `@inlinable` accessors. They work on 6.3.1 via `_read` / `nonmutating _modify` coroutines, so downstream code runs before `BorrowAndMutateAccessors` (SE-0507) ships in a stable toolchain.
-- **Interior mutability through `nonmutating _modify`** — `Ownership.Inout.value` splits on copyability: `get` + `nonmutating _modify` for `Copyable` `Value`, `_read` + `nonmutating _modify` for `~Copyable`. Nested method-call mutations (`base.value.pop.front()`) route through the stored pointer, preserving CoW uniqueness; pure reads on `Copyable` `Value` escape the coroutine lifetime chain.
-- **Heap-owned `~Copyable` cell** — `Ownership.Unique<Value>` exposes `withValue`, `withMutableValue`, `take`, `hasValue` over a `@safe` struct with deterministic `deinit`; replaces the manual `allocate` / `initialize(to:)` / track-initialized / `deinitialize` / `deallocate` pattern.
-- **Cross-boundary transfer with exactly-once semantics** — `Ownership.Transfer.Cell`, `.Storage`, `.Retained`, and `.Box` move values across `@Sendable` boundaries; tokens are `Copyable` for closure capture, but only one `take` / `store` succeeds atomically.
-- **`Optional<~Copyable>.take()`** — Consumes the wrapped value in place and leaves `nil`; stdlib has no equivalent on `~Copyable` `Wrapped`, so this is the canonical pattern for moving out of a `~Copyable` optional stored property.
+- **Stdlib-parity borrows and inouts, today** — `Ownership.Borrow` and `Ownership.Inout` mirror SE-0519's `Borrow<T>` / `Inout<T>` (SwiftStdlib 6.4) with `@safe` conformance. They work on 6.3.1 via `_read` / `nonmutating _modify` coroutines so downstream code runs before `BorrowAndMutateAccessors` (SE-0507) ships in a stable toolchain.
+- **SE-0517 `UniqueBox` parity** — `Ownership.Unique<Value>` mirrors `UniqueBox`: `init(_:)`, `consume()`, `clone()`, `var value { _read _modify }`, `span` / `mutableSpan`. The Institute rendering uses the `Nest.Name` form (`Ownership.Unique`) per [API-NAME-001]; the compound-form `UniqueBox` is forbidden.
+- **Copy-on-write value cell** — `Ownership.Indirect<Value>` wraps a `Copyable` value in heap storage with lazy CoW on `_modify`; parallels Swift's `indirect` keyword on recursive enum cases. Deferred physical copy until divergent mutation.
+- **One-shot and reusable atomic cells** — `Ownership.Slot` cycles empty ↔ full for resource pools and channels; `Ownership.Latch` is terminal after take, for single-publication hand-off.
+- **Cross-boundary transfer matrix** — `Transfer.Value<V>.{Outgoing, Incoming}`, `Transfer.Retained<T>.{Outgoing, Incoming}`, and `Transfer.Erased.{Outgoing, Incoming}` fill the two-axis matrix of direction × payload kind. Tokens are `Copyable` for closure capture; only one `take` / `store` / `consume` succeeds atomically.
+- **`Optional<~Copyable>.take()`** — Consumes the wrapped value in place and leaves `nil`; stdlib has no equivalent on `~Copyable` `Wrapped`.
 
 ---
 
@@ -24,8 +25,8 @@ Safe ownership references for `~Copyable` / `~Escapable` values — `Ownership.B
 import Ownership_Primitives
 
 var request = Ownership.Unique(Request.get("/status"))   // Request is ~Copyable
-request.withMutableValue { $0.timeout = .seconds(30) }
-let owned = request.take()                               // request.hasValue == false
+request.value.timeout = .seconds(30)                      // _modify coroutine
+let owned = request.consume()                             // destroys the cell
 ```
 
 The hand-rolled equivalent for a `~Copyable` `Value`:
@@ -33,13 +34,12 @@ The hand-rolled equivalent for a `~Copyable` `Value`:
 ```swift
 let storage = UnsafeMutablePointer<Request>.allocate(capacity: 1)
 storage.initialize(to: .get("/status"))
-var isInitialized = true
-// ... every exit path must run:
-if isInitialized { storage.deinitialize(count: 1) }
+// every exit path must run:
+storage.deinitialize(count: 1)
 storage.deallocate()
 ```
 
-`Ownership.Unique` folds allocation, initialization tracking, take/leak semantics, and `deinit` cleanup into one `@safe`, `~Copyable` struct.
+`Ownership.Unique` folds allocation, lifetime tracking, and `deinit` cleanup into one `@safe`, `~Copyable` struct — matching the SE-0517 `UniqueBox<Value>` shape exactly.
 
 ### Scoped mutable reference with safe lifetime
 
@@ -97,11 +97,14 @@ The package is a **primary decomposition** per [MOD-015] — consumers depend on
         .product(name: "Ownership Unique Primitives", package: "swift-ownership-primitives"),
         .product(name: "Ownership Shared Primitives", package: "swift-ownership-primitives"),
         .product(name: "Ownership Mutable Primitives", package: "swift-ownership-primitives"),
-        // Reusable atomic slot
+        // Reusable atomic slot + one-shot latch
         .product(name: "Ownership Slot Primitives", package: "swift-ownership-primitives"),
-        // Cross-boundary transfer family
+        .product(name: "Ownership Latch Primitives", package: "swift-ownership-primitives"),
+        // Heap CoW value cell
+        .product(name: "Ownership Indirect Primitives", package: "swift-ownership-primitives"),
+        // Cross-boundary transfer family (kind x direction matrix)
         .product(name: "Ownership Transfer Primitives", package: "swift-ownership-primitives"),
-        .product(name: "Ownership Transfer Box Primitives", package: "swift-ownership-primitives"),
+        .product(name: "Ownership Transfer Erased Primitives", package: "swift-ownership-primitives"),
         // Optional<~Copyable>.take()
         .product(name: "Ownership Primitives Standard Library Integration", package: "swift-ownership-primitives"),
     ]
@@ -139,15 +142,16 @@ A `Property.View` is `~Copyable, ~Escapable`, stores its mutable reference as `O
 |------|---------|
 | `Ownership.Borrow<Value>` | Scoped read-only reference (`Copyable, ~Escapable`) |
 | `Ownership.Inout<Value>` | Scoped mutable reference (`~Copyable, ~Escapable`) |
-| `Ownership.Unique<Value>` | Heap-owned exclusive cell with `withValue` / `withMutableValue` / `take` — `~Copyable`, also available on `Copyable Value` |
+| `Ownership.Unique<Value>` | Heap-owned exclusive cell — SE-0517 `UniqueBox` parity (`consume()`, `clone()`, `value { _read _modify }`, `span` / `mutableSpan`) |
 | `Ownership.Shared<Value>` | ARC-shared immutable cell |
-| `Ownership.Mutable<Value>` | ARC-shared mutable cell |
+| `Ownership.Mutable<Value>` | ARC-shared mutable cell (single-isolation) |
 | `Ownership.Mutable.Unchecked<Value>` | `@unchecked Sendable` opt-in variant of `Mutable` |
-| `Ownership.Slot<Value>` | Atomic heap slot with `store` / `take` / `move.in` / `move.out` — reusable, `@unchecked Sendable` |
-| `Ownership.Transfer.Cell<Value>` | One-shot transfer: pass an existing value through `@Sendable` |
-| `Ownership.Transfer.Storage<Value>` | One-shot transfer: create inside a closure, retrieve after |
-| `Ownership.Transfer.Retained<Value>` | Zero-alloc one-shot transfer for `AnyObject` |
-| `Ownership.Transfer.Box<Value>` | Type-erased boxed transfer |
+| `Ownership.Slot<Value>` | Reusable atomic heap slot — cycles empty ↔ full |
+| `Ownership.Latch<Value>` | One-shot atomic cell — terminal after `take()` |
+| `Ownership.Indirect<Value>` | Heap-allocated copy-on-write value cell |
+| `Ownership.Transfer.Value<V>.Outgoing` / `.Incoming` | One-shot generic transfer across `@Sendable` (direction × kind matrix) |
+| `Ownership.Transfer.Retained<T>.Outgoing` / `.Incoming` | Zero-alloc-outgoing / single-latch-incoming `AnyObject` transfer |
+| `Ownership.Transfer.Erased.Outgoing` / `.Incoming` | Type-erased boxed transfer |
 | `Optional<Wrapped>.take()` | Consume and reset on `~Copyable` `Wrapped` (mutating extension) |
 
 `Ownership.Borrow.`Protocol`` is the canonical borrow-capability protocol; conform via `extension MyType: Ownership.Borrow.`Protocol` {}` to participate without a bespoke accessor.

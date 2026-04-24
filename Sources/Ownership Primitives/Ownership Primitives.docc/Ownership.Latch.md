@@ -38,7 +38,7 @@ All operations are atomic. The latch can be safely shared across threads: public
 | Use case | Type |
 |----------|------|
 | One-shot hand-off, direct ARC sharing | ``Ownership/Latch`` |
-| One-shot hand-off, Token-based cross-boundary | ``Ownership/Transfer/Cell`` / ``Ownership/Transfer/Storage`` |
+| One-shot hand-off, Token-based cross-boundary | ``Ownership/Transfer/Value`` |
 | Reusable slot (cycles empty ↔ full) | ``Ownership/Slot`` |
 
 ## Topics
