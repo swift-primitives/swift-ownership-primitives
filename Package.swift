@@ -71,6 +71,7 @@ let package = Package(
         ),
     ],
     dependencies: [
+        .package(path: "../swift-tagged-primitives"),
     ],
     targets: [
         // MARK: - Namespace
@@ -92,6 +93,7 @@ let package = Package(
             name: "Ownership Borrow Primitives",
             dependencies: [
                 "Ownership Primitives Core",
+                .product(name: "Tagged Primitives", package: "swift-tagged-primitives"),
             ]
         ),
         .target(
