@@ -70,6 +70,7 @@ The umbrella `import Ownership_Primitives` is available for prototyping and test
 
 ### Patterns
 
+- <doc:Choosing-an-Ownership-Primitive>
 - <doc:Borrow-vs-Inout>
 - <doc:Shared-vs-Mutable-vs-Unique>
 - <doc:Ownership-Transfer-Recipes>
