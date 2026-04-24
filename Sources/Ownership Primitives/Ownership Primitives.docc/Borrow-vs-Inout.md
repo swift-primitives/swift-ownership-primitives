@@ -29,7 +29,7 @@ Both types are `~Escapable` — they cannot outlive their source. The compiler e
 
 ## The `Copyable` / `~Copyable` Value Axis
 
-``Ownership/Inout.value`` splits on `Value` copyability to resolve a compiler lifetime-escape interaction:
+`Ownership.Inout.value` splits on `Value` copyability to resolve a compiler lifetime-escape interaction:
 
 | `Value` constraint | `get` accessor | `_modify` accessor |
 |--------------------|----------------|--------------------|

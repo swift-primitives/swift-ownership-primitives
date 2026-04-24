@@ -105,7 +105,7 @@ If both sides need to exchange values, pair one of each — an Outgoing for the 
 
 ## Transfer vs Slot vs Latch
 
-- ``Ownership/Transfer/*`` — cross-boundary transfer with a separate Sendable Token layer; one-shot.
+- `Ownership.Transfer` variants — cross-boundary transfer with a separate Sendable Token layer; one-shot.
 - ``Ownership/Slot`` — **reusable** atomic slot, cycles empty ↔ full indefinitely. Use for pools and long-lived channels.
 - ``Ownership/Latch`` — one-shot atomic cell without the Token indirection; use when ARC sharing between producer and consumer is acceptable directly.
 

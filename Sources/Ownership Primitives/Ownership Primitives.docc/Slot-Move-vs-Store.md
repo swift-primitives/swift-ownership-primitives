@@ -71,7 +71,7 @@ let taken = slot.move.out
 
 ## Slot vs Transfer
 
-| Property | ``Ownership/Slot`` | ``Ownership/Transfer/*`` |
+| Property | ``Ownership/Slot`` | `Ownership.Transfer` variants |
 |----------|--------------------|--------------------------|
 | Reusable | Yes — `empty ↔ full` cycles indefinitely | No — `empty → full → empty` (done) |
 | Thread-safety | `@unchecked Sendable` via atomic state machine | Tokens `Copyable`; CAS enforces exactly-once |
