@@ -10,51 +10,38 @@
 //
 // ===----------------------------------------------------------------------===//
 
-extension Ownership.Transfer {
-    /// Type-erased boxing for ownership transfer.
+// MARK: - Erased.Outgoing
+
+extension Ownership.Transfer.Erased {
+    /// Outgoing type-erased transfer — producer boxes an arbitrary value
+    /// into a single contiguous allocation whose header carries enough
+    /// information to destruct the payload without knowing `T` at the
+    /// consumer site.
     ///
-    /// ## Design
-    /// Each box is a single allocation containing:
-    /// - Header at the start (destroy function + payload offset)
-    /// - Payload at aligned offset after header
-    ///
-    /// This enables:
-    /// - Single allocation per box (reduced from 2)
-    /// - Correct destruction without knowing `T` or `E` (for abandonment paths)
-    /// - Type-safe unboxing when the caller knows `T` and `E`
-    /// - No leaks in cancel-wait-but-drain paths
+    /// The payload's concrete type is agreed between producer and consumer
+    /// out of band. Correct destruction is preserved even on abandoned
+    /// paths — if neither `consume(_:)` nor any reader reaches the unboxing
+    /// call, `destroy()` still releases the payload without type info.
     ///
     /// ## Memory Layout
-    /// ```
-    /// [Header (at offset 0)] [padding] [Payload (at aligned offset)]
-    /// ```
-    /// The payload offset is computed to satisfy the payload type's alignment.
+    /// A single allocation contains `[Header][padding][Payload]`, where the
+    /// payload offset satisfies the payload's alignment requirement.
     ///
     /// ## Ownership Rules
-    /// **Invariant:** Exactly one party allocates, exactly one party frees.
+    /// **Invariant:** exactly one party allocates, exactly one party
+    /// deallocates.
     ///
-    /// - **Allocation:** `make()` or `makeValue()` allocates the unified block
-    /// - **Deallocation:** Either `take()`/`takeValue()` or `destroy()` deallocates
+    /// - **Allocation:** `init(_:)` allocates the unified block.
+    /// - **Deallocation:** `consume(_:)` or `destroy()` deallocates.
     ///
-    /// **Never call both `take*()` and `destroy()` on the same pointer.**
-    ///
-    public enum Box {}
+    /// **Never call both `consume(_:)` and `destroy()` on the same value.**
+    public enum Outgoing {}
 }
 
 // MARK: - Header
 
-extension Ownership.Transfer.Box {
-    /// Header for type-erased box with inline payload.
-    ///
-    /// ## Memory Layout
-    /// The entire box is a single allocation:
-    /// ```
-    /// [Header at offset 0] [padding] [Payload at payloadOffset]
-    /// ```
-    ///
-    /// The `payloadOffset` is computed to satisfy the payload type's alignment
-    /// requirements. The destroy function takes the base pointer and offset
-    /// to locate and deinitialize the payload.
+extension Ownership.Transfer.Erased.Outgoing {
+    /// Header for the erased box with inline payload.
     ///
     // WORKAROUND: `destroyPayload` is a heap-allocating closure instead of a
     //             `@convention(thin)` function pointer.
@@ -67,12 +54,10 @@ extension Ownership.Transfer.Box {
     // WHEN TO REMOVE: when a toolchain accepts generic-capturing thin
     //                 function references.
     // TRACKING: swift-institute/Experiments/unsafe-bitcast-generic-thin-function-pointer/
-    //           (STILL PRESENT on 6.3.1, verified 2026-04-23). Revalidate on
-    //           each toolchain bump via the swift-6.3-fix-status memory.
+    //           (STILL PRESENT on 6.3.1, verified 2026-04-23).
     @safe
     fileprivate struct Header {
         /// Function to destroy the payload given base pointer and offset.
-        /// Captures type information (T, E) for proper deinitialization.
         let destroyPayload: (UnsafeMutableRawPointer, Int) -> Void
 
         /// Offset from base pointer to payload (for alignment).
@@ -82,19 +67,18 @@ extension Ownership.Transfer.Box {
 
 // MARK: - Pointer
 
-extension Ownership.Transfer.Box {
-    /// Sendable capability wrapper for boxed pointers.
+extension Ownership.Transfer.Erased.Outgoing {
+    /// Sendable capability wrapper for the boxed pointer.
     ///
-    /// Represents a capability to consume or destroy a box, concentrating
-    /// the unsafe sendability at the boundary.
+    /// Carries an `UnsafeMutableRawPointer` as an ownership-transfer token
+    /// across `@Sendable` boundaries. The holder agrees to invoke
+    /// `consume(_:)` or `destroy(_:)` exactly once.
     ///
     /// ## Safety Invariant
     ///
-    /// Carries an `UnsafeMutableRawPointer` as an ownership-transfer token;
-    /// `@unsafe @unchecked Sendable` per [MEM-SAFE-024] Category A
-    /// (synchronization is external — the holder of a `Pointer` agrees to
-    /// invoke `take` / `destroy` exactly once). Not a general-purpose
-    /// pointer wrapper.
+    /// `@unsafe @unchecked Sendable` per [MEM-SAFE-024] Category A —
+    /// synchronization is external; the holder commits to single-consumption
+    /// by contract.
     @safe
     public struct Pointer: @unsafe @unchecked Sendable {
         @unsafe
@@ -106,15 +90,14 @@ extension Ownership.Transfer.Box {
 
 // MARK: - Boxing
 
-extension Ownership.Transfer.Box {
+extension Ownership.Transfer.Erased.Outgoing {
     /// Allocate and initialize a boxed value.
     ///
-    /// Returns a pointer to the erased header. Use `take<T>` to unbox
-    /// or `destroy` to free without unboxing.
+    /// Returns an opaque pointer to the header. Use `consume(_:)` to unbox,
+    /// or `destroy(_:)` to free without unboxing.
     ///
-    /// ## Single Allocation
-    /// The header and payload are stored in a single contiguous allocation.
-    /// The payload is placed at an aligned offset after the header.
+    /// The header and payload share a single contiguous allocation; the
+    /// payload is placed at an aligned offset after the header.
     @unsafe
     public static func make<T>(
         _ value: T
@@ -155,17 +138,16 @@ extension Ownership.Transfer.Box {
 
     /// Unbox and deallocate a value.
     ///
-    /// Moves the value out of the box and deallocates all memory.
-    /// Caller must provide the correct T type.
+    /// Moves the value out of the box and deallocates all memory. The caller
+    /// must provide the correct `T` type that the box was created with.
     @unsafe
-    public static func take<T>(
+    public static func consume<T>(
         _ ptr: UnsafeMutableRawPointer
     ) -> T {
         let headerPtr = unsafe ptr.assumingMemoryBound(to: Header.self)
         let header = unsafe headerPtr.move()  // releases closure
         let payloadPtr = unsafe (ptr + header.payloadOffset).assumingMemoryBound(to: T.self)
         let result = unsafe payloadPtr.move()
-        // Single deallocation for entire box
         unsafe ptr.deallocate()
         return result
     }
@@ -173,20 +155,21 @@ extension Ownership.Transfer.Box {
 
 // MARK: - Type-Erased Destruction
 
-extension Ownership.Transfer.Box {
+extension Ownership.Transfer.Erased.Outgoing {
     /// Destroy a boxed value without reading it.
     ///
-    /// Correctly deinitializes the payload (running destructors for T and E)
-    /// and deallocates all memory. Safe to call without knowing T or E.
+    /// Correctly deinitializes the payload (running the original destructor
+    /// captured by `make(_:)`) and deallocates all memory. Safe to call
+    /// without knowing the payload type.
     ///
-    /// - Important: Uses `move()` on Header before deallocate to properly
-    ///   release the closure and balance the initialization from `make()`.
+    /// - Important: Uses `move()` on the header before deallocate to
+    ///   properly release the closure and balance the initialization from
+    ///   `make(_:)`.
     @unsafe
     public static func destroy(_ ptr: UnsafeMutableRawPointer) {
         let headerPtr = unsafe ptr.assumingMemoryBound(to: Header.self)
         let header = unsafe headerPtr.move()  // releases closure
         unsafe header.destroyPayload(ptr, header.payloadOffset)
-        // Single deallocation for entire box
         unsafe ptr.deallocate()
     }
 }

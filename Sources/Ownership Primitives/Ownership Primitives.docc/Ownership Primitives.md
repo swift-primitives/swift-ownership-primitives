@@ -32,8 +32,8 @@ The package ships these as SE-0519-parallel primitives on toolchains where `Borr
 | Reusable atomic slot | `import Ownership_Slot_Primitives` |
 | One-shot atomic cell | `import Ownership_Latch_Primitives` |
 | Heap CoW value cell | `import Ownership_Indirect_Primitives` |
-| Cross-boundary transfer | `import Ownership_Transfer_Primitives` |
-| Type-erased boxed transfer | `import Ownership_Transfer_Box_Primitives` |
+| Cross-boundary transfer (Value, Retained) | `import Ownership_Transfer_Primitives` |
+| Type-erased transfer | `import Ownership_Transfer_Erased_Primitives` |
 | `Optional<~Copyable>.take()` | `import Ownership_Primitives_Standard_Library_Integration` |
 
 The umbrella `import Ownership_Primitives` is available for prototyping and tests — it `@_exported`-re-exports every variant. Release builds SHOULD use the narrow imports.
@@ -103,10 +103,15 @@ The umbrella `import Ownership_Primitives` is available for prototyping and test
 ### Cross-Boundary Transfer
 
 - ``Ownership/Transfer``
-- ``Ownership/Transfer/Box``
-- ``Ownership/Transfer/Cell``
+- ``Ownership/Transfer/Value``
+- ``Ownership/Transfer/Value/Outgoing``
+- ``Ownership/Transfer/Value/Incoming``
 - ``Ownership/Transfer/Retained``
-- ``Ownership/Transfer/Storage``
+- ``Ownership/Transfer/Retained/Outgoing``
+- ``Ownership/Transfer/Retained/Incoming``
+- ``Ownership/Transfer/Erased``
+- ``Ownership/Transfer/Erased/Outgoing``
+- ``Ownership/Transfer/Erased/Incoming``
 
 ## Further reading
 

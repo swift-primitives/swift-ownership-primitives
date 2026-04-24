@@ -9,38 +9,51 @@ Namespace for cross-boundary ownership transfer primitives with exactly-once sem
 
 ## Overview
 
-`Ownership.Transfer` is a namespace (empty `enum`) that groups four one-shot transfer shapes:
+`Ownership.Transfer` is a namespace (caseless `enum`) that organises its primitives along two axes:
 
-- ``Ownership/Transfer/Cell`` — pass an existing `~Copyable` value through a `@Sendable` boundary.
-- ``Ownership/Transfer/Storage`` — create a value inside a closure; retrieve on the originating side.
-- ``Ownership/Transfer/Retained`` — zero-allocation transfer for `AnyObject` types.
-- ``Ownership/Transfer/Box`` — type-erased boxing for opaque-pointer scenarios.
+| Kind (payload shape)             | Outgoing (producer→consumer)                                  | Incoming (consumer slot)                                      |
+|----------------------------------|---------------------------------------------------------------|---------------------------------------------------------------|
+| ``Ownership/Transfer/Value`` \<V\> | ``Ownership/Transfer/Value/Outgoing``                         | ``Ownership/Transfer/Value/Incoming``                         |
+| ``Ownership/Transfer/Retained`` \<T\> | ``Ownership/Transfer/Retained/Outgoing``                      | ``Ownership/Transfer/Retained/Incoming``                      |
+| ``Ownership/Transfer/Erased``    | ``Ownership/Transfer/Erased/Outgoing``                        | ``Ownership/Transfer/Erased/Incoming``                        |
 
-Tokens for each variant are `Copyable` (so they can be captured by `@Sendable` escaping closures), but only one `take` / `store` operation succeeds — subsequent calls either trap or return the value back. Thread safety comes from atomic CAS enforcement; the types are `@unchecked Sendable` where applicable.
+- **Direction**: *Outgoing* — producer creates the cell already holding the value and hands it across; *Incoming* — consumer allocates an empty slot first, producer fills it later through a Sendable token.
+- **Kind** (payload shape):
+  - ``Ownership/Transfer/Value`` \<V\> — any `~Copyable` / `Copyable` value type.
+  - ``Ownership/Transfer/Retained`` \<T\> — `AnyObject`; direct ARC manipulation via `Unmanaged`, no box allocation on the outgoing path.
+  - ``Ownership/Transfer/Erased`` — type-erased payload; producer and consumer agree on `T` out of band. Correct destruction is preserved on abandoned paths.
+
+Tokens for each variant are `Copyable` (captureable in `@Sendable` escaping closures), but only one `take` / `store` / `consume` operation succeeds — subsequent calls trap deterministically. Thread safety comes from atomic CAS enforcement; types are `@unchecked Sendable` where applicable.
 
 ## When to Use
 
-Use `Transfer.*` when ownership must cross a `@Sendable` boundary exactly once. For reusable slots (cycle between empty and full), use ``Ownership/Slot`` instead. For exclusive heap-ownership within a single thread, use ``Ownership/Unique``.
+Use `Transfer.*` when ownership must cross a `@Sendable` boundary exactly once. For reusable slots (cycle empty ↔ full), use ``Ownership/Slot``. For one-shot hand-off without the Token indirection, use ``Ownership/Latch``.
 
 See <doc:Ownership-Transfer-Recipes> for the full recipe catalog.
 
 ## Topics
 
-### Direction: Passing Out
+### Kind: Value
 
-- ``Ownership/Transfer/Cell``
+- ``Ownership/Transfer/Value``
+- ``Ownership/Transfer/Value/Outgoing``
+- ``Ownership/Transfer/Value/Incoming``
+
+### Kind: Retained (AnyObject)
+
 - ``Ownership/Transfer/Retained``
+- ``Ownership/Transfer/Retained/Outgoing``
+- ``Ownership/Transfer/Retained/Incoming``
 
-### Direction: Receiving In
+### Kind: Erased
 
-- ``Ownership/Transfer/Storage``
-
-### Type Erasure
-
-- ``Ownership/Transfer/Box``
+- ``Ownership/Transfer/Erased``
+- ``Ownership/Transfer/Erased/Outgoing``
+- ``Ownership/Transfer/Erased/Incoming``
 
 ## See Also
 
 - ``Ownership/Slot``
+- ``Ownership/Latch``
 - ``Ownership/Unique``
 - <doc:Ownership-Transfer-Recipes>

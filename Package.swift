@@ -56,8 +56,8 @@ let package = Package(
             targets: ["Ownership Transfer Primitives"]
         ),
         .library(
-            name: "Ownership Transfer Box Primitives",
-            targets: ["Ownership Transfer Box Primitives"]
+            name: "Ownership Transfer Erased Primitives",
+            targets: ["Ownership Transfer Erased Primitives"]
         ),
 
         // MARK: - StdLib Integration
@@ -154,9 +154,10 @@ let package = Package(
             ]
         ),
         .target(
-            name: "Ownership Transfer Box Primitives",
+            name: "Ownership Transfer Erased Primitives",
             dependencies: [
                 "Ownership Primitives Core",
+                "Ownership Latch Primitives",
             ]
         ),
 
@@ -183,7 +184,7 @@ let package = Package(
                 "Ownership Latch Primitives",
                 "Ownership Indirect Primitives",
                 "Ownership Transfer Primitives",
-                "Ownership Transfer Box Primitives",
+                "Ownership Transfer Erased Primitives",
                 "Ownership Primitives Standard Library Integration",
             ]
         ),

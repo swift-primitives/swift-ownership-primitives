@@ -5,58 +5,54 @@
     @TitleHeading("Ownership Primitives")
 }
 
-The ``Ownership/Transfer`` namespace provides exactly-once value transfer across `@Sendable` boundaries. Pick a variant by whether the value exists before the boundary (`.Cell`), is created inside (`.Storage`), is a class instance (`.Retained`), or needs type erasure (`.Box`).
+The ``Ownership/Transfer`` namespace provides exactly-once value transfer across `@Sendable` boundaries. Pick a cell by the direction (Outgoing vs Incoming) and the payload kind (Value, Retained, Erased).
 
 ## Decision Matrix
 
-| Starting state | Transfer type | Shape |
-|----------------|---------------|-------|
-| Value exists; pass it to the other side | ``Ownership/Transfer/Cell`` | `Cell(value)` → `cell.token()` → `token.take()` |
-| Create value inside a closure; retrieve on the originating side | ``Ownership/Transfer/Storage`` | `Storage<T>()` → `storage.token` → `token.store(value)` → `storage.consume()` |
-| Zero-allocation transfer for `AnyObject` | ``Ownership/Transfer/Retained`` | `Retained(object)` → `retained.consume()` (no heap indirection) |
-| Type-erased transfer through an opaque boundary | ``Ownership/Transfer/Box`` | For interop scenarios needing an erased slot |
+| Starting state                            | Cell                                              | Shape                                                                                 |
+|-------------------------------------------|---------------------------------------------------|---------------------------------------------------------------------------------------|
+| Value exists; pass it to the other side   | ``Ownership/Transfer/Value/Outgoing``             | `Value<T>.Outgoing(value)` → `outgoing.token()` → `token.take()`                      |
+| Create value inside; retrieve outside     | ``Ownership/Transfer/Value/Incoming``             | `Value<T>.Incoming()` → `incoming.token` → `token.store(value)` → `incoming.consume()` |
+| Zero-alloc AnyObject; pass out            | ``Ownership/Transfer/Retained/Outgoing``          | `Retained<T>.Outgoing(object)` → `outgoing.consume()` (no box indirection)            |
+| Consumer-side AnyObject slot; fill later  | ``Ownership/Transfer/Retained/Incoming``          | `Retained<T>.Incoming()` → `incoming.token.store(object)` → `incoming.consume()`       |
+| Type-erased; pass through opaque boundary | ``Ownership/Transfer/Erased/Outgoing``            | `Erased.Outgoing.make(value)` → opaque pointer → `Erased.Outgoing.consume(ptr)`       |
+| Type-erased consumer slot                 | ``Ownership/Transfer/Erased/Incoming``            | `Erased.Incoming()` → `incoming.token.store(ptr)` → `incoming.consume(T.self)`        |
 
-All variants provide **exactly-once** semantics. Tokens are `Copyable` — they can be captured in escaping closures. At most one `take()` / `store()` succeeds; subsequent operations trap or return the value back.
+All variants provide **exactly-once** semantics. Tokens are `Copyable` — they can be captured in escaping closures. At most one `take()` / `store()` / `consume()` succeeds; subsequent operations trap.
 
 ## Recipe 1: Pass an Existing Value Through `@Sendable`
 
 ```swift
 import Ownership_Primitives
 
-struct Work: ~Copyable, Sendable {
-    let payload: Data
-}
+struct Work: ~Copyable, Sendable { let payload: Data }
 
-let cell = Ownership.Transfer.Cell(Work(payload: input))
-let token = cell.token()   // Copyable — capture in @Sendable closure
+let outgoing = Ownership.Transfer.Value<Work>.Outgoing(Work(payload: input))
+let token = outgoing.token()           // Copyable — capture in @Sendable closure
 
 Task.detached {
-    let received = token.take()   // exactly-once
+    let received = token.take()        // exactly-once
     process(received)
 }
 ```
-
-`Cell` pre-allocates storage and pre-populates it with the value. The token is a lightweight handle that can cross boundaries. Only one `take()` succeeds.
 
 ## Recipe 2: Create Inside, Retrieve Outside
 
 ```swift
 import Ownership_Primitives
 
-let storage = Ownership.Transfer.Storage<Work>()
-let storeToken = storage.token
+let incoming = Ownership.Transfer.Value<Work>.Incoming()
+let storeToken = incoming.token
 
 Task.detached {
     let work = Work(payload: try await fetch())
-    storeToken.store(work)    // exactly-once — deposits the value
+    storeToken.store(work)             // exactly-once — deposits the value
 }
 
-let received = storage.consume()   // on the originating side
+let received = incoming.consume()      // on the originating side
 ```
 
-`Storage` is the inverse direction of `Cell`: the caller pre-allocates empty storage, ships the `store`-capable token to the producer, and retrieves the produced value afterwards. Use when the value is expensive or asynchronous to construct and shouldn't block the originating side.
-
-## Recipe 3: Zero-Allocation Class Transfer
+## Recipe 3: Zero-Allocation Class Transfer (Outgoing)
 
 ```swift
 import Ownership_Primitives
@@ -64,40 +60,59 @@ import Ownership_Primitives
 final class Connection { /* ... */ }
 
 let conn = Connection()
-let retained = Ownership.Transfer.Retained(conn)
+let outgoing = unsafe Ownership.Transfer.Retained<Connection>.Outgoing(conn)
 
 Task.detached {
-    let received = retained.consume()
+    let received = outgoing.consume()
     use(received)
 }
 ```
 
-`Retained` uses `Unmanaged` retain counts to transfer `AnyObject` types without any heap indirection. For class-typed values, prefer `Retained` over `Cell` — it avoids the extra allocation.
+## Recipe 4: Consumer-Side AnyObject Slot
 
-## Recipe 4: Type Erasure for Opaque Boundaries
+```swift
+import Ownership_Primitives
 
-Use ``Ownership/Transfer/Box`` when the boundary requires a type-erased slot (e.g., a C API taking `void*`). `Box` provides opaque-pointer transfer with the same exactly-once contract; on the other side, `take()` restores the typed value.
+let incoming = Ownership.Transfer.Retained<Connection>.Incoming()
+let token = incoming.token
 
-## Cell vs Storage: Which Direction?
+Task.detached {
+    let conn = await newConnection()
+    token.store(conn)
+}
+
+let received = incoming.consume()
+```
+
+## Recipe 5: Type-Erased Outgoing
+
+Use ``Ownership/Transfer/Erased/Outgoing`` when the boundary requires an opaque slot (e.g., a C API taking `void*`). `make(_:)` boxes; `consume(_:)` unboxes with the caller's known `T`; `destroy(_:)` releases without unboxing on abandoned paths.
+
+## Recipe 6: Type-Erased Incoming
+
+``Ownership/Transfer/Erased/Incoming`` mirrors the outgoing erased path: the consumer allocates an empty slot, the producer stores an opaque pointer through the Sendable token, and the consumer unboxes with `incoming.consume(T.self)`.
+
+## Outgoing vs Incoming: Which Direction?
 
 Both move values across a `@Sendable` boundary, but the direction of dataflow differs:
 
-| Dataflow | Type |
-|----------|------|
-| Originating side → producing side | ``Ownership/Transfer/Cell`` (value is there, consumer takes) |
-| Producing side → originating side | ``Ownership/Transfer/Storage`` (slot is there, producer stores) |
+| Dataflow                              | Direction    |
+|---------------------------------------|--------------|
+| Originating side → producing side     | Outgoing (value is there, consumer takes) |
+| Producing side → originating side     | Incoming (slot is there, producer stores) |
 
-If both sides need to exchange values, use one of each — a `Cell` for the outgoing direction and a `Storage` for the incoming direction.
+If both sides need to exchange values, pair one of each — an Outgoing for the outbound hand-off and an Incoming for the inbound reply.
 
-## Transfer vs Slot
+## Transfer vs Slot vs Latch
 
-``Ownership/Transfer/*`` is **one-shot** — once taken, the slot is done. ``Ownership/Slot`` is **reusable** — it cycles between empty and full indefinitely. Use `Slot` for pools, long-lived channels, or any pattern where the same storage is reused. See <doc:Slot-Move-vs-Store>.
+- ``Ownership/Transfer/*`` — cross-boundary transfer with a separate Sendable Token layer; one-shot.
+- ``Ownership/Slot`` — **reusable** atomic slot, cycles empty ↔ full indefinitely. Use for pools and long-lived channels.
+- ``Ownership/Latch`` — one-shot atomic cell without the Token indirection; use when ARC sharing between producer and consumer is acceptable directly.
+
+See <doc:Slot-Move-vs-Store>.
 
 ## See Also
 
 - ``Ownership/Transfer``
-- ``Ownership/Transfer/Cell``
-- ``Ownership/Transfer/Storage``
-- ``Ownership/Transfer/Retained``
-- ``Ownership/Transfer/Box``
-- <doc:Slot-Move-vs-Store>
+- ``Ownership/Slot``
+- ``Ownership/Latch``

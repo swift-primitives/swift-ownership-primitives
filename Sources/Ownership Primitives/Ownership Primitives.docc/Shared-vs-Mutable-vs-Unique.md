@@ -27,7 +27,7 @@ Use `Unique` when:
 - You need heap storage for a `~Copyable` `Value` (e.g., a resource handle that can't be trivially copied).
 - You want deterministic cleanup at `deinit` without ARC overhead.
 - You intend to move the value out later via `consume()`.
-- You're transferring ownership into `Transfer.Cell` / `Transfer.Storage` once (see <doc:Ownership-Transfer-Recipes>).
+- You're transferring ownership into ``Ownership/Transfer/Value/Outgoing`` / ``Ownership/Transfer/Value/Incoming`` once (see <doc:Ownership-Transfer-Recipes>).
 
 ## When to Use ``Ownership/Shared``
 
@@ -57,7 +57,7 @@ Use `Mutable.Unchecked` when:
 
 ## Unique vs Transfer Family
 
-`Unique` holds its value for the lifetime of the owner; `Transfer.*` holds a value *in transit* across a `@Sendable` boundary. If you need to move a `~Copyable` `Value` from one thread / task to another, wrap it in a `Transfer.Cell` or `Transfer.Storage` — not a `Unique` — and `take()` on the other side. See <doc:Ownership-Transfer-Recipes>.
+`Unique` holds its value for the lifetime of the owner; `Transfer.*` holds a value *in transit* across a `@Sendable` boundary. If you need to move a `~Copyable` `Value` from one thread / task to another, wrap it in ``Ownership/Transfer/Value/Outgoing`` or ``Ownership/Transfer/Value/Incoming`` — not a `Unique` — and `take()` / `consume()` on the other side. See <doc:Ownership-Transfer-Recipes>.
 
 ## See Also
 
