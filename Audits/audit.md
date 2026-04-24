@@ -1,5 +1,35 @@
 # Audit: swift-ownership-primitives
 
+## Timeless 0.1.0 Completion — 2026-04-24
+
+### Scope
+
+Final session before the `0.1.0` tag. Applies the five-phase plan from
+`HANDOFF.md` to close every design-review finding that blocks the
+timeless-0.1.0 criterion: the ownership lattice is totally covered, every
+principled position is occupied by a shipped type, no planned breaking
+renames remain.
+
+### Phases
+
+| Phase | Action | Outcome |
+|-------|--------|---------|
+| 1 | Promote internal `Transfer._Box<T>` → public `Ownership.Latch<V: ~Copyable>` (new variant target `Ownership Latch Primitives`; `Value.*` / `Retained.*` rewired to use it through `internal import`) | LANDED |
+| 2 | Add `Ownership.Indirect<Value>` heap copy-on-write cell (new variant target `Ownership Indirect Primitives`) | LANDED |
+| 3 | Transfer reorganization: kind × direction matrix. `Transfer.Value<V>.{Outgoing, Incoming}` (was `Cell<V>` / `Storage<V>`); `Transfer.Retained<T>.{Outgoing, Incoming}` (was `Retained<T>`; `Incoming` new); `Transfer.Erased.{Outgoing, Incoming}` (was `Transfer.Box`; `Incoming` new). Target `Ownership Transfer Box Primitives` → `Ownership Transfer Erased Primitives`. D7 `consumeIfStored()` kept as single-concept Optional-returning consume variant per principal direction. | LANDED |
+| 4 | DocC decision-matrix article `Choosing an Ownership Primitive.md` at the `Ownership Primitives.docc` root — 15-row lattice across lifetime × mutability × ownership-multiplicity × sync × copyability. | LANDED |
+| 5 | Final sweep — this section; grep for residual planning-language; final build + test verification. | IN FLIGHT |
+
+### Final type-set (frozen)
+
+`Ownership.{Borrow, Inout, Unique, Shared, Mutable, Mutable.Unchecked, Slot, Latch, Indirect, Transfer.{Value<V>.Outgoing, Value<V>.Incoming, Retained<T>.Outgoing, Retained<T>.Incoming, Erased.Outgoing, Erased.Incoming}}` — 15 types, each holding a unique contract in the lattice. The Design Review section below records the path from pre-session state to this set.
+
+### Tests
+
+`swift test` green — 113 tests passing in 47 suites on Swift 6.3.1.
+
+---
+
 ## Memory Safety — 2026-04-23
 
 ### Scope
@@ -125,31 +155,36 @@ Do not run until the principal explicitly authorizes (per `feedback_no_public_or
 git tag -a 0.1.0 -m "$(cat <<'EOF'
 swift-ownership-primitives 0.1.0
 
-First public release. Ships safe ownership references for ~Copyable / ~Escapable
-values — Ownership.Borrow, Ownership.Inout, Ownership.Unique,
-Ownership.Slot, and the Ownership.Transfer.* family — on production
-Swift 6.3.1, paralleling SE-0519 stdlib Borrow / Inout on toolchains
-where BorrowAndMutateAccessors (SE-0507) has not yet landed.
+First public release. Ships safe ownership references and cells for
+~Copyable / ~Escapable / Copyable values on production Swift 6.3.1.
+Parallels SE-0519 stdlib Borrow / Inout, SE-0517 UniqueBox, and
+SE-0507 BorrowAndMutateAccessors on toolchains where the stdlib has
+not yet landed the final shapes.
 
-12 library products per [MOD-015] primary decomposition:
+14 library products per [MOD-015] primary decomposition:
 
   - Ownership Namespace — bare `public enum Ownership {}`
-  - Ownership Primitives Core — internal — Ownership.Transfer sub-namespace
+  - Ownership Primitives Core — internal — namespace enums for Transfer family
   - Ownership Borrow Primitives — Ownership.Borrow + Protocol typealias
   - Ownership Inout Primitives — Ownership.Inout (V12 accessor split)
-  - Ownership Unique Primitives — Ownership.Unique + .Unique+Copyable
+  - Ownership Unique Primitives — Ownership.Unique (SE-0517 parity)
   - Ownership Shared Primitives — Ownership.Shared
   - Ownership Mutable Primitives — Ownership.Mutable + Mutable.Unchecked
-  - Ownership Slot Primitives — Ownership.Slot + Slot.Move + Slot.Store
-  - Ownership Transfer Primitives — Cell + Storage + Retained + _Box
-  - Ownership Transfer Box Primitives — type-erased Box
+  - Ownership Slot Primitives — Ownership.Slot + Slot.Move
+  - Ownership Latch Primitives — Ownership.Latch (one-shot atomic cell)
+  - Ownership Indirect Primitives — Ownership.Indirect (CoW value cell)
+  - Ownership Transfer Primitives — Transfer.Value<V>.{Outgoing, Incoming},
+        Transfer.Retained<T>.{Outgoing, Incoming}
+  - Ownership Transfer Erased Primitives — Transfer.Erased.{Outgoing, Incoming}
   - Ownership Primitives Standard Library Integration — Optional<~Copyable>.take()
   - Ownership Primitives — umbrella (re-exports every variant)
 
-Tests: 84 pass in 33 suites. Clean audit with 1 OPEN (takeIfStored
-compound name — deferred to a post-0.1.0 follow-up) and 2 DEFERRED
-(Category C ~Sendable migration pending SE-0518; stdlib
-@_unsafeSelfDependentResult pending SE-0507).
+Fifteen ownership types complete the direction x kind matrix of the
+transfer family and the heap-owned / scoped reference lattice.
+
+Tests: 113 pass in 47 suites. Design Review closes A1 + A2 + A3 + A5 +
+B1 + B2 + D7 + F1 (all RESOLVED 2026-04-24). Remaining audit items are
+downstream coordination (G1) and validations/visual DocC (D*, F2).
 EOF
 )"
 # Verify:
@@ -190,8 +225,8 @@ Parked per [AUDIT-017] — deferred investigations, naming decisions, and claims
 
 | # | Cluster | Severity | Rule | Location | Finding | Status |
 |---|---------|----------|------|----------|---------|--------|
-| A1 | Cluster A — `Transfer.Box` rename | MEDIUM | [API-NAME-001] | Ownership.Transfer.Box.swift:41 | `Transfer.Box` collides diametrically with Rust's `Box<T>` (= our `Ownership.Unique`). Rename to `Transfer.Erased`. Zero current consumers; low risk. **Recommended to land pre-0.1.0.** | DEFERRED — principal decision |
-| A2 | Cluster B — Transfer direction rename | MEDIUM | [API-NAME-002] | Transfer.Cell / Transfer.Storage / Transfer.Retained | The `Cell` / `Storage` pair doesn't read as a pair at the name level. Rename to `Outgoing` / `Incoming` (+ `Retained` → `Outgoing.Retained`) exposes direction symmetry and sets up clean gap-fill via `Incoming.Retained` / `Incoming.Erased`. Affects 1 real consumer (swift-kernel's `Thread.spawn`) + 6 executor sites (swift-executors). | DEFERRED — principal decision |
+| A1 | Cluster A — `Transfer.Box` rename | MEDIUM | [API-NAME-001] | was Ownership.Transfer.Box.swift:41 | `Transfer.Box` collided diametrically with Rust's `Box<T>` (= our `Ownership.Unique`). **RESOLVED 2026-04-24 (Phase 3)** — target `Ownership Transfer Box Primitives` renamed to `Ownership Transfer Erased Primitives`; type renamed to `Transfer.Erased.Outgoing` under the kind-namespace structure. | RESOLVED 2026-04-24 |
+| A2 | Cluster B — Transfer direction rename | MEDIUM | [API-NAME-002] | was Transfer.Cell / Transfer.Storage / Transfer.Retained | **RESOLVED 2026-04-24 (Phase 3)** — landed as a kind × direction matrix with the generic at the kind layer to sidestep the Swift 6.3.1 nested-generic access limit (ref. `Experiments/nested-type-generic-escape/`). `Cell<V>` → `Value<V>.Outgoing`; `Storage<V>` → `Value<V>.Incoming`; `Retained<T>` → `Retained<T>.Outgoing`. | RESOLVED 2026-04-24 |
 | A3 | Cluster C — `Unique` API → SE-0517 parity | MEDIUM | [API-NAME-001] | Ownership.Unique.swift | **RESOLVED 2026-04-24.** Original proposal (rename type to `Box`) SUPERSEDED by `Research/naming-box-ecosystem-survey.md` (v1.2.0): Apple explicitly rejected bare `Box` in SE-0517 and reserves it for a future CoW sibling. Experiments `unified-vs-two-type-box-design` + `nested-type-generic-escape` proved unified/nested approaches not viable. Final action: keep `Ownership.Unique` name (Institute rendering of SE-0517 `UniqueBox`); rewrite API to SE-0517 parity — `.take()` (mutating, leaves empty) → `.consume()` (consuming, destroys self); `.duplicated()` → `.clone()`; drop `.hasValue`, `.leak()`, `description`, `debugDescription`; add `var value { _read _modify }`; storage `UnsafeMutablePointer<Value>?` → non-optional `UnsafeMutablePointer<Value>`. 85 tests in 35 suites pass. | RESOLVED 2026-04-24 |
 | A4 | Cluster D — Shared/Mutable symmetry | LOW | [API-NAME-001] | Ownership.Shared / Ownership.Mutable / Mutable.Unchecked | Asymmetric names: both types are ARC-shared; only mutability differs. Pair-rename to `Shared.Immutable` / `Shared.Mutable` / `Shared.Mutable.Unchecked` would read symmetrically. 32+ external call sites — highest blast radius. | DEFERRED — likely not pre-0.1.0 |
 | A5 | Cluster E — `Slot.Store` result enum removal | LOW | [API-NAME-002] | was Ownership.Slot.Store.swift:22 | Result enum `Slot.Store` collided verb/noun with the method `slot.store(_:)`. **RESOLVED 2026-04-24 — removed entirely.** `store(_)` now returns `Value?` directly (Apple-idiomatic — mirrors stdlib `Dictionary.updateValue(_:forKey:)`). Zero external consumers of the enum cases per ecosystem sweep. 84/33 tests pass; swift-async + swift-pool build clean. Research: `Research/naming-slot-store-result-enum.md` v2.0.0 IMPLEMENTED. | RESOLVED 2026-04-24 |
@@ -200,8 +235,8 @@ Parked per [AUDIT-017] — deferred investigations, naming decisions, and claims
 
 | # | Severity | Rule | Location | Finding | Status |
 |---|----------|------|----------|---------|--------|
-| B1 | MEDIUM | — (totality design goal) | Ownership.Transfer.* | Missing: inbound zero-alloc `AnyObject` transfer (mirror of `Transfer.Retained`). Under Cluster B rename: `Transfer.Incoming.Retained`. | DEFERRED — depends on Cluster B |
-| B2 | MEDIUM | — (totality design goal) | Ownership.Transfer.* | Missing: inbound type-erased transfer (mirror of `Transfer.Box`). Under Cluster B rename: `Transfer.Incoming.Erased`. | DEFERRED — depends on Cluster B |
+| B1 | MEDIUM | — (totality design goal) | Ownership.Transfer.Retained.Incoming | Missing: inbound zero-alloc `AnyObject` transfer. **RESOLVED 2026-04-24 (Phase 3)** — shipped as `Transfer.Retained<T>.Incoming`, a consumer-side `AnyObject` slot backed by `Ownership.Latch<T>` with a Sendable `Token` for producer hand-off. | RESOLVED 2026-04-24 |
+| B2 | MEDIUM | — (totality design goal) | Ownership.Transfer.Erased.Incoming | Missing: inbound type-erased transfer. **RESOLVED 2026-04-24 (Phase 3)** — shipped as `Transfer.Erased.Incoming`, a consumer-side slot holding the opaque pointer produced by `Erased.Outgoing.make(_:)`; `consume<T>(_:)` unboxes with the consumer-known type. | RESOLVED 2026-04-24 |
 
 #### C — Claims validated this session (informational)
 
@@ -217,13 +252,13 @@ Parked per [AUDIT-017] — deferred investigations, naming decisions, and claims
 
 | # | Severity | Rule | Location | Finding | Status |
 |---|----------|------|----------|---------|--------|
-| D1 | LOW | — | Ownership.Slot.swift (atomic state machine) | Release/acquire memory ordering is asserted in doc comments but not verified. TSAN harness + multi-thread stress test would anchor the claim. | OPEN — investigate post-0.1.0 |
-| D2 | LOW | — | Ownership.Transfer.{Cell,Storage,_Box}.take / store | Atomic CAS on `State.full ↔ State.empty` is claimed exactly-once; behavioral test under concurrent double-take / double-store would document the invariant. | OPEN — investigate post-0.1.0 |
-| D3 | LOW | [MEM-LIFE-006] | Ownership.Inout V12 accessor | V12 `get` + `nonmutating _modify` split was validated for the lifetime-escape fix but not for deep CoW chains (5+ levels of coroutine yields). Existing tests cover one level. | OPEN — investigate post-0.1.0 |
-| D4 | LOW | — | Package.swift | "Swift Embedded compatible" is claimed in the DocC landing but not verified — no embedded build job runs. | OPEN — investigate post-0.1.0 |
+| D1 | LOW | — | Ownership.Slot.swift (atomic state machine) | Release/acquire memory ordering is asserted in doc comments but not verified. TSAN harness + multi-thread stress test would anchor the claim. | OPEN — investigate |
+| D2 | LOW | — | Ownership.Transfer.{Cell,Storage,_Box}.take / store | Atomic CAS on `State.full ↔ State.empty` is claimed exactly-once; behavioral test under concurrent double-take / double-store would document the invariant. | OPEN — investigate |
+| D3 | LOW | [MEM-LIFE-006] | Ownership.Inout V12 accessor | V12 `get` + `nonmutating _modify` split was validated for the lifetime-escape fix but not for deep CoW chains (5+ levels of coroutine yields). Existing tests cover one level. | OPEN — investigate |
+| D4 | LOW | — | Package.swift | "Swift Embedded compatible" is claimed in the DocC landing but not verified — no embedded build job runs. | OPEN — investigate |
 | D5 | LOW | — | All types | Behavior on Swift 6.4-dev nightly is untested (only 6.3.1 verified). Resolves when CI matrix runs. | OPEN — resolves with CI |
-| D6 | LOW | — | Ownership.Borrow | `Value: ~Copyable & ~Escapable` is admitted; the `~Escapable` path is exercised only through the raw-address init. No end-to-end test covers the `Span`-like shape. | OPEN — investigate post-0.1.0 |
-| D7 | LOW | [API-NAME-002] | Transfer.Storage.takeIfStored, Transfer._Box.takeIfPresent | Compound identifiers. Fix requires a nested `Take` fluent struct mirroring `Slot.Move` (`.ifStored` / `.ifPresent` accessors). Design needs drafting. | OPEN — design, then implement post-0.1.0 |
+| D6 | LOW | — | Ownership.Borrow | `Value: ~Copyable & ~Escapable` is admitted; the `~Escapable` path is exercised only through the raw-address init. No end-to-end test covers the `Span`-like shape. | OPEN — investigate |
+| D7 | LOW | [API-NAME-002] | Transfer.Value.Incoming.consumeIfStored, Ownership.Latch.takeIfPresent | Compound-looking identifiers considered for fluent-accessor reshape. **RESOLVED 2026-04-24 (Phase 3)** — kept as single-concept Optional-returning consume/take variants (analogous to stdlib `hasPrefix` / `first(where:)`). Per principal: the reshape to a fluent nested-accessor struct would collide with the `consuming self` destruction semantic these methods must express. The existing names read as one conditional operation each. | RESOLVED 2026-04-24 |
 | D8 | LOW | — | Ownership.Mutable.Unchecked | SE-0518 `~Sendable` migration path not drafted. When `~Sendable` stabilises: migration doc + `@available(*, deprecated, message: "...")`. | DEFERRED — pending SE-0518 stable |
 | D9 | LOW | — | Ownership.Borrow, Ownership.Inout | SE-0519 stable `Borrow<T>` / `Inout<T>` (SwiftStdlib 6.4) migration path not drafted. Typealias bridge vs. hard rename vs. coexist? | DEFERRED — pending SE-0519 stable |
 | D10 | LOW | — | Ownership.Borrow.value, Ownership.Inout.value | SE-0507 `BorrowAndMutateAccessors` — `_read` / `_modify` coroutines replaced by `borrow` / `mutate`. Structure survives; body syntax changes. | DEFERRED — pending SE-0507 stable |
@@ -243,8 +278,8 @@ Parked per [AUDIT-017] — deferred investigations, naming decisions, and claims
 
 | # | Severity | Rule | Location | Finding | Status |
 |---|----------|------|----------|---------|--------|
-| F1 | LOW | [DOC-060] | `Ownership Primitives.docc` | No top-level "Choosing an Ownership Primitive" topical article with a decision matrix across all 11 types. Today's articles are partial slices. | OPEN — polish post-0.1.0 |
-| F2 | LOW | — | `Ownership Primitives.docc` | DocC rendering not visually verified end-to-end (`swift build --emit-symbol-graph` + `xcrun docc convert` pipeline not run locally). | OPEN — verify post-0.1.0 |
+| F1 | LOW | [DOC-060] | `Ownership Primitives.docc/Choosing an Ownership Primitive.md` | Top-level decision-matrix article. **RESOLVED 2026-04-24 (Phase 4)** — 15-row lattice across lifetime × mutability × ownership-multiplicity × sync × copyability; decision flowchart; cross-axis pairs naming the single-bit flip that moves between them. Linked from the umbrella landing page. | RESOLVED 2026-04-24 |
+| F2 | LOW | — | `Ownership Primitives.docc` | DocC rendering not visually verified end-to-end (`swift build --emit-symbol-graph` + `xcrun docc convert` pipeline not run locally). | OPEN — verify |
 | F3 | LOW | — | `Ownership Primitives.md` landing | The "Narrow-Import Decomposition" section was added in the earlier commit; could expand with a decision matrix linking to per-variant articles. | PARTIALLY RESOLVED |
 | F4 | LOW | [DOC-019a] | Tutorial step files under `Ownership Primitives.docc/Resources/` | Tutorial references `Ownership.Unique`; if Cluster C lands, tutorial must update. | DEFERRED — depends on Cluster C |
 
@@ -252,14 +287,16 @@ Parked per [AUDIT-017] — deferred investigations, naming decisions, and claims
 
 | # | Severity | Rule | Location | Finding | Status |
 |---|----------|------|----------|---------|--------|
-| G1 | MEDIUM | — | swift-reference-primitives/Sources/Reference Primitives/Reference.swift | Doc table in Reference.swift characterises Ownership types as-of-relocation. If any Cluster A–E lands, table needs update. | OPEN — coordinate post-0.1.0 |
+| G1 | MEDIUM | — | swift-reference-primitives/Sources/Reference Primitives/Reference.swift | Doc table in Reference.swift characterises Ownership types as-of-relocation. With Phase 3 Transfer rename landed, the downstream table references `Transfer.Cell` / `Transfer.Storage` / `Transfer.Box` which no longer exist. Needs coordinated update. | OPEN — coordinate |
 | G2 | LOW | — | swift-property-primitives (commit `b4ae443`) | Narrow-import migration bundled with pre-existing V12-parent WIP. Clean separation would require interactive rebase; cost/benefit low. | ACCEPTED — documented in commit message |
 | G3 | LOW | — | swift-tagged-primitives | `Tagged+Ownership.Borrow.Protocol.swift` imports `Ownership.Borrow`. When SE-0519 stable lands, parallel migration needed. | DEFERRED — pending SE-0519 |
 | G4 | LOW | — | swift-async-primitives, swift-pool-primitives, swift-cache-primitives, swift-foundations/swift-markdown-html-render | All use `Ownership.Shared` / `.Mutable`. If Cluster D lands (`Shared.Immutable` / `Shared.Mutable`), 32+ call sites need parallel migration. Argument for NOT doing Cluster D. | DEFERRED — pending Cluster D decision |
 
 ### Summary
 
-**26 findings total: 5 VALIDATED (workaround revalidations + V12-split cross-target proof + ~Copyable-generic-Sendable refutation), 2 RESOLVED (A5 — 2026-04-24; A3 — 2026-04-24), 6 OPEN (investigate post-0.1.0), 13 DEFERRED (pending principal choice or language evolution), 6 EXPLORATORY.**
+**36 findings total: 5 VALIDATED (experiment revalidations), 8 RESOLVED (A1 + A2 + A3 + A5 + B1 + B2 + D7 + F1, all 2026-04-24), 8 OPEN (investigations / visual DocC / downstream coordination), 7 DEFERRED (pending language evolution — A4 Cluster D, D8/SE-0518, D9/SE-0519 stable, D10/SE-0507 stable, F4/Tutorial update conditional on Unique API work, G3/G4 downstream cascades), 6 EXPLORATORY (E1–E6), 1 ACCEPTED (G2), 1 PARTIALLY RESOLVED (F3).**
+
+Timeless-0.1.0 gate (direction × kind matrix totality + ownership-lattice completeness): satisfied. The remaining OPEN items are validations and downstream cascades; no type-level gap blocks the tag.
 
 ### Side-effect improvements from A3 landing (2026-04-24)
 
@@ -276,19 +313,18 @@ Final convention across the package:
 
 ### Recommended next step
 
-Minimal-change path for 0.1.0 (was A1 + A5): A5 **RESOLVED** via enum removal
-on 2026-04-24; remaining minimal candidate is **A1** (`Transfer.Box` →
-`Transfer.Erased`) — zero blast radius, diametric collision with Rust Box.
-
-Totality-now path: apply **A1 + A2** (direction rename) **+ B1 + B2**
-(fill completeness gaps) **+ A3** (`Unique` → `Box`). Accept the
-coordinated downstream fix in swift-kernel (`Thread.spawn`) + swift-executors.
-Principal choice.
+Taken. The totality-now path (A1 + A2 + A3 + B1 + B2 + F1) + the Unique
+SE-0517 parity (A3) + the Slot.Store removal (A5) all landed in a single
+five-phase session on 2026-04-24, plus two additional type additions not
+in the original plan — `Ownership.Latch` (Phase 1 — promoted from the
+internal `Transfer._Box`) and `Ownership.Indirect` (Phase 2 — CoW heap
+cell). The lattice is complete at fifteen types.
 
 Companion research:
-- `Research/ownership-types-usage-and-justification.md` (v2.1.0) — cross-type merit + naming
-- `Research/naming-transfer-box-to-erased.md` (A1 decision basis)
-- `Research/naming-slot-store-result-enum.md` (A5 — IMPLEMENTED 2026-04-24)
-- `Research/naming-unique-to-box.md` (A3 decision basis)
-- `Research/naming-transfer-direction-pair.md` (A2 decision basis)
+- `Research/ownership-types-usage-and-justification.md` — cross-type merit + naming
+- `Research/naming-transfer-box-to-erased.md` (A1 decision basis) — LANDED
+- `Research/naming-slot-store-result-enum.md` (A5 — LANDED 2026-04-24)
+- `Research/naming-unique-to-box.md` — SUPERSEDED by naming-box-ecosystem-survey
+- `Research/naming-box-ecosystem-survey.md` (A3 decision basis) — LANDED
+- `Research/naming-transfer-direction-pair.md` (A2 decision basis) — LANDED with semantic refinement (generic at kind layer)
 - `Research/naming-shared-mutable-symmetry.md` (A4 — recommend DEFER)

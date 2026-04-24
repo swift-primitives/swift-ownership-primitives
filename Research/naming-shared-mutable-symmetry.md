@@ -209,18 +209,18 @@ Under `Shared.Immutable` / `Shared.Mutable`, the engineer types
 4. The seasoned-Swift-engineer reachability is BETTER under the
    current names (one step vs two).
 
-**Action**: leave `Ownership.Shared` / `Ownership.Mutable` / `Ownership.Mutable.Unchecked`
-as-is through 0.1.0 and 0.2.0. Revisit only if:
+**Action**: keep `Ownership.Shared` / `Ownership.Mutable` /
+`Ownership.Mutable.Unchecked` as-is. Revisit only if:
 
 - An `Ownership.Shared.Atomic` sibling is added, AND
 - The nesting demand hits critical mass (3+ mutability variants).
 
-If either condition materialises, the rename cost is the same post-tag
-as pre-tag (no API-compat reason to do it pre-tag).
+If either condition materialises, the rename cost is the same at that
+point as it would have been now (no API-compat reason to do it sooner).
 
-**Alternative (if principal prefers symmetry)**: the rename CAN ship
-in 0.1.0. Downstream packages migrate in lock-step. The argument is
-aesthetic; the cost is real. Not recommended.
+**Alternative (if principal prefers symmetry)**: the rename can be
+taken at any subsequent revision; downstream packages migrate in
+lock-step. The argument is aesthetic; the cost is real.
 
 ## References
 

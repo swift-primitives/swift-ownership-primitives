@@ -2,15 +2,24 @@
 
 <!--
 ---
-version: 2.1.0
-last_updated: 2026-04-23
-status: RECOMMENDATION
+version: 2.2.0
+last_updated: 2026-04-24
+status: IMPLEMENTED
 tier: 2
 scope: cross-package
 ---
 -->
 
 ## Changelog
+
+- **v2.2.0 (2026-04-24)** — Timeless-0.1.0 completion. The ownership
+  lattice is now total at fifteen types: the direction × kind matrix
+  of the Transfer family fills both new positions (`Transfer.Retained<T>.Incoming`,
+  `Transfer.Erased.Incoming`) and two additional ownership cells ship
+  (`Ownership.Latch` as the one-shot atomic primitive, `Ownership.Indirect`
+  as the heap CoW value cell). Clusters A + B + E land per the Design
+  Review recommendations; Cluster D (Shared/Mutable symmetry rename)
+  remains deferred per the companion research doc.
 
 - **v2.1.0 (2026-04-23)** — Revalidated the "~Copyable generic blocks
   Sendable inference" claim on Swift 6.3.1 via
@@ -605,21 +614,17 @@ Candidates for inclusion and their verdicts:
 | Weak / Unowned reference | `Weak<T>`, `Unowned<T>` | **Not here** — lives in `swift-reference-primitives`. That package explicitly owns non-owning references. |
 | Lock-protected shared mutable | `Ownership.Locked<T>` | **Not here** — stdlib `Mutex<T>` covers it |
 
-**Two genuine gaps** if we want total coverage:
+**Two genuine gaps** (now closed):
 
-1. **Inbound-AnyObject zero-alloc transfer** — mirror of `Transfer.Retained`
-   for the consumer-creates-slot direction. Today's Storage covers this
-   generically but not with `Unmanaged`-zero-alloc.
-2. **Inbound type-erased transfer** — mirror of `Transfer.Box` for the
-   consumer-creates-slot direction.
+1. **Inbound AnyObject transfer** — mirror of the outgoing retained
+   path. Shipped as ``Transfer.Retained<T>.Incoming``.
+2. **Inbound type-erased transfer** — mirror of the outgoing erased
+   path. Shipped as ``Transfer.Erased.Incoming``.
 
-Both are narrow but complete the symmetry of the Transfer family. 0.1.0
-could ship without them; 0.2.0 could fill them when (and if) a consumer
-surfaces.
-
-Note: these gaps become MORE visible under the `Outgoing` / `Incoming`
-rename scheme. Today's asymmetric names hide the gap; naming for
-symmetry makes it obvious.
+Both complete the symmetry of the Transfer family at 15 total ownership
+types. The `Outgoing` / `Incoming` direction axis makes the complete
+matrix structurally visible; the kind axis (`Value<V>`, `Retained<T>`,
+`Erased`) anchors each cell's payload identity.
 
 ### Claims not to make
 
@@ -753,15 +758,17 @@ Ordered by cost/benefit (highest-value first):
 
 Two narrow gaps if the package is to be truly total:
 
-1. Inbound zero-alloc AnyObject transfer (mirror of `Transfer.Retained`).
-2. Inbound type-erased transfer (mirror of `Transfer.Box`).
+1. Inbound AnyObject transfer — shipped as `Transfer.Retained<T>.Incoming`.
+2. Inbound type-erased transfer — shipped as `Transfer.Erased.Incoming`.
 
-Both would require the `Incoming.*` namespace from Cluster B. Until
-Cluster B is adopted, the gaps are visible-but-awkward-to-fill.
+Both ship under the kind-namespace × direction matrix (Cluster B
+landing refined to place the generic at the kind layer; see
+`naming-transfer-direction-pair.md` Historical note).
 
-**For 0.1.0**: recommend Cluster A + Cluster E as no-regret name fixes.
-Clusters B/C/D are optional style improvements that can ship post-0.1.0
-if appetite exists.
+**Landed in 0.1.0**: Clusters A + B + C + E (A1 + A2 + A3 + A5 + B1 +
+B2) plus the Latch (Phase 1) and Indirect (Phase 2) additions. Cluster
+D (Shared / Mutable symmetry rename) kept deferred per research-grade
+recommendation (see `naming-shared-mutable-symmetry.md`).
 
 ## Appendix: usage inventory (v1.0.0 data)
 

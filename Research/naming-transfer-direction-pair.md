@@ -209,17 +209,30 @@ session that lands the rename.
 Migrate both in parallel with the ownership-primitives rename, verify
 their tests, commit each repo separately.
 
-**Completeness follow-ups (deferred)**: B1 and B2 (inbound AnyObject
-and inbound type-erased) become trivially nameable under the rename
-and can be filled in post-0.1.0 if consumer demand materialises.
+**Completeness follow-ups (landed)**: B1 and B2 (inbound AnyObject and
+inbound type-erased) become trivially nameable under the rename and are
+filled in the 0.1.0 cycle as `Transfer.Retained<T>.Incoming` and
+`Transfer.Erased.Incoming`.
 
-## Alternative (defer)
+## Historical note — implementation refinement
 
-If the principal prefers minimal-change-for-0.1.0 and is willing to
-accept the asymmetric names for now, Cluster A (A1 `Transfer.Box` →
-`Transfer.Erased`) and Cluster E (A5 `Slot.Store` → `Slot.Outcome`)
-remain the no-regret subset. A2 can ship in 0.2.0 — the downstream
-coordination cost is the same either way.
+The literal form applied at implementation time refines the proposal
+above: the generic moves to the **kind layer** (`Transfer.Value<V>`,
+`Transfer.Retained<T>`) rather than the direction layer, because
+Swift 6.3.1 forbids accessing `Foo<V>.Bar<U>` as `Foo.Bar<U>`
+(verified in `Experiments/nested-type-generic-escape/`). Landed shape:
+
+- `Transfer.Cell<V>` → `Transfer.Value<V>.Outgoing`
+- `Transfer.Storage<V>` → `Transfer.Value<V>.Incoming`
+- `Transfer.Retained<T>` → `Transfer.Retained<T>.Outgoing`
+- `Transfer.Box` → `Transfer.Erased.Outgoing`
+- NEW: `Transfer.Retained<T>.Incoming`
+- NEW: `Transfer.Erased.Incoming`
+
+The direction-pair symmetry from the original proposal is preserved;
+the generic placement binds to the cell's payload identity (Value,
+Retained, Erased) rather than the handle role (Outgoing, Incoming),
+which is the correct semantic anchor.
 
 ## References
 

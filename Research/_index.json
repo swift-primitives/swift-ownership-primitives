@@ -67,7 +67,7 @@
     {
       "file": "naming-shared-mutable-symmetry.md",
       "displayName": "naming-shared-mutable-symmetry.md",
-      "topic": "Per-module naming research for Ownership.Shared + Ownership.Mutable + Ownership.Mutable.Unchecked. Recommends: DO NOT RENAME for 0.1.0 or 0.2.0. Apple's 25-year NSArray/NSMutableArray pattern is the canonical precedent — the current scheme IS that pattern. Explicit-pair alternative (Shared.Immutable / Shared.Mutable / Shared.Mutable.Unchecked) is academically motivated (Clarke-Potter-Noble 1998; Boyapati-Liskov-Shrira 2003) but adds nesting with 32+ external call sites across swift-async / swift-pool / swift-cache / swift-markdown-html-render. The seasoned-Swift-engineer reachability is better under the current names (one step vs two).",
+      "topic": "Per-module naming research for Ownership.Shared + Ownership.Mutable + Ownership.Mutable.Unchecked. Recommends: DO NOT RENAME. Apple's 25-year NSArray/NSMutableArray pattern is the canonical precedent — the current scheme IS that pattern. Explicit-pair alternative (Shared.Immutable / Shared.Mutable / Shared.Mutable.Unchecked) is academically motivated (Clarke-Potter-Noble 1998; Boyapati-Liskov-Shrira 2003) but adds nesting with 32+ external call sites across swift-async / swift-pool / swift-cache / swift-markdown-html-render. The seasoned-Swift-engineer reachability is better under the current names (one step vs two).",
       "status": "DEFERRED",
       "statusDetail": "recommend: do not rename — Apple precedent (NSArray/NSMutableArray)",
       "statusRaw": "DEFERRED",
