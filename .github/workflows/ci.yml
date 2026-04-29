@@ -32,7 +32,7 @@ jobs:
       umbrella-display-name: "Ownership Primitives"
       umbrella-bundle-id: "swift-ownership-primitives.Ownership-Primitives"
       umbrella-docc-path: "Sources/Ownership Primitives/Ownership Primitives.docc"
-      exclude-modules: ""
+      exclude-modules: "Ownership_Primitives_Test_Support"
       enable-private-repos: true
     secrets:
       PRIVATE_REPO_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
