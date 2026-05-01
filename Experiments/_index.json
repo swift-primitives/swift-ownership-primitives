@@ -1,0 +1,106 @@
+{
+  "$schema": "https://swift-institute.org/schemas/experiments-index-v1.json",
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-04-23",
+  "title": "Experiments Index",
+  "blurb": "Ownership primitives experiments — empirical anchors for the `Ownership.Borrow` / `Ownership.Inout` / `Ownership.Unique` / `Ownership.Slot` / `Ownership.Transfer.*` family.\n\nFor cross-primitive investigations (Ownership + Property + Buffer + Identity), see `/Users/coen/Developer/swift-primitives/Experiments/`.",
+  "scope": "swift-ownership-primitives",
+  "experiments": [
+    {
+      "directory": "inout-value-accessor-copyability-split",
+      "displayName": "inout-value-accessor-copyability-split",
+      "purpose": "Verify the V12 Ownership.Inout.value accessor split in isolation — `get + nonmutating _modify` for Copyable Value, `_read + nonmutating _modify` for ~Copyable Value. Confirms both paths route nested method-call mutations through the shared pointer (CoW-preserving) and the `get` path releases pure reads from the coroutine lifetime chain.",
+      "date": "2026-04-23",
+      "toolchain": "Apple Swift 6.3.1 (swiftlang-6.3.1.1.2)",
+      "status": "CONFIRMED",
+      "statusDetail": null,
+      "statusRaw": "CONFIRMED",
+      "supersededBy": null,
+      "crossRefs": [
+        "swift-ownership-primitives/Sources/Ownership Inout Primitives/Ownership.Inout.swift",
+        "swift-primitives/Experiments/property-view-lifetime-escape-reproduction",
+        "HANDOFF-property-view-ownership-inout-lifetime-chain.md"
+      ]
+    },
+    {
+      "directory": "borrow-inout-stdlib-parity",
+      "displayName": "borrow-inout-stdlib-parity",
+      "purpose": "Verify Ownership.Borrow / Ownership.Inout cover the SE-0519 stdlib Borrow<T> / Inout<T> shape (the four public inits and the `.value` accessor) on production Swift 6.3.1 before SE-0507 BorrowAndMutateAccessors ships stable. Formalizes the audit trail in `Audits/audit.md` under \"Legacy — Consolidated 2026-04-08\".",
+      "date": "2026-04-23",
+      "toolchain": "Apple Swift 6.3.1 (swiftlang-6.3.1.1.2)",
+      "status": "CONFIRMED",
+      "statusDetail": null,
+      "statusRaw": "CONFIRMED",
+      "supersededBy": null,
+      "crossRefs": [
+        "swift-ownership-primitives/Audits/audit.md",
+        "swift-ownership-primitives/Sources/Ownership Borrow Primitives/Ownership.Borrow.swift",
+        "swift-ownership-primitives/Sources/Ownership Inout Primitives/Ownership.Inout.swift"
+      ]
+    },
+    {
+      "directory": "nested-in-generic-extension-target-boundary",
+      "displayName": "nested-in-generic-extension-target-boundary",
+      "purpose": "Validate whether a nested type inside a ~Copyable-generic outer struct, itself nested in a sub-namespace across a 4-target chain (Namespace → Core → Variant → Umbrella → consumer), can have public methods declared in `extension Outer.Inner.Cell.Token where T: ~Copyable` and be called from a Copyable-T consumer. Result: FIXED on Swift 6.3.1 — clean build passes; the earlier linker failure that motivated keeping `Ownership.Transfer.Cell.Token.take()` and `Storage.Token.store(_:)` in the struct bodies was stale-cache-related. Decision: moved both methods into `extension ... where T: ~Copyable`.",
+      "date": "2026-04-23",
+      "toolchain": "Apple Swift 6.3.1 (swiftlang-6.3.1.1.2)",
+      "status": "FIXED",
+      "statusDetail": "hypothesis REFUTED — workaround obsolete",
+      "statusRaw": "FIXED",
+      "supersededBy": null,
+      "crossRefs": [
+        "swift-ownership-primitives/Sources/Ownership Transfer Primitives/Ownership.Transfer.Cell.swift",
+        "swift-ownership-primitives/Sources/Ownership Transfer Primitives/Ownership.Transfer.Storage.swift",
+        "swift-ownership-primitives/Audits/audit.md"
+      ]
+    },
+    {
+      "directory": "unified-vs-two-type-box-design",
+      "displayName": "unified-vs-two-type-box-design",
+      "purpose": "Empirically validate whether a unified Ownership.Box<V: ~Copyable>: ~Copyable with conditional Copyable (array-primitives-style) is equivalent to the two-type approach (raw-pointer UniqueBox + class-backed CoW Box) for the SE-0517 UniqueBox contract. Eight sub-hypotheses tested: class-backed compilability, class holding ~Copyable property, memory footprint, struct-copy reference semantics, consume() implementability, isKnownUniquelyReferenced in ~Copyable extension, same-named conditional accessors, ARC-managed deinit. Key finding (H5): consume() of ~Copyable Value with class-backed storage is UNIMPLEMENTABLE in Swift — compiler rejects with 'storage.value is borrowed and cannot be consumed'. SE-0517's core API requires raw-pointer storage. The two-type approach is architecturally necessary, not stylistic preference.",
+      "date": "2026-04-24",
+      "toolchain": "Apple Swift 6.3.1 (swiftlang-6.3.1.1.2)",
+      "status": "CONFIRMED",
+      "statusDetail": "two-type approach empirically validated as architecturally necessary",
+      "statusRaw": "CONFIRMED",
+      "supersededBy": null,
+      "crossRefs": [
+        "swift-ownership-primitives/Research/naming-box-ecosystem-survey.md",
+        "swift-ownership-primitives/Research/naming-unique-to-box.md",
+        "https://github.com/swiftlang/swift-evolution/blob/main/proposals/0517-uniquebox.md"
+      ]
+    },
+    {
+      "directory": "nested-type-generic-escape",
+      "displayName": "nested-type-generic-escape",
+      "purpose": "Follow-on to unified-vs-two-type-box-design. Tests whether Swift 6.3.1 allows accessing a nested type of a generic outer struct WITHOUT specifying the outer's generic, via six different patterns: nested typealias to non-generic (H1), nested struct with own generic (H2), ~Copyable variant (H3), default generic parameters (H4), hoisted typealias (H5), module-scope typealias (H6). Key findings: H2/H3 REFUTED — Swift requires explicit outer generic for nested structs with own generics. H5 CRASHES the compiler (stack dump captured, upstream bug worth filing). H1 WORKS only for nested typealiases to non-generic types. Rules out the user's desired 'Ownership.Box<V> as bare CoW + Ownership.Box.Unique<U> nested with outer V omitted' shape — NOT expressible in current Swift. Viable paths: namespace enum Box + nested variants (loses bare Box<V>), OR sibling types Ownership.Box<V> + Ownership.Unique<V> (loses nesting).",
+      "date": "2026-04-24",
+      "toolchain": "Apple Swift 6.3.1 (swiftlang-6.3.1.1.2)",
+      "status": "REFUTED",
+      "statusDetail": "hoisting does not rescue; the desired shape is not expressible in Swift 6.3.1",
+      "statusRaw": "REFUTED",
+      "supersededBy": null,
+      "crossRefs": [
+        "swift-ownership-primitives/Experiments/unified-vs-two-type-box-design",
+        "swift-ownership-primitives/Research/naming-box-ecosystem-survey.md"
+      ]
+    }
+  ],
+  "crossRefExperiments": [
+    {
+      "directory": "../../swift-primitives/Experiments/ownership-borrow-protocol-unification",
+      "note": "Cross-primitive (Identity + Ownership) — tests whether Viewable can unify with Ownership.Borrow.`Protocol` via associatedtype defaulting. Lives in the swift-primitives superrepo because multiple primitives participate.",
+      "status": "CONFIRMED"
+    },
+    {
+      "directory": "../../swift-primitives/Experiments/property-view-ownership-inout-factoring",
+      "note": "Cross-primitive (Property + Identity + Ownership) — establishes the Tagged<Tag, Ownership.Inout<Base>> composition shape used by Property.View.",
+      "status": "CONFIRMED"
+    },
+    {
+      "directory": "../../swift-primitives/Experiments/property-view-lifetime-escape-reproduction",
+      "note": "Cross-primitive (Property + Buffer + Identity + Ownership) — isolates the lifetime-escape failure that drove the V12 fix. Companion to `inout-value-accessor-copyability-split` (the fix shape).",
+      "status": "CONFIRMED"
+    }
+  ]
+}

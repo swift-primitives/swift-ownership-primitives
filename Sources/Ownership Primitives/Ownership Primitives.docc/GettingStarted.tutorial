@@ -1,0 +1,132 @@
+@Tutorial(time: 10) {
+    @Intro(title: "Getting Started with Ownership Primitives") {
+        Walk through the three most common shapes in Ownership Primitives:
+        a heap-owned `~Copyable` cell, a scoped mutable reference, and
+        consuming an `Optional<~Copyable>`.
+
+        By the end, you'll have a `Request` value that's heap-allocated,
+        mutated through a scoped reference, and consumed out of an optional
+        slot — all with `@safe` conformance and no raw
+        `UnsafeMutablePointer` on the surface.
+    }
+
+    @Section(title: "Start with a `~Copyable` value type") {
+        @ContentAndMedia {
+            The starting point is a `~Copyable` `Request` struct — a common
+            shape for types carrying file descriptors, active connections,
+            or other resources that must not be accidentally duplicated.
+        }
+
+        @Steps {
+            @Step {
+                Start with an empty file. Import `Ownership_Primitives`.
+
+                @Code(name: "main.swift", file: "step-01-imports.swift")
+            }
+
+            @Step {
+                Declare a `~Copyable` `Request` struct. Being `~Copyable`
+                means an instance cannot be duplicated — every mutation
+                must go through the single live instance.
+
+                @Code(name: "main.swift", file: "step-02-request.swift")
+            }
+        }
+    }
+
+    @Section(title: "Heap-own the value with `Ownership.Unique`") {
+        @ContentAndMedia {
+            `Ownership.Unique<Value>` heap-allocates a value and owns it
+            exclusively. Use the `value` accessor for direct read/mutation,
+            or `consume()` to destroy the cell and extract the value.
+
+            This replaces the manual `allocate` → `initialize(to:)` →
+            `deinitialize(count:)` → `deallocate` pattern with a single
+            `@safe` struct, mirroring SE-0517 `UniqueBox` semantics.
+        }
+
+        @Steps {
+            @Step {
+                Create an `Ownership.Unique` holding a new `Request`. The
+                value is consumed into the heap-allocated storage.
+
+                @Code(name: "main.swift", file: "step-03-unique.swift")
+            }
+
+            @Step {
+                Mutate through `value`. The `_modify` coroutine yields an
+                `inout Request`; your mutations route through the owned
+                storage with full exclusivity.
+
+                @Code(name: "main.swift", file: "step-04-mutate.swift")
+            }
+
+            @Step {
+                Extract the value with `consume()`. The cell is destroyed
+                at the `consume()` call site; attempting to reference it
+                afterwards is a compile-time error.
+
+                @Code(name: "main.swift", file: "step-05-take.swift")
+            }
+        }
+    }
+
+    @Section(title: "Pass a scoped mutable reference with `Ownership.Inout`") {
+        @ContentAndMedia {
+            `Ownership.Inout<Value>` is a `~Copyable, ~Escapable` struct
+            that wraps an `UnsafeMutablePointer<Value>` with a compiler-
+            enforced lifetime. Unlike an `inout` parameter (not storable)
+            or a raw `UnsafeMutablePointer` (no lifetime), `Ownership.Inout`
+            is storable as a field with `@_lifetime(...)` bounding its scope.
+        }
+
+        @Steps {
+            @Step {
+                Build a safe mutable reference from an `inout` parameter.
+                The reference's lifetime is bound to the parameter's
+                `&value` scope.
+
+                @Code(name: "main.swift", file: "step-06-inout.swift")
+            }
+
+            @Step {
+                Read and mutate through `ref.value`. The accessor splits
+                on copyability: `Copyable` `Value` uses `get` +
+                `nonmutating _modify`; `~Copyable` `Value` uses `_read` +
+                `nonmutating _modify`. Both preserve CoW on nested
+                method-call mutations.
+
+                @Code(name: "main.swift", file: "step-07-access.swift")
+            }
+        }
+    }
+
+    @Section(title: "Consume an `Optional<~Copyable>`") {
+        @ContentAndMedia {
+            The stdlib does not provide `Optional<~Copyable>.take()`. This
+            package provides the extension: `take()` consumes `self`,
+            leaves `nil` in its place, and returns the wrapped value.
+
+            It is the canonical pattern for moving out of a `~Copyable`
+            optional stored property.
+        }
+
+        @Steps {
+            @Step {
+                Store a `~Copyable` value in an optional slot. Attempting
+                to read it by copy would fail to compile (the value is
+                `~Copyable`).
+
+                @Code(name: "main.swift", file: "step-08-optional.swift")
+            }
+
+            @Step {
+                Consume the value with `take()`. The guard-let pattern
+                surfaces the `nil` case. After `take()`, the slot is
+                `nil`; you own the value.
+
+                @Code(name: "main.swift", file: "step-09-take-optional.swift")
+            }
+        }
+    }
+}

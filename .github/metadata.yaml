@@ -1,0 +1,9 @@
+# .github/metadata.yaml
+# Triaged 2026-04-29 — refined for the swift-primitives 0.1.0 release-cohort path.
+description: "Ownership and lifetime types for Swift."
+topics:
+  - primitives
+  - ownership
+  - lifetime
+  - type-safety
+homepage: "https://swift-institute.org"
