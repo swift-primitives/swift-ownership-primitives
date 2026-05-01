@@ -80,7 +80,7 @@ guard let handle = slot.take() else { return }
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/swift-primitives/swift-ownership-primitives.git", from: "0.1.0")
+    .package(url: "https://github.com/swift-primitives/swift-ownership-primitives.git", branch: "main")
 ]
 ```
 
