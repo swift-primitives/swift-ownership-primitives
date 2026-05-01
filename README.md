@@ -224,20 +224,6 @@ and are not expected to be deprecated as part of this transition.
 
 ---
 
-## Design choices
-
-**Per-type vs relation-parametric shape**: an alternative shape was
-considered — a single parametric `Ownership<Relation, Value>` type
-discriminated by a phantom-tag relation (mirroring `Tagged<Tag, RawValue>`
-and `Property<Tag, Base>`). The per-type shape was chosen for
-**stdlib SE-0519 alignment**: the stdlib `Borrow<T>` and `Inout<T>`
-types under SE-0519 are per-type, not relation-parametric. Adopting a
-parametric shape now would force a deprecation refactor when SE-0519
-stabilises. The per-type shape anticipates the language's eventual
-direction; the cost is a slightly larger surface at 0.1.0.
-
----
-
 ## Related Packages
 
 **Used By**:
