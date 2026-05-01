@@ -117,25 +117,6 @@ Requires Swift 6.3.1 and macOS 26 / iOS 26 / tvOS 26 / watchOS 26 / visionOS 26 
 
 ---
 
-## Adoption
-
-Downstream packages store `Ownership.Inout<Base>` / `Ownership.Borrow<Base>` as the reference-shape for fluent-accessor primitives. Canonical shape from `swift-property-primitives`:
-
-```swift
-extension Property.View {
-    internal var _storage: Tagged<Tag, Ownership.Inout<Base>>
-
-    public var base: Ownership.Inout<Base> {
-        @_lifetime(borrow self)
-        _read { yield _storage.rawValue }
-    }
-}
-```
-
-A `Property.View` is `~Copyable, ~Escapable`, stores its mutable reference as `Ownership.Inout<Base>` (wrapped by `Tagged` for phantom-typed namespace discrimination), and yields it back through a `_read` coroutine. `swift-buffer-primitives` uses the same shape on ring / linear / slab accessors to return typed, lifetime-bounded references instead of raw `UnsafeMutablePointer`.
-
----
-
 ## Overview
 
 | Type | Purpose |
@@ -172,55 +153,15 @@ A `Property.View` is `~Copyable, ~Escapable`, stores its mutable reference as `O
 
 ## Stability
 
-`swift-ownership-primitives` is **pre-1.0** and follows SemVer
-pre-release semantics: minor-version bumps within `0.x` MAY introduce
-source-breaking changes. The package will reach `1.0` when the
-remaining items below are settled.
+`swift-ownership-primitives` follows SemVer pre-release semantics in 0.x.
 
-**Source-stability commitment for `0.x`**:
+| Surface | 0.1.x expectation |
+|---|---|
+| Public type names + initializer surface for the fifteen primitives | Stable within 0.1.x |
+| `Ownership.Borrow.\`Protocol\`` capability-conformance contract | Stable within 0.1.x |
+| Internal storage shapes / hoisted helper modules / fileprivate helper classes | Not part of the source-stability commitment |
 
-- The public initializer surface of `Ownership.Borrow`,
-  `Ownership.Inout`, `Ownership.Unique`, `Ownership.Shared`,
-  `Ownership.Mutable`, `Ownership.Slot`, `Ownership.Latch`, and
-  `Ownership.Transfer.{Value, Retained, Erased}.{Outgoing, Incoming}`
-  is intended to be source-stable through `1.0`.
-- Internal storage shapes (`_pointer` / `_owner` / `_storage` fields,
-  hoisted state-constant modules, fileprivate helper classes) are
-  implementation details and free to change between `0.x` minors.
-- The `Ownership.Borrow.\`Protocol\`` capability typealias and its
-  hoisted `__Ownership_Borrow_Protocol` backing exist to work around
-  SE-0404 (no nested protocols inside generic types). The
-  capability-conformance contract — adopt `Ownership.Borrow.\`Protocol\``
-  to gain a canonical borrow path — is source-stable.
-
-**Migration to stdlib SE-0519 `Borrow<T>` / `Inout<T>`**:
-
-When SE-0519 stabilises in stdlib, this package will:
-
-1. Deprecate `Ownership.Borrow` / `Ownership.Inout` in favour of
-   stdlib `Borrow<T>` / `Inout<T>`.
-2. Provide a migration guide and a deprecation window of at least
-   one minor version (`0.N` → `0.N+1`) before removal.
-3. Retain the `Ownership.Borrow.\`Protocol\`` capability typealias
-   as an alias to the stdlib equivalent (or its closest analog) for
-   adopters who took the capability conformance.
-4. Remove the heap-owning Copyable workaround in
-   `Ownership.Borrow.init(borrowing:)`. Stdlib's register-pass
-   miscompile fix means the workaround becomes unnecessary.
-
-The owned-storage primitives (`Unique`, `Shared`, `Mutable`,
-`Slot`, `Latch`) and the Transfer family are NOT covered by SE-0519
-and are not expected to be deprecated as part of this transition.
-
-**Known accepted-as-known constraints in 0.1.0**:
-
-- `Ownership.Borrow.init(borrowing:)` for `Copyable Value` heap-allocates
-  a class-owned copy. The cost is documented inline; the workaround
-  is required by the pre-SE-0519 toolchain.
-- `Ownership.Borrow.init(borrowing:)` for `~Copyable Value` is
-  non-`@inlinable` to preserve the cross-module `@in_guaranteed`
-  ABI; same-module consumers must use the `init(_ pointer:)`
-  overload. Documented at the call site.
+Notes on possible interaction with SE-0519 are tracked in [`Research/stdlib-interaction-notes.md`](./Research/stdlib-interaction-notes.md).
 
 ---
 

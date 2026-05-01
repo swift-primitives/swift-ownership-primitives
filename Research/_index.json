@@ -1,11 +1,22 @@
 {
   "$schema": "https://swift-institute.org/schemas/research-index-v1.json",
   "schemaVersion": "1.0.0",
-  "generatedAt": "2026-04-29",
+  "generatedAt": "2026-05-01",
   "title": "Research Index",
   "blurb": "swift-ownership-primitives ships a package-local corpus that groups (1) the cross-type merit + completeness + naming review (v2.1.0) and (2) per-module naming research for every type whose name was DEBATE / QUESTION / INCORRECT in v2.1.0 \u2014 grounded in Apple (Swift Evolution, stdlib, API Design Guidelines) and academia (linear/affine types, ownership types, session types). Ecosystem-wide cross-references live in `/Users/coen/Developer/swift-institute/Research/` and `/Users/coen/Developer/swift-primitives/Research/`; this index carries pointers to those external canonical docs.",
   "scope": "swift-ownership-primitives (swift-primitives)",
   "documents": [
+    {
+      "file": "stdlib-interaction-notes.md",
+      "displayName": "stdlib-interaction-notes",
+      "topic": "Notes on possible interaction between this package and stdlib SE-0519 (Borrow<T> / Inout<T>). Captures current state (mirroring shape on Swift 6.3.1 via _read / nonmutating _modify before SE-0507 stabilises) and several plausible scenarios for what may happen when SE-0519 stabilises: deprecate package types in favour of stdlib equivalents, retain divergent types where stdlib ships a meaningfully different shape, or continue current shape if SE-0519 stalls. Explicitly non-committal; replaces the README's earlier 'Migration to stdlib SE-0519' four-step deprecation-plan prose, which asserted forecast as consumer fact.",
+      "date": "2026-05-01",
+      "status": "NOTES",
+      "statusDetail": "Contributor-facing notes only; not part of the source-stability commitment. Created 2026-05-01 to relocate the README's prior speculative migration-plan prose, per cohort README evaluator-pass remediation (swift-institute/Research/cohort-readme-evaluator-pass.md).",
+      "statusRaw": "NOTES",
+      "tier": 3,
+      "scope": "swift-ownership-primitives"
+    },
     {
       "file": "ownership-types-usage-and-justification.md",
       "displayName": "ownership-types-usage-and-justification.md",
