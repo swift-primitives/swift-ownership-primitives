@@ -7,7 +7,7 @@ date: 2026-05-01
 
 ## Scope and non-commitment
 
-This document captures **possible** interaction patterns between `swift-ownership-primitives` and the in-evolution `Borrow<T>` / `Inout<T>` types proposed under [SE-0519](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0519-noncopyable-stdlib-primitives.md). SE-0519 has not landed; its final shape may differ from the current proposal. **Nothing in this document is a consumer commitment**: the package's behaviour at the moment SE-0519 ships will be determined at that moment based on the proposal's final shape, the toolchain's then-current capabilities, and downstream consumer impact.
+This document captures **possible** interaction patterns between `swift-ownership-primitives` and the in-evolution `Borrow<T>` / `Inout<T>` types proposed under [SE-0519](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0519-borrow-inout-types.md). SE-0519 has not landed; its final shape may differ from the current proposal. **Nothing in this document is a consumer commitment**: the package's behaviour at the moment SE-0519 ships will be determined at that moment based on the proposal's final shape, the toolchain's then-current capabilities, and downstream consumer impact.
 
 The package's current 0.1.x stability commitment is operational and lives in the README. This document is a contributor-facing note about the design space; it is not part of the source-stability commitment.
 

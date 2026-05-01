@@ -535,7 +535,7 @@ Keep `Optional.take()`; rename `Ownership.Unique.take()` → `.consume()`.
 - [SE-0427: Noncopyable Generics](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0427-noncopyable-generics.md) — foundation: Copyable protocol
 - [SE-0437: Noncopyable stdlib primitives](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0437-noncopyable-stdlib-primitives.md) — Optional<~Copyable>, Result<~Copyable, _>
 - [SE-0366: consume operator](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0366-move-function.md) — language-level `consume` keyword
-- [SE-0507: BorrowAndMutateAccessors](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0507-implicit-initialization-and-self.md) — `borrow mutate` accessors
+- [SE-0507: Borrow Accessors](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0507-borrow-accessors.md) — `borrow` accessors
 
 ### Swift Forums — naming debates
 
@@ -562,7 +562,7 @@ Keep `Optional.take()`; rename `Ownership.Unique.take()` → `.consume()`.
 ### Contrasting precedent (non-Swift)
 
 - [Rust std::boxed::Box](https://doc.rust-lang.org/std/boxed/struct.Box.html)
-- [Rust core::ptr::Unique (unstable)](https://doc.rust-lang.org/std/ptr/struct.Unique.html)
+- Rust `core::ptr::Unique` (unstable internal API; no stable doc URL)
 - [C++ std::unique_ptr](https://en.cppreference.com/w/cpp/memory/unique_ptr)
 
 ### Internal cross-refs

@@ -174,7 +174,7 @@ cohort.
 ## References
 
 - [Rust std::boxed::Box](https://doc.rust-lang.org/std/boxed/struct.Box.html)
-- [Rust core::ptr::Unique (unstable)](https://doc.rust-lang.org/std/ptr/struct.Unique.html)
+- Rust `core::ptr::Unique` (unstable internal API; no stable doc URL)
 - [C++ std::unique_ptr](https://en.cppreference.com/w/cpp/memory/unique_ptr)
 - [SE-0437: Noncopyable stdlib primitives](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0437-noncopyable-stdlib-primitives.md)
 - [SE-0519: Borrow and Inout](https://forums.swift.org/t/se-0519-borrow-and-inout-types-for-safe-first-class-references/85151)
