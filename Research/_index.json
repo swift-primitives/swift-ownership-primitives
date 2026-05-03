@@ -1,11 +1,22 @@
 {
   "$schema": "https://swift-institute.org/schemas/research-index-v1.json",
   "schemaVersion": "1.0.0",
-  "generatedAt": "2026-05-01",
+  "generatedAt": "2026-05-03",
   "title": "Research Index",
   "blurb": "swift-ownership-primitives ships a package-local corpus that groups (1) the cross-type merit + completeness + naming review (v2.1.0) and (2) per-module naming research for every type whose name was DEBATE / QUESTION / INCORRECT in v2.1.0 \u2014 grounded in Apple (Swift Evolution, stdlib, API Design Guidelines) and academia (linear/affine types, ownership types, session types). Ecosystem-wide cross-references live in `/Users/coen/Developer/swift-institute/Research/` and `/Users/coen/Developer/swift-primitives/Research/`; this index carries pointers to those external canonical docs.",
   "scope": "swift-ownership-primitives (swift-primitives)",
   "documents": [
+    {
+      "file": "ownership-primitives-rawvalue-underlying-rename.md",
+      "displayName": "ownership-primitives-rawvalue-underlying-rename",
+      "topic": "Phase 1 design audit for the upstream RawValue → Underlying rename in swift-tagged-primitives (96f2a76, 73020e6) and the Carrier → Carrier.`Protocol` rename in swift-carrier-primitives (99ad46e). Concludes all four audit questions trivial: no own-field rawValue, no editorial public surface, all public members have downstream consumers, no code-surface violations. Mechanical scope is one source file (Tagged+Ownership.Borrow.Protocol.swift) and one test file. No Carrier dependency in the package.",
+      "date": "2026-05-03",
+      "status": "AUDIT",
+      "statusDetail": "Phase 1 trivial — proceed to Phase 2 mechanical migration",
+      "statusRaw": "AUDIT",
+      "tier": 1,
+      "scope": "swift-ownership-primitives"
+    },
     {
       "file": "stdlib-interaction-notes.md",
       "displayName": "stdlib-interaction-notes",
