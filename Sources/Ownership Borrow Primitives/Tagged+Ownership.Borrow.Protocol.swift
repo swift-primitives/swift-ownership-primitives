@@ -21,12 +21,12 @@ public import Tagged_Primitives
 // `swift-format-primitives` `Tagged+Format`, etc.) — keeping
 // `swift-tagged-primitives` atomic and dep-free.
 extension Tagged: Ownership.Borrow.`Protocol`
-where RawValue: Ownership.Borrow.`Protocol` & ~Copyable, Tag: ~Copyable & ~Escapable {
-    /// Resolves `Tagged<Tag, RawValue>.Borrowed` to `RawValue.Borrowed`.
+where Underlying: Ownership.Borrow.`Protocol` & ~Copyable, Tag: ~Copyable & ~Escapable {
+    /// Resolves `Tagged<Tag, Underlying>.Borrowed` to `Underlying.Borrowed`.
     ///
     /// Type identity is preserved — `Tagged<Kernel, Path>.Borrowed` IS
     /// `Path.Borrowed`, not a wrapper. Functions accepting
     /// `borrowing Path.Borrowed` accept
     /// `borrowing Tagged<Kernel, Path>.Borrowed` without conversion.
-    public typealias Borrowed = RawValue.Borrowed
+    public typealias Borrowed = Underlying.Borrowed
 }

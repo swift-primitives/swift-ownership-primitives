@@ -13,10 +13,10 @@ private enum TestTag {}
 
 extension TaggedOwnershipBorrowProtocolTests.Unit {
     @Test
-    func `Tagged conforms to Ownership Borrow Protocol when RawValue does`() {
+    func `Tagged conforms to Ownership Borrow Protocol when Underlying does`() {
         // Compile-time assertion: Tagged<Tag, Resource> conforms when
         // Resource conforms. If this test compiles, the conformance holds.
-        // Tagged.Borrowed == RawValue.Borrowed is established by the
+        // Tagged.Borrowed == Underlying.Borrowed is established by the
         // typealias in Tagged+Ownership.Borrow.Protocol.swift and is
         // verified structurally by successful conformance checking here.
         struct Resource: ~Copyable, Ownership.Borrow.`Protocol` {
