@@ -15,16 +15,16 @@
 // consumers SHOULD depend on specific variant products per [MOD-015]
 // primary decomposition.
 
+@_exported public import Ownership_Borrow_Primitives
+@_exported public import Ownership_Indirect_Primitives
+@_exported public import Ownership_Inout_Primitives
+@_exported public import Ownership_Latch_Primitives
+@_exported public import Ownership_Mutable_Primitives
 @_exported public import Ownership_Namespace
 @_exported public import Ownership_Primitives_Core
-@_exported public import Ownership_Borrow_Primitives
-@_exported public import Ownership_Inout_Primitives
-@_exported public import Ownership_Unique_Primitives
-@_exported public import Ownership_Shared_Primitives
-@_exported public import Ownership_Mutable_Primitives
-@_exported public import Ownership_Slot_Primitives
-@_exported public import Ownership_Latch_Primitives
-@_exported public import Ownership_Indirect_Primitives
-@_exported public import Ownership_Transfer_Primitives
-@_exported public import Ownership_Transfer_Erased_Primitives
 @_exported public import Ownership_Primitives_Standard_Library_Integration
+@_exported public import Ownership_Shared_Primitives
+@_exported public import Ownership_Slot_Primitives
+@_exported public import Ownership_Transfer_Erased_Primitives
+@_exported public import Ownership_Transfer_Primitives
+@_exported public import Ownership_Unique_Primitives

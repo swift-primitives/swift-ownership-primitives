@@ -10,8 +10,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Ownership_Primitives
+import Testing
 
 @Suite
 struct `Ownership Latch Tests` {
@@ -76,7 +76,10 @@ extension `Ownership Latch Tests`.`Edge Case` {
 
     @Test
     func `store then take round-trips a struct Value`() {
-        struct Payload: Equatable { var a: Int; var b: Int }
+        struct Payload: Equatable {
+            var a: Int
+            var b: Int
+        }
         let latch = Ownership.Latch<Payload>()
         latch.store(Payload(a: 1, b: 2))
         #expect(latch.take() == Payload(a: 1, b: 2))
@@ -102,7 +105,10 @@ extension `Ownership Latch Tests`.`Edge Case` {
 extension `Ownership Latch Tests`.Integration {
     @Test
     func `latch carries a class reference identity across take`() {
-        final class Marker { let tag: Int; init(_ tag: Int) { self.tag = tag } }
+        final class Marker {
+            let tag: Int
+            init(_ tag: Int) { self.tag = tag }
+        }
         let original = Marker(7)
         let latch = Ownership.Latch<Marker>(original)
         let received = latch.take()

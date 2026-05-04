@@ -10,8 +10,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Ownership_Primitives
+import Testing
 
 @Suite
 struct `Ownership Inout Tests` {

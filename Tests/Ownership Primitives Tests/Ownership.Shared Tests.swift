@@ -10,8 +10,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Ownership_Primitives
+import Testing
 
 @Suite
 struct `Ownership Shared Tests` {
@@ -50,14 +50,20 @@ extension `Ownership Shared Tests`.Unit {
 extension `Ownership Shared Tests`.`Edge Case` {
     @Test
     func `works with struct types`() {
-        struct Point: Equatable, Sendable { var x: Int; var y: Int }
+        struct Point: Equatable, Sendable {
+            var x: Int
+            var y: Int
+        }
         let shared = Ownership.Shared(Point(x: 3, y: 4))
         #expect(shared.value == Point(x: 3, y: 4))
     }
 
     @Test
     func `works with class types`() {
-        final class Node: Sendable { let id: Int; init(_ id: Int) { self.id = id } }
+        final class Node: Sendable {
+            let id: Int
+            init(_ id: Int) { self.id = id }
+        }
         let shared = Ownership.Shared(Node(1))
         #expect(shared.value.id == 1)
     }

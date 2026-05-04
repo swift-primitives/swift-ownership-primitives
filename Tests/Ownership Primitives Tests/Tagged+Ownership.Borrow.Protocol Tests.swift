@@ -1,6 +1,6 @@
-import Testing
 import Ownership_Primitives
 import Tagged_Primitives
+import Testing
 
 // MARK: - Tagged+Ownership.Borrow.`Protocol` conformance
 

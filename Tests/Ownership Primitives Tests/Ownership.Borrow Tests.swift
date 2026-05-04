@@ -10,8 +10,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Ownership_Primitives
+import Testing
 
 @Suite
 struct `Ownership Borrow Tests` {
@@ -60,7 +60,10 @@ extension `Ownership Borrow Tests`.Unit {
 extension `Ownership Borrow Tests`.`Edge Case` {
     @Test
     func `value accessor works with struct types`() {
-        struct Point: Equatable { var x: Int; var y: Int }
+        struct Point: Equatable {
+            var x: Int
+            var y: Int
+        }
         let source = Point(x: 3, y: 4)
         func readX(_ value: borrowing Point) -> Int {
             let ref = Ownership.Borrow(borrowing: value)
@@ -74,7 +77,7 @@ extension `Ownership Borrow Tests`.`Edge Case` {
         let source = 100
         func forkAndReadBoth(_ value: borrowing Int) -> (Int, Int) {
             let a = Ownership.Borrow(borrowing: value)
-            let b = a      // Copyable — second copy of the same borrow
+            let b = a  // Copyable — second copy of the same borrow
             return (a.value, b.value)
         }
         let (x, y) = forkAndReadBoth(source)

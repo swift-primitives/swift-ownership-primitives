@@ -10,8 +10,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Ownership_Primitives
+import Testing
 
 @Suite
 struct `Ownership Slot Tests` {
@@ -99,7 +99,10 @@ extension `Ownership Slot Tests`.`Edge Case` {
 extension `Ownership Slot Tests`.Integration {
     @Test
     func `works with struct Value types`() {
-        struct Pair: Equatable { var a: Int; var b: Int }
+        struct Pair: Equatable {
+            var a: Int
+            var b: Int
+        }
         let slot = Ownership.Slot<Pair>()
         slot.move.in(Pair(a: 1, b: 2))
         #expect(slot.take() == Pair(a: 1, b: 2))

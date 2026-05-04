@@ -28,6 +28,5 @@
 /// direct nesting inside the generic struct `Ownership.Borrow<Value>`
 /// remains prohibited on Swift 6.3.1.
 public protocol __Ownership_Borrow_Protocol: ~Copyable, ~Escapable {
-    associatedtype Borrowed: ~Copyable, ~Escapable
-        = Ownership.Borrow<Self>
+    associatedtype Borrowed: ~Copyable, ~Escapable = Ownership.Borrow<Self>
 }

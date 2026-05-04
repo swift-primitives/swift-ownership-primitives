@@ -10,8 +10,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Ownership_Primitives
+import Testing
 
 @Suite
 struct `Ownership Transfer Tests` {
@@ -47,7 +47,10 @@ extension `Ownership Transfer Tests`.`Value Outgoing` {
 
     @Test
     func `works with struct Value`() {
-        struct Payload: Equatable { var a: Int; var b: Int }
+        struct Payload: Equatable {
+            var a: Int
+            var b: Int
+        }
         let outgoing = Ownership.Transfer.Value<Payload>.Outgoing(Payload(a: 1, b: 2))
         let token = outgoing.token()
         #expect(token.take() == Payload(a: 1, b: 2))
@@ -104,7 +107,10 @@ extension `Ownership Transfer Tests`.`Retained Outgoing` {
 
     @Test
     func `preserves class identity through transfer`() {
-        final class Marker { let tag: Int; init(_ tag: Int) { self.tag = tag } }
+        final class Marker {
+            let tag: Int
+            init(_ tag: Int) { self.tag = tag }
+        }
         let marker = Marker(1)
         let outgoing = unsafe Ownership.Transfer.Retained<Marker>.Outgoing(marker)
         let received = outgoing.consume()
@@ -152,7 +158,10 @@ extension `Ownership Transfer Tests`.`Retained Incoming` {
 
     @Test
     func `preserves class identity through the slot`() {
-        final class Marker { let tag: Int; init(_ tag: Int) { self.tag = tag } }
+        final class Marker {
+            let tag: Int
+            init(_ tag: Int) { self.tag = tag }
+        }
         let marker = Marker(7)
         let incoming = Ownership.Transfer.Retained<Marker>.Incoming()
         incoming.token.store(marker)
@@ -166,7 +175,10 @@ extension `Ownership Transfer Tests`.`Retained Incoming` {
 extension `Ownership Transfer Tests`.`Erased Outgoing` {
     @Test
     func `make then consume round-trips a struct payload`() {
-        struct Payload: Equatable { var a: Int; var b: Int }
+        struct Payload: Equatable {
+            var a: Int
+            var b: Int
+        }
         let raw = unsafe Ownership.Transfer.Erased.Outgoing.make(Payload(a: 3, b: 4))
         let payload: Payload = unsafe Ownership.Transfer.Erased.Outgoing.consume(raw)
         #expect(payload == Payload(a: 3, b: 4))
@@ -192,7 +204,10 @@ extension `Ownership Transfer Tests`.`Erased Outgoing` {
 extension `Ownership Transfer Tests`.`Erased Incoming` {
     @Test
     func `token.store then consume round-trips a boxed struct`() {
-        struct Payload: Equatable { var a: Int; var b: Int }
+        struct Payload: Equatable {
+            var a: Int
+            var b: Int
+        }
         let incoming = Ownership.Transfer.Erased.Incoming()
         let token = incoming.token
         let raw = unsafe Ownership.Transfer.Erased.Outgoing.make(Payload(a: 1, b: 2))
@@ -229,7 +244,10 @@ extension `Ownership Transfer Tests`.Integration {
 
     @Test
     func `Retained.Incoming roundtrip preserves identity across threadless hand-off`() {
-        final class Service { let id: Int ; init(_ id: Int) { self.id = id } }
+        final class Service {
+            let id: Int
+            init(_ id: Int) { self.id = id }
+        }
         let incoming = Ownership.Transfer.Retained<Service>.Incoming()
         let producerToken = incoming.token
         let expected = Service(1)

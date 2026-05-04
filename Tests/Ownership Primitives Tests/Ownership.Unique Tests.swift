@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 import Testing
+
 @testable import Ownership_Primitives
 
 @Suite("Ownership.Unique")
@@ -164,7 +165,7 @@ extension OwnershipUniqueTests.Integration {
             _ = Ownership.Unique<Int>(42)
             // Unique goes out of scope and should deallocate
         }
-        #expect(true) // If we get here, deinit didn't crash
+        #expect(true)  // If we get here, deinit didn't crash
     }
 
     @Test

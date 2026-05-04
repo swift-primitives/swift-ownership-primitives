@@ -10,8 +10,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Ownership_Primitives
+import Testing
 
 @Suite
 struct `Ownership Indirect Tests` {
@@ -85,7 +85,10 @@ extension `Ownership Indirect Tests`.`Edge Case` {
 extension `Ownership Indirect Tests`.Integration {
     @Test
     func `struct Value round-trips through CoW`() {
-        struct Pair: Equatable { var a: Int; var b: Int }
+        struct Pair: Equatable {
+            var a: Int
+            var b: Int
+        }
         var x = Ownership.Indirect<Pair>(Pair(a: 1, b: 2))
         var y = x
         y.value.a = 99

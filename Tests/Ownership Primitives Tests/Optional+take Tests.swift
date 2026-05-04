@@ -10,8 +10,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
 import Ownership_Primitives
+import Testing
 
 @Suite
 struct `Optional Take Tests` {
@@ -70,7 +70,10 @@ extension `Optional Take Tests`.`Edge Case` {
 
     @Test
     func `take() works with struct Copyable Wrapped`() {
-        struct Pair: Equatable { var a: Int; var b: Int }
+        struct Pair: Equatable {
+            var a: Int
+            var b: Int
+        }
         var slot: Pair? = Pair(a: 1, b: 2)
         #expect(slot.take() == Pair(a: 1, b: 2))
         #expect(slot == nil)
@@ -78,7 +81,10 @@ extension `Optional Take Tests`.`Edge Case` {
 
     @Test
     func `take() works with class Wrapped`() {
-        final class Box { let v: Int; init(_ v: Int) { self.v = v } }
+        final class Box {
+            let v: Int
+            init(_ v: Int) { self.v = v }
+        }
         var slot: Box? = Box(9)
         let taken = slot.take()
         #expect(taken?.v == 9)
@@ -100,7 +106,7 @@ extension `Optional Take Tests`.Integration {
         }
 
         #expect(consume(&slot) == 3)
-        #expect(consume(&slot) == -1)   // second consume sees nil
+        #expect(consume(&slot) == -1)  // second consume sees nil
     }
 
     @Test
