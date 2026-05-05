@@ -20,7 +20,7 @@ extension TaggedOwnershipBorrowProtocolTests.Unit {
         // typealias in Tagged+Ownership.Borrow.Protocol.swift and is
         // verified structurally by successful conformance checking here.
         struct Resource: ~Copyable, Ownership.Borrow.`Protocol` {
-            typealias Borrowed = Ownership.Borrow<Resource>
+            typealias Borrowed = Ownership.Borrow<Self>
         }
         func _requireBorrowProtocol<T: Ownership.Borrow.`Protocol` & ~Copyable>(_: T.Type) {}
         _requireBorrowProtocol(Tagged<TestTag, Resource>.self)

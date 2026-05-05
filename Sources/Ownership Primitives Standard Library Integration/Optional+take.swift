@@ -45,6 +45,7 @@ extension Optional where Wrapped: ~Copyable {
         case .some(let value):
             self = nil
             return value
+
         case .none:
             self = nil
             return nil
