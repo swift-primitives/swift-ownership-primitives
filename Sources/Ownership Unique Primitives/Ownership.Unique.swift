@@ -51,6 +51,7 @@ extension Ownership {
     /// SE-0517's explicit design choice — empty state is rejected — and
     /// eliminates the class of bugs from re-observing a taken cell.
     @safe
+    @frozen
     public struct Unique<Value: ~Copyable>: ~Copyable {
 
         // MARK: - Stored Properties

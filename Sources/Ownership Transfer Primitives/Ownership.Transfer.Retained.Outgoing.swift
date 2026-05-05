@@ -51,6 +51,7 @@ extension Ownership.Transfer.Retained {
     /// ownership prevents double-release. `@unsafe @unchecked Sendable`
     /// per [MEM-SAFE-024] Category B (ownership transfer).
     @safe
+    @frozen
     public struct Outgoing: ~Copyable, @unsafe @unchecked Sendable {
         /// Opaque bit representation of the retained pointer. This is NOT a
         /// pointer to be manipulated — it is an ownership token that must be
