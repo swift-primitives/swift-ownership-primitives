@@ -75,9 +75,10 @@ extension Ownership.Inout where Value: ~Copyable {
     ///
     /// This mirrors stdlib `Inout.init(unsafeAddress:mutating:)`.
     ///
-    /// - Parameter pointer: The address of the value to mutate.
-    /// - Parameter owner: The owning instance whose mutation scope bounds
-    ///   this reference.
+    /// - Parameters:
+    ///   - pointer: The address of the value to mutate.
+    ///   - owner: The owning instance whose mutation scope bounds
+    ///     this reference.
     @unsafe
     @inlinable
     @_lifetime(&owner)

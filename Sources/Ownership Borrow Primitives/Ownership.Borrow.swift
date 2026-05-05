@@ -239,8 +239,9 @@ extension Ownership.Borrow where Value: ~Copyable {
     /// Only available for `Escapable` `Value` — the typed
     /// `UnsafePointer<Value>` parameter requires it.
     ///
-    /// - Parameter pointer: The address of the value to borrow.
-    /// - Parameter owner: The owning instance whose lifetime scopes this borrow.
+    /// - Parameters:
+    ///   - pointer: The address of the value to borrow.
+    ///   - owner: The owning instance whose lifetime scopes this borrow.
     @unsafe
     @inlinable
     @_lifetime(borrow owner)
@@ -267,8 +268,9 @@ extension Ownership.Borrow where Value: ~Copyable & ~Escapable {
     /// typical `~Escapable` conformers (Path, String) declare their own
     /// nested `Borrowed` struct instead.
     ///
-    /// - Parameter pointer: The raw address of the value to borrow.
-    /// - Parameter owner: The owning instance whose lifetime scopes this borrow.
+    /// - Parameters:
+    ///   - pointer: The raw address of the value to borrow.
+    ///   - owner: The owning instance whose lifetime scopes this borrow.
     @unsafe
     @inlinable
     @_lifetime(borrow owner)
