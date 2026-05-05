@@ -10,7 +10,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-/// Ownership Primitives
+/// Ownership Primitives namespace.
 ///
 /// Types that own values with distinct ownership contracts. Each type provides
 /// a specific combination of ownership semantics, mutability, and thread-safety.

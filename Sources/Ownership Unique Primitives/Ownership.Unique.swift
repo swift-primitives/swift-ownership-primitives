@@ -56,8 +56,10 @@ extension Ownership {
 
         // MARK: - Stored Properties
 
-        /// Heap-allocated pointer to the value. Always initialised while the
-        /// owner exists; `consume()` and `deinit` are the only exits.
+        /// Heap-allocated pointer to the value.
+        ///
+        /// Always initialised while the owner exists; `consume()` and
+        /// `deinit` are the only exits.
         @usableFromInline
         internal let _storage: UnsafeMutablePointer<Value>
 

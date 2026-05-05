@@ -105,8 +105,10 @@ extension Ownership {
         @usableFromInline
         let _state: Atomic<Int>
 
-        /// Storage for the value. Access protected by _state transitions.
-        /// Non-nil only when state is State.full.
+        /// Storage for the value.
+        ///
+        /// Access protected by `_state` transitions. Non-nil only when
+        /// state is `State.full`.
         @usableFromInline
         var _storage: UnsafeMutablePointer<Value>?
 
@@ -176,7 +178,11 @@ extension Ownership {
                 }
             }
 
-            let p = unsafe _storage!
+            // Invariant: state-CAS full→taken succeeded ⇒ _storage was set
+            // during fill(), is non-nil, and we hold exclusive consumption right.
+            guard let p = unsafe _storage else {
+                preconditionFailure("Ownership.Latch: state-CAS succeeded but _storage was nil — protocol violation")
+            }
             unsafe (_storage = nil)
             let value = unsafe p.move()
             unsafe p.deallocate()
@@ -200,7 +206,10 @@ extension Ownership {
                 return nil
             }
 
-            let p = unsafe _storage!
+            // Invariant: state-CAS full→taken succeeded ⇒ _storage non-nil.
+            guard let p = unsafe _storage else {
+                preconditionFailure("Ownership.Latch: state-CAS succeeded but _storage was nil — protocol violation")
+            }
             unsafe (_storage = nil)
             let value = unsafe p.move()
             unsafe p.deallocate()

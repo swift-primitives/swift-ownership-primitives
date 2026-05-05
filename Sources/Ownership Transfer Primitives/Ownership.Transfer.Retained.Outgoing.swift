@@ -53,9 +53,10 @@ extension Ownership.Transfer.Retained {
     @safe
     @frozen
     public struct Outgoing: ~Copyable, @unsafe @unchecked Sendable {
-        /// Opaque bit representation of the retained pointer. This is NOT a
-        /// pointer to be manipulated — it is an ownership token that must be
-        /// round-tripped back via `consume()`.
+        /// Opaque bit representation of the retained pointer.
+        ///
+        /// This is NOT a pointer to be manipulated — it is an ownership
+        /// token that must be round-tripped back via `consume()`.
         internal let raw: UnsafeMutableRawPointer
 
         /// Creates an outgoing retained-transfer token, incrementing the
@@ -79,9 +80,10 @@ extension Ownership.Transfer.Retained {
             unsafe (self.raw = UnsafeMutableRawPointer(mutating: ptr))
         }
 
-        /// Releases the unbalanced retain when the token is abandoned without
-        /// `consume()`. Without this deinit, dropping an `Outgoing` that was
-        /// never consumed would leak the +1 retain stored in `raw`.
+        /// Releases the unbalanced retain when the token is abandoned without `consume()`.
+        ///
+        /// Without this deinit, dropping an `Outgoing` that was never
+        /// consumed would leak the +1 retain stored in `raw`.
         ///
         /// `consuming func consume()` consumes `self` and skips the deinit;
         /// any other path (drop in scope, drop on error, drop in pattern

@@ -11,7 +11,7 @@
 
 import Testing
 
-@testable import Ownership_Primitives
+@testable import Ownership_Primitives_Test_Support
 
 @Suite("Ownership.Unique")
 struct OwnershipUniqueTests {

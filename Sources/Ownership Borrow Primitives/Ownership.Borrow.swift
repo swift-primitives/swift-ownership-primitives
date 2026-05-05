@@ -74,9 +74,9 @@ extension Ownership {
         @usableFromInline
         let _owner: AnyObject?
 
-        /// Designated internal initializer. All public inits delegate here.
+        /// Designated internal initializer.
         ///
-        /// Two construction paths reach this init; both produce sound
+        /// All public inits delegate here. Two construction paths reach this init; both produce sound
         /// lifetimes despite the `@_lifetime(borrow pointer)` attribute
         /// naming only `pointer`:
         ///

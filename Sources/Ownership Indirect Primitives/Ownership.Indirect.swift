@@ -65,8 +65,10 @@ extension Ownership {
 
         // MARK: - Storage
 
-        /// Heap storage class. CoW replaces `_storage` when not uniquely
-        /// referenced rather than mutating in place through a shared reference.
+        /// Heap storage class.
+        ///
+        /// CoW replaces `_storage` when not uniquely referenced rather
+        /// than mutating in place through a shared reference.
         @usableFromInline
         final class Storage {
             @usableFromInline

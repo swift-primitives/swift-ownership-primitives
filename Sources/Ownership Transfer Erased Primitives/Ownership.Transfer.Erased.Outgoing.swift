@@ -81,8 +81,10 @@ extension Ownership.Transfer.Erased.Outgoing {
     /// by contract.
     @safe
     public struct Pointer: @unsafe @unchecked Sendable {
+        /// The raw allocation address.
         @unsafe
         public let raw: UnsafeMutableRawPointer
+        /// Wraps a raw pointer as an outgoing erased pointer.
         @unsafe
         public init(_ raw: UnsafeMutableRawPointer) { unsafe (self.raw = raw) }
     }

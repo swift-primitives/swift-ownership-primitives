@@ -118,8 +118,10 @@ extension Ownership {
         @usableFromInline
         let _state: Atomic<UInt8>
 
-        /// Preallocated storage for the value. Always allocated, even when empty.
-        /// This avoids allocation on the hot path (store/take operations).
+        /// Preallocated storage for the value.
+        ///
+        /// Always allocated, even when empty. This avoids allocation on
+        /// the hot path (store/take operations).
         @usableFromInline
         let _storage: UnsafeMutablePointer<Value>
 
