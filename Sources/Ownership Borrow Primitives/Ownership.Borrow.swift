@@ -24,13 +24,13 @@ extension Ownership {
     ///
     /// - Need to return a borrowed view of a ~Copyable element without consuming it
     /// - Need `Optional<Ownership.Borrow<Element>>` for peek-style APIs
-    /// - `Property.View` is ~Copyable — use `Ownership.Borrow` when Optional is needed
+    /// - `Property.Inout` is ~Copyable — use `Ownership.Borrow` when Optional is needed
     ///
     /// ## Copyable + ~Escapable
     ///
     /// `Borrow` is `Copyable` (pointer copies are safe) but `~Escapable`
     /// (must not outlive its source). This enables `Optional<Ownership.Borrow<Element>>`
-    /// — the key use case that `Property.View` (~Copyable) cannot serve.
+    /// — the key use case that `Property.Inout` (~Copyable) cannot serve.
     ///
     /// ## ~Escapable `Value`
     ///
@@ -169,11 +169,11 @@ extension Ownership.Borrow where Value: ~Copyable {
     /// > If you are adding `@inlinable` to solve a cross-module-import
     /// > or performance problem, verify downstream release-mode tests
     /// > for `Tagged<Tag, Ownership.Borrow<~Copyable Base>>` consumers
-    /// > (e.g. `swift-property-primitives` `Property.View.Read` suite)
+    /// > (e.g. `swift-property-primitives` `Property.Borrow` suite)
     /// > still pass in `swift test -c release` first.
     ///
     /// This mirrors stdlib `Borrow.init(_ value: borrowing Value)` and the
-    /// ecosystem `Property.View.Read` borrowing-init pattern. Enables
+    /// ecosystem `Property.Borrow` borrowing-init pattern. Enables
     /// construction from any borrowing context without pointer exposure.
     ///
     /// For `Copyable Value`, a separate overload in the `where Value: Copyable`
