@@ -7,6 +7,17 @@
   "scope": "swift-ownership-primitives (swift-primitives)",
   "documents": [
     {
+      "file": "escapable-value-upgrade.md",
+      "displayName": "escapable-value-upgrade.md",
+      "topic": "CONVERGED (v1.0.0): Per-package execution note for Ownership.Inout<Value>'s Value widening from ~Copyable to ~Copyable & ~Escapable. Mirrors Ownership.Borrow's already-shipped pattern: storage rewrites from UnsafeMutablePointer<Value> to UnsafeMutableRawPointer; typed inits stay where Value: ~Copyable (Escapable implicit; UnsafeMutablePointer<Value> requires it); new raw-address init `init(unsafeRawAddress:, mutating owner:)` gated where Value: ~Copyable & ~Escapable; var value accessors switch from direct pointee to assumingMemoryBound(to:). Inout is structurally simpler than Borrow (no _owner field; no init(borrowing:) path). 1 source file rewrite (~25 net new lines), 1 test file addition (~50 lines including NEResource fixture). Lands FIRST in cascade (Property.Inout's Tagged storage depends on this).",
+      "date": "2026-05-09",
+      "status": "CONVERGED",
+      "statusDetail": "v1.0.0. Tier 1 per-package research. Authored 2026-05-09 in Phase 1 of HANDOFF-property-primitives-escapable-upgrade.md cascade. Phase 2 implementation gated on per-action user authorization for the public-repo push. Cascade-order: lands FIRST (before swift-property-primitives' Property Base widening).",
+      "statusRaw": "CONVERGED (v1.0.0)",
+      "tier": 1,
+      "scope": "swift-ownership-primitives"
+    },
+    {
       "file": "ownership-primitives-rawvalue-underlying-rename.md",
       "displayName": "ownership-primitives-rawvalue-underlying-rename",
       "topic": "Phase 1 design audit for the upstream RawValue → Underlying rename in swift-tagged-primitives (96f2a76, 73020e6) and the Carrier → Carrier.`Protocol` rename in swift-carrier-primitives (99ad46e). Concludes all four audit questions trivial: no own-field rawValue, no editorial public surface, all public members have downstream consumers, no code-surface violations. Mechanical scope is one source file (Tagged+Ownership.Borrow.Protocol.swift) and one test file. No Carrier dependency in the package.",
