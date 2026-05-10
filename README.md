@@ -174,6 +174,12 @@ Notes on possible interaction with SE-0519 are tracked in [`Research/stdlib-inte
 
 ---
 
+## Community
+
+<!-- BEGIN: discussion -->
+Discuss this package: [swift-institute/discussions/19](https://github.com/orgs/swift-institute/discussions/19)
+<!-- END: discussion -->
+
 ## License
 
 Apache 2.0. See [LICENSE](LICENSE.md).
