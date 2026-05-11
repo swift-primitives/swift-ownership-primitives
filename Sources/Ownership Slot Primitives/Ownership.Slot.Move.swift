@@ -48,6 +48,9 @@ extension Ownership.Slot.Move where Value: ~Copyable {
     /// - Precondition: Slot must be occupied.
     /// - Returns: The stored value.
     public var out: Value {
+        // swift-linter:disable:next unchecked call site
+        // REASON: Slot.Move.out is the trapping public API delegating
+        //   to the __unchecked: overload after precondition check ([CONV-016]).
         slot.take(__unchecked: ())
     }
 
@@ -56,6 +59,9 @@ extension Ownership.Slot.Move where Value: ~Copyable {
     /// - Precondition: Slot must be empty.
     /// - Parameter value: The value to store.
     public func `in`(_ value: consuming Value) {
+        // swift-linter:disable:next unchecked call site
+        // REASON: Slot.Move.in is the trapping public API delegating
+        //   to the __unchecked: overload after precondition check ([CONV-016]).
         slot.store(__unchecked: value)
     }
 }
