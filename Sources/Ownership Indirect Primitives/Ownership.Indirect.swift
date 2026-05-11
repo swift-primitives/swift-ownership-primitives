@@ -63,23 +63,6 @@ extension Ownership {
     @safe
     public struct Indirect<Value> {
 
-        // MARK: - Storage
-
-        /// Heap storage class.
-        ///
-        /// CoW replaces `_storage` when not uniquely referenced rather
-        /// than mutating in place through a shared reference.
-        @usableFromInline
-        final class Storage {
-            @usableFromInline
-            var value: Value
-
-            @usableFromInline
-            init(_ value: consuming Value) {
-                self.value = value
-            }
-        }
-
         // MARK: - Stored Properties
 
         @usableFromInline
@@ -93,6 +76,25 @@ extension Ownership {
         ///   heap storage).
         public init(_ initialValue: consuming Value) {
             _storage = Storage(initialValue)
+        }
+    }
+}
+
+// MARK: - Storage
+
+extension Ownership.Indirect where Value: Copyable {
+    /// Heap storage class.
+    ///
+    /// CoW replaces `_storage` when not uniquely referenced rather
+    /// than mutating in place through a shared reference.
+    @usableFromInline
+    final class Storage {
+        @usableFromInline
+        var value: Value
+
+        @usableFromInline
+        init(_ value: consuming Value) {
+            self.value = value
         }
     }
 }
@@ -142,7 +144,7 @@ extension Ownership.Indirect {
 
 // MARK: - Clone
 
-extension Ownership.Indirect {
+extension Ownership.Indirect where Value: Copyable {
     /// Returns an eager deep copy with its own heap storage.
     ///
     /// Unlike the lazy CoW triggered by `_modify`, `clone()` allocates and

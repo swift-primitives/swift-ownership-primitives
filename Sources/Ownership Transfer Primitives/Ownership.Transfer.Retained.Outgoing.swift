@@ -97,7 +97,7 @@ extension Ownership.Transfer.Retained {
 
 // MARK: - Consume
 
-extension Ownership.Transfer.Retained.Outgoing {
+extension Ownership.Transfer.Retained.Outgoing where T: Copyable {
     /// Consumes the transfer token and returns ownership of the retained
     /// object, decrementing the unbalanced retain.
     ///

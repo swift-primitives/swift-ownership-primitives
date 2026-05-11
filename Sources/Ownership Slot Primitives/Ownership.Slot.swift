@@ -19,7 +19,9 @@ public import Synchronization
 /// Hoisted to module scope due to Swift limitation: static stored properties
 /// are not supported in generic types. Refer via `Ownership.Slot.State`.
 @usableFromInline
-enum __OwnershipSlotState {
+enum __OwnershipSlotState {}
+
+extension __OwnershipSlotState {
     @usableFromInline static let empty: UInt8 = 0
     @usableFromInline static let initializing: UInt8 = 1
     @usableFromInline static let full: UInt8 = 2
@@ -110,10 +112,6 @@ extension Ownership {
         // - State.initializing (1): exclusive writer reserved; init in progress
         // - State.full (2): storage initialized; may be taken
 
-        /// State constants for the slot state machine.
-        @usableFromInline
-        typealias State = __OwnershipSlotState
-
         /// Atomic state for the slot.
         @usableFromInline
         let _state: Atomic<UInt8>
@@ -153,6 +151,14 @@ extension Ownership {
             unsafe _storage.deallocate()
         }
     }
+}
+
+// MARK: - State Typealias
+
+extension Ownership.Slot where Value: ~Copyable {
+    /// State constants for the slot state machine.
+    @usableFromInline
+    typealias State = __OwnershipSlotState
 }
 
 // MARK: - State Inspection

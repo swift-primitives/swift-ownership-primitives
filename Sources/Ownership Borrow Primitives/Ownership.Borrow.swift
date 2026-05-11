@@ -100,7 +100,7 @@ extension Ownership {
         ///    ARC scope.
         @inlinable
         @_lifetime(borrow pointer)
-        internal init(
+        package init(
             _pointer pointer: UnsafeRawPointer,
             _owner owner: AnyObject?
         ) {
