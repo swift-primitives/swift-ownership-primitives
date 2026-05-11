@@ -65,7 +65,7 @@ extension Ownership.Transfer.Retained {
 
 // MARK: - Operations
 
-extension Ownership.Transfer.Retained.Incoming {
+extension Ownership.Transfer.Retained.Incoming where T: Copyable {
     /// Returns a Sendable token that the producer uses to `store` a
     /// retained class reference into this slot.
     ///

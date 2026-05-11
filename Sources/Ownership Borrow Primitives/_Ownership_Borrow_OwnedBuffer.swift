@@ -29,7 +29,7 @@ internal final class _Ownership_Borrow_OwnedBuffer<Value> {
     let _pointer: UnsafeMutablePointer<Value>
 
     @inlinable
-    init(copying value: consuming Value) {
+    package init(copying value: consuming Value) {
         unsafe (self._pointer = UnsafeMutablePointer<Value>.allocate(capacity: 1))
         unsafe self._pointer.initialize(to: value)
     }
