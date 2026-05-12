@@ -26,7 +26,8 @@ extension Ownership.Transfer.Value where V: ~Copyable {
     /// - `init()` allocates empty ARC-managed storage.
     /// - `token` produces a Sendable token for storing.
     /// - `token.store(_:)` stores the value (exactly once, enforced atomically).
-    /// - `consume()` retrieves the stored value and destroys the storage.
+    /// - `consume()` retrieves the stored value and destroys the storage,
+    ///   or returns `nil` if the slot was never filled.
     ///
     /// ## Thread Safety
     /// Designed for single-producer/single-consumer with a happens-before
@@ -42,7 +43,7 @@ extension Ownership.Transfer.Value where V: ~Copyable {
     ///     storeToken.store(createValue())
     /// }
     /// handle.join()
-    /// let value = incoming.consume()
+    /// if let value = incoming.consume() { use(value) }
     /// ```
     public struct Incoming: ~Copyable {
         internal let _latch: Ownership.Latch<V>
@@ -68,23 +69,13 @@ extension Ownership.Transfer.Value.Incoming where V: ~Copyable {
 
     /// Destroys the slot and returns the stored value.
     ///
-    /// Mirrors SE-0517's `consuming func consume() -> Value` pattern:
-    /// `consume()` destroys `self` and yields the owned value.
+    /// Mirrors SE-0517's `consuming func consume() -> Value` pattern, but
+    /// returns `Optional` to cover cleanup paths where the slot may or may
+    /// not have been filled (cancelled producer, failed handshake).
     ///
-    /// - Returns: The stored value.
-    /// - Precondition: `token.store(_:)` must have been called exactly once.
-    public consuming func consume() -> V {
+    /// - Returns: The stored value if `token.store(_:)` was called,
+    ///   `nil` otherwise.
+    public consuming func consume() -> V? {
         _latch.take()
-    }
-
-    /// Destroys the slot and returns the stored value if present, otherwise
-    /// returns `nil`.
-    ///
-    /// Use this on cleanup paths where the slot may or may not have been
-    /// filled (e.g., cancelled producer, failed handshake).
-    ///
-    /// - Returns: The stored value if `token.store(_:)` was called, nil otherwise.
-    public consuming func consumeIfStored() -> V? {
-        _latch.takeIfPresent()
     }
 }

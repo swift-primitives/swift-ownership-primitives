@@ -36,13 +36,14 @@ extension Ownership {
     /// `Latch<Value>` is a `final class` holding at most one value across its
     /// lifetime, with an atomic state machine (`empty → initializing → full →
     /// taken`) enforcing exactly-once publication and consumption. Multiple
-    /// ARC holders may share the latch, but only one `take()` or
-    /// `takeIfPresent()` call succeeds across all holders.
+    /// ARC holders may share the latch, but only one `take()` call returns
+    /// `.some(value)` across all holders; subsequent calls return `nil`.
     ///
     /// Unlike ``Slot`` which cycles indefinitely between `empty` and `full`,
-    /// `Latch` is terminal after its sole value is taken: subsequent `store()`
-    /// and `take()` calls trap. The vocabulary mirrors Java's
-    /// `CountDownLatch` — a triggered latch does not reset.
+    /// `Latch` is terminal after its sole value is taken: a subsequent
+    /// `store()` traps, and subsequent `take()` calls return `nil`. The
+    /// vocabulary mirrors Java's `CountDownLatch` — a triggered latch does
+    /// not reset.
     ///
     /// ## Thread Safety
     ///
@@ -60,7 +61,9 @@ extension Ownership {
     /// latch.store(resource)
     ///
     /// // Consumer (later, on any thread)
-    /// let resource = latch.take()
+    /// if let resource = latch.take() {
+    ///     use(resource)
+    /// }
     /// ```
     ///
     /// ## Safety Invariant
@@ -185,44 +188,14 @@ extension Ownership.Latch where Value: ~Copyable {
 // MARK: - Take
 
 extension Ownership.Latch where Value: ~Copyable {
-    /// Atomically takes the value.
+    /// Atomically takes the stored value.
     ///
-    /// - Returns: The stored value.
-    /// - Precondition: The latch must be full. Traps if empty or already
-    ///   taken.
-    public func take() -> Value {
-        // CAS full -> taken
-        let (exchanged, original) = _state.compareExchange(
-            expected: State.full,
-            desired: State.taken,
-            ordering: .acquiringAndReleasing
-        )
-        if !exchanged {
-            if original == State.empty || original == State.initializing {
-                preconditionFailure("Ownership.Latch: take() called when no value present")
-            } else {
-                preconditionFailure("Ownership.Latch: take() called twice")
-            }
-        }
-
-        // Invariant: state-CAS full→taken succeeded ⇒ _storage was set
-        // during fill(), is non-nil, and we hold exclusive consumption right.
-        guard let p = unsafe _storage else {
-            preconditionFailure("Ownership.Latch: state-CAS succeeded but _storage was nil — protocol violation")
-        }
-        unsafe (_storage = nil)
-        let value = unsafe p.move()
-        unsafe p.deallocate()
-        return value
-    }
-
-    /// Atomically takes the value if present, otherwise returns nil.
+    /// At most one call across all ARC holders returns `.some(value)`;
+    /// subsequent calls (and calls on a never-filled latch) return `nil`.
     ///
-    /// Useful for cleanup paths where the latch may or may not have been
-    /// filled.
-    ///
-    /// - Returns: The stored value if present, otherwise `nil`.
-    public func takeIfPresent() -> Value? {
+    /// - Returns: The stored value, or `nil` if the latch is empty or has
+    ///   already been taken.
+    public func take() -> Value? {
         // CAS full -> taken
         let (exchanged, _) = _state.compareExchange(
             expected: State.full,

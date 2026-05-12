@@ -31,9 +31,7 @@ extension Ownership.Transfer.Erased {
     /// - `token` produces a Sendable token for storing a boxed-pointer.
     /// - `token.store(_:)` atomically publishes the opaque pointer.
     /// - `consume(_:)` atomically takes the pointer and unboxes into the
-    ///   consumer-known `T`.
-    /// - `consumeIfStored(_:)` same as consume, but returns `nil` if the
-    ///   slot was never filled.
+    ///   consumer-known `T`, or returns `nil` if the slot was never filled.
     ///
     /// ## Safety Invariant
     ///
@@ -61,26 +59,13 @@ extension Ownership.Transfer.Erased.Incoming {
         unsafe Token(_latch)
     }
 
-    /// Destroys the slot, unboxes the stored pointer as `T`, and returns
-    /// the result.
+    /// Destroys the slot and unboxes the stored pointer as `T`.
     ///
     /// - Parameter type: The payload type agreed between producer and consumer.
-    /// - Returns: The unboxed value.
-    /// - Precondition: `token.store(_:)` must have been called exactly once.
+    /// - Returns: The unboxed value, or `nil` if the slot was never filled.
     @unsafe
-    public consuming func consume<T>(_ type: T.Type) -> T {
-        let raw = unsafe _latch.take()
-        return unsafe Ownership.Transfer.Erased.Outgoing.consume(raw)
-    }
-
-    /// Destroys the slot and unboxes the stored pointer as `T` if present;
-    /// returns `nil` if the slot was never filled.
-    ///
-    /// Use this on cleanup paths where the slot may or may not have been
-    /// filled.
-    @unsafe
-    public consuming func consumeIfStored<T>(_ type: T.Type) -> T? {
-        guard let raw = unsafe _latch.takeIfPresent() else { return nil }
+    public consuming func consume<T>(_ type: T.Type) -> T? {
+        guard let raw = unsafe _latch.take() else { return nil }
         return unsafe Ownership.Transfer.Erased.Outgoing.consume(raw)
     }
 }
