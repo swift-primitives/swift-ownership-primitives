@@ -55,6 +55,8 @@ extension Ownership.Transfer.Erased.Outgoing {
     //           (STILL PRESENT on 6.3.1, verified 2026-04-23).
 
     /// Header for the erased box with inline payload.
+    // SAFETY: Encapsulates unsafe internals behind a safe API; see
+    // SAFETY: [MEM-SAFE-024] for the absorber-pattern taxonomy.
     @safe
     fileprivate struct Header {
         /// Function to destroy the payload given base pointer and offset.

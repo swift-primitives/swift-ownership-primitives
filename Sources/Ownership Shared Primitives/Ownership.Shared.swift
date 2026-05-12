@@ -36,6 +36,9 @@ extension Ownership {
     /// let shared = Ownership.Shared(42)
     /// print(shared.value)  // 42
     /// ```
+    // SAFETY: Transitive absorption of `an absorber type`'s invariants;
+    // SAFETY: this wrapper's API never re-exposes the underlying unsafety,
+    // SAFETY: and lifetime / ownership constraints are inherited.
     @safe
     public final class Shared<Value: ~Copyable & Sendable>: Sendable {
         /// The wrapped value.

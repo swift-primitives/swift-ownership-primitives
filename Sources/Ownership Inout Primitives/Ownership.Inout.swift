@@ -44,6 +44,8 @@ extension Ownership {
     /// `~Copyable` suppression does not re-suppress escapability). For
     /// `~Escapable Value`, construct via `init(unsafeRawAddress:mutating:)`
     /// in the `where Value: ~Copyable & ~Escapable` extension.
+    // SAFETY: Encapsulates unsafe internals behind a safe API; see
+    // SAFETY: [MEM-SAFE-024] for the absorber-pattern taxonomy.
     @safe
     public struct Inout<Value: ~Copyable & ~Escapable>: ~Copyable, ~Escapable {
 
