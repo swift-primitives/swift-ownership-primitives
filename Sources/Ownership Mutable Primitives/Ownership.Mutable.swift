@@ -61,6 +61,9 @@ extension Ownership {
     ///     var children: [Ownership.Mutable<TreeNode>]
     /// }
     /// ```
+    // SAFETY: Transitive absorption of `Ownership.Mutable`'s invariants;
+    // SAFETY: this wrapper's API never re-exposes the underlying unsafety,
+    // SAFETY: and lifetime / ownership constraints are inherited.
     @safe
     public final class Mutable<Value: ~Copyable> {
         /// The wrapped value.

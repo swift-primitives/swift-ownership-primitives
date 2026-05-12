@@ -23,6 +23,8 @@ extension Ownership.Transfer.Erased.Incoming {
     /// - `Copyable` — can be captured in escaping closures.
     /// - ARC-managed — strong reference to the atomic state machine.
     /// - Atomic one-shot — `store()` enforced atomically; a second call traps.
+    // SAFETY: Encapsulates unsafe internals behind a safe API; see
+    // SAFETY: [MEM-SAFE-024] for the absorber-pattern taxonomy.
     @safe
     public struct Token: Sendable {
         internal let _latch: Ownership.Latch<UnsafeMutableRawPointer>

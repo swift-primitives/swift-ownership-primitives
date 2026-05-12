@@ -65,6 +65,9 @@ extension Ownership {
     /// `Borrow` referencing it is destroyed. The typed and raw-address
     /// initializers leave `_owner = nil` — they promise the caller provided
     /// a pointer whose lifetime is managed elsewhere.
+    // WHY: Category D (SP-5) — pointer-backed value type; storage is
+    // WHY: private/internal; the type's safe API never lets the raw pointer
+    // WHY: escape, and lifetime invariants are enforced by init/deinit pairing.
     @safe
     public struct Borrow<Value: ~Copyable & ~Escapable>: ~Escapable {
 

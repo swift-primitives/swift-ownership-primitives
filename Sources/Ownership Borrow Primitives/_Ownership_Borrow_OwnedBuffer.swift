@@ -21,6 +21,8 @@
 /// Only used by `Ownership.Borrow.init(borrowing:) where Value: Copyable`.
 /// The typed and `unsafeAddress:` inits pass through a caller-managed
 /// pointer and leave `_owner = nil`.
+// SAFETY: Encapsulates unsafe internals behind a safe API; see
+// SAFETY: [MEM-SAFE-024] for the absorber-pattern taxonomy.
 @safe
 @usableFromInline
 internal final class _Ownership_Borrow_OwnedBuffer<Value> {
