@@ -9,7 +9,7 @@ A one-shot atomic cell holding a single `~Copyable` value with exactly-once publ
 
 ## Overview
 
-`Ownership.Latch<Value>` is a `final class` holding at most one value across its lifetime, with an atomic state machine (`empty → initializing → full → taken`) that ensures a value is published exactly once and taken exactly once. Multiple ARC holders may share the latch, but only one ``Ownership/Latch/take()`` (or ``Ownership/Latch/takeIfPresent()``) call succeeds across all holders.
+`Ownership.Latch<Value>` is a `final class` holding at most one value across its lifetime, with an atomic state machine (`empty → initializing → full → taken`) that ensures a value is published exactly once and taken exactly once. Multiple ARC holders may share the latch, but only one ``Ownership/Latch/take()`` call returns `.some(value)` across all holders; subsequent calls return `nil`.
 
 Unlike ``Ownership/Slot``, which cycles indefinitely between `empty` and `full`, `Latch` is *terminal* after its sole value is consumed. The vocabulary mirrors Java's `CountDownLatch` and the broader "latch" concept in concurrency literature — once triggered, the latch does not reset. This makes `Latch` the right primitive for one-shot hand-off patterns (futures, promises, single-publication channels).
 
@@ -24,7 +24,9 @@ let latch = Ownership.Latch<Resource>()
 latch.store(resource)
 
 // Consumer thread (after happens-before established)
-let resource = latch.take()
+if let resource = latch.take() {
+    use(resource)
+}
 ```
 
 ## Thread Safety
@@ -52,7 +54,6 @@ All operations are atomic. The latch can be safely shared across threads: public
 
 - ``Ownership/Latch/store(_:)``
 - ``Ownership/Latch/take()``
-- ``Ownership/Latch/takeIfPresent()``
 
 ### Inspection
 

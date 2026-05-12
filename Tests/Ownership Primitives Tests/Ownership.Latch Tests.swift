@@ -51,16 +51,9 @@ extension `Ownership Latch Tests`.Unit {
     }
 
     @Test
-    func `takeIfPresent() returns nil on an empty latch`() {
+    func `take() returns nil on an empty latch`() {
         let latch = Ownership.Latch<Int>()
-        #expect(latch.takeIfPresent() == nil)
-    }
-
-    @Test
-    func `takeIfPresent() returns the stored value when full`() {
-        let latch = Ownership.Latch<Int>(99)
-        #expect(latch.takeIfPresent() == 99)
-        #expect(!latch.hasValue)
+        #expect(latch.take() == nil)
     }
 }
 
@@ -68,10 +61,10 @@ extension `Ownership Latch Tests`.Unit {
 
 extension `Ownership Latch Tests`.`Edge Case` {
     @Test
-    func `takeIfPresent() after take() returns nil`() {
+    func `take() after take() returns nil`() {
         let latch = Ownership.Latch<Int>(3)
         #expect(latch.take() == 3)
-        #expect(latch.takeIfPresent() == nil)
+        #expect(latch.take() == nil)
     }
 
     @Test
@@ -122,7 +115,10 @@ extension `Ownership Latch Tests`.Integration {
         #expect(!latch.hasValue)
         latch.store(Handle(fd: 11))
         #expect(latch.hasValue)
-        let handle = latch.take()
+        guard let handle = latch.take() else {
+            Issue.record("expected take() to return .some after store()")
+            return
+        }
         #expect(handle.fd == 11)
         #expect(!latch.hasValue)
     }

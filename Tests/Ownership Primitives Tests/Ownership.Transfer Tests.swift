@@ -77,16 +77,9 @@ extension `Ownership Transfer Tests`.`Value Incoming` {
     }
 
     @Test
-    func `consumeIfStored returns nil on an empty slot`() {
+    func `consume() returns nil on an empty slot`() {
         let incoming = Ownership.Transfer.Value<Int>.Incoming()
-        #expect(incoming.consumeIfStored() == nil)
-    }
-
-    @Test
-    func `consumeIfStored returns the value when stored`() {
-        let incoming = Ownership.Transfer.Value<Int>.Incoming()
-        incoming.token.store(123)
-        #expect(incoming.consumeIfStored() == 123)
+        #expect(incoming.consume() == nil)
     }
 }
 
@@ -146,14 +139,14 @@ extension `Ownership Transfer Tests`.`Retained Incoming` {
         let token = incoming.token
         token.store(Service(42))
         let received = incoming.consume()
-        #expect(received.id == 42)
+        #expect(received?.id == 42)
     }
 
     @Test
-    func `consumeIfStored returns nil on an empty slot`() {
+    func `consume() returns nil on an empty slot`() {
         final class Service { init() {} }
         let incoming = Ownership.Transfer.Retained<Service>.Incoming()
-        #expect(incoming.consumeIfStored() == nil)
+        #expect(incoming.consume() == nil)
     }
 
     @Test
@@ -212,14 +205,14 @@ extension `Ownership Transfer Tests`.`Erased Incoming` {
         let token = incoming.token
         let raw = unsafe Ownership.Transfer.Erased.Outgoing.make(Payload(a: 1, b: 2))
         unsafe token.store(raw)
-        let payload = unsafe incoming.consume(Payload.self)
+        let payload: Payload? = unsafe incoming.consume(Payload.self)
         #expect(payload == Payload(a: 1, b: 2))
     }
 
     @Test
-    func `consumeIfStored returns nil on an empty slot`() {
+    func `consume() returns nil on an empty slot`() {
         let incoming = Ownership.Transfer.Erased.Incoming()
-        let v: Int? = unsafe incoming.consumeIfStored(Int.self)
+        let v: Int? = unsafe incoming.consume(Int.self)
         #expect(v == nil)
     }
 }
@@ -256,3 +249,4 @@ extension `Ownership Transfer Tests`.Integration {
         #expect(got === expected)
     }
 }
+

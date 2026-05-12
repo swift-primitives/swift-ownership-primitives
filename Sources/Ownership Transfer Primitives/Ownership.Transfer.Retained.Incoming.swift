@@ -32,8 +32,9 @@ extension Ownership.Transfer.Retained {
     ///   retained class reference.
     /// - `token.store(_:)` retains the instance and atomically publishes it.
     /// - `consume()` atomically takes ownership of the retained reference
-    ///   and destroys the slot; the `~Copyable` constraint makes
-    ///   double-consume unrepresentable.
+    ///   and destroys the slot, or returns `nil` if the slot was never
+    ///   filled; the `~Copyable` constraint makes double-consume
+    ///   unrepresentable.
     ///
     /// ## Usage
     /// ```swift
@@ -43,7 +44,7 @@ extension Ownership.Transfer.Retained {
     ///     token.store(Service())
     /// }
     /// handle.join()
-    /// let service = incoming.consume()
+    /// if let service = incoming.consume() { use(service) }
     /// ```
     ///
     /// ## Safety Invariant
@@ -77,23 +78,13 @@ extension Ownership.Transfer.Retained.Incoming where T: Copyable {
 
     /// Destroys the slot and returns the retained class reference.
     ///
-    /// Mirrors SE-0517's `consuming func consume() -> Value` pattern.
-    ///
-    /// - Returns: The retained object. The caller now owns this reference.
-    /// - Precondition: `token.store(_:)` must have been called exactly once.
-    public consuming func consume() -> T {
-        _latch.take()
-    }
-
-    /// Destroys the slot and returns the retained reference if present,
-    /// otherwise returns `nil`.
-    ///
-    /// Use this on cleanup paths where the slot may or may not have been
-    /// filled (cancelled producer, failed handshake).
+    /// Mirrors SE-0517's `consuming func consume() -> Value` pattern, but
+    /// returns `Optional` to cover cleanup paths where the slot may or may
+    /// not have been filled (cancelled producer, failed handshake).
     ///
     /// - Returns: The retained object if `token.store(_:)` was called,
-    ///   nil otherwise.
-    public consuming func consumeIfStored() -> T? {
-        _latch.takeIfPresent()
+    ///   `nil` otherwise. The caller owns the returned reference.
+    public consuming func consume() -> T? {
+        _latch.take()
     }
 }
