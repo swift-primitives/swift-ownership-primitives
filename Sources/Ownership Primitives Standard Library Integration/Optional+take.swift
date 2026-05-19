@@ -44,7 +44,14 @@ extension Optional where Wrapped: ~Copyable {
         switch consume self {
         case .some(let value):
             self = nil
-            return value
+            // Swift 6.4-dev RegionIsolation: the bound `value` is
+            // task-isolated to `mutating self`. Re-binding through
+            // `nonisolated(unsafe)` marks the local as disconnected
+            // from the caller's region — established ecosystem pattern
+            // (see Order.Comparator+Projection / Pool.Bounded.onEnqueue).
+            // Under Swift <6.4 this is a harmless no-op.
+            nonisolated(unsafe) let v = value
+            return v
 
         case .none:
             self = nil
