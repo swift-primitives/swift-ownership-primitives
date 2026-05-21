@@ -10,4 +10,4 @@
 //
 // ===----------------------------------------------------------------------===//
 
-@_exported public import Ownership_Primitives_Core
+@_exported public import Ownership_Namespace
