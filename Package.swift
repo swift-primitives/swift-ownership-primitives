@@ -18,12 +18,6 @@ let package = Package(
             targets: ["Ownership Namespace"]
         ),
 
-        // MARK: - Sub-namespace targets (Transfer namespace per [MOD-031])
-        .library(
-            name: "Ownership Transfer",
-            targets: ["Ownership Transfer"]
-        ),
-
         // MARK: - Variants (primary decomposition per [MOD-015])
         .library(
             name: "Ownership Borrow Primitives",
@@ -94,14 +88,6 @@ let package = Package(
             dependencies: []
         ),
 
-        // MARK: - Sub-namespace targets (per [MOD-031])
-        .target(
-            name: "Ownership Transfer",
-            dependencies: [
-                "Ownership Namespace",
-            ]
-        ),
-
         // MARK: - Variants
         .target(
             name: "Ownership Borrow Primitives",
@@ -155,14 +141,14 @@ let package = Package(
         .target(
             name: "Ownership Transfer Primitives",
             dependencies: [
-                "Ownership Transfer",
+                "Ownership Namespace",
                 "Ownership Latch Primitives",
             ]
         ),
         .target(
             name: "Ownership Transfer Erased Primitives",
             dependencies: [
-                "Ownership Transfer",
+                "Ownership Transfer Primitives",
                 "Ownership Latch Primitives",
             ]
         ),
@@ -180,7 +166,6 @@ let package = Package(
             name: "Ownership Primitives",
             dependencies: [
                 "Ownership Namespace",
-                "Ownership Transfer",
                 "Ownership Borrow Primitives",
                 "Ownership Inout Primitives",
                 "Ownership Unique Primitives",
