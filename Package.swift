@@ -14,8 +14,8 @@ let package = Package(
     products: [
         // MARK: - Namespace
         .library(
-            name: "Ownership Namespace",
-            targets: ["Ownership Namespace"]
+            name: "Ownership Primitive",
+            targets: ["Ownership Primitive"]
         ),
 
         // MARK: - Variants (primary decomposition per [MOD-015])
@@ -84,7 +84,7 @@ let package = Package(
     targets: [
         // MARK: - Namespace
         .target(
-            name: "Ownership Namespace",
+            name: "Ownership Primitive",
             dependencies: []
         ),
 
@@ -92,56 +92,56 @@ let package = Package(
         .target(
             name: "Ownership Borrow Primitives",
             dependencies: [
-                "Ownership Namespace",
+                "Ownership Primitive",
                 .product(name: "Tagged Primitives", package: "swift-tagged-primitives"),
             ]
         ),
         .target(
             name: "Ownership Inout Primitives",
             dependencies: [
-                "Ownership Namespace",
+                "Ownership Primitive",
             ]
         ),
         .target(
             name: "Ownership Unique Primitives",
             dependencies: [
-                "Ownership Namespace",
+                "Ownership Primitive",
             ]
         ),
         .target(
             name: "Ownership Shared Primitives",
             dependencies: [
-                "Ownership Namespace",
+                "Ownership Primitive",
             ]
         ),
         .target(
             name: "Ownership Mutable Primitives",
             dependencies: [
-                "Ownership Namespace",
+                "Ownership Primitive",
             ]
         ),
         .target(
             name: "Ownership Slot Primitives",
             dependencies: [
-                "Ownership Namespace",
+                "Ownership Primitive",
             ]
         ),
         .target(
             name: "Ownership Latch Primitives",
             dependencies: [
-                "Ownership Namespace",
+                "Ownership Primitive",
             ]
         ),
         .target(
             name: "Ownership Indirect Primitives",
             dependencies: [
-                "Ownership Namespace",
+                "Ownership Primitive",
             ]
         ),
         .target(
             name: "Ownership Transfer Primitives",
             dependencies: [
-                "Ownership Namespace",
+                "Ownership Primitive",
                 "Ownership Latch Primitives",
             ]
         ),
@@ -157,7 +157,7 @@ let package = Package(
         .target(
             name: "Ownership Primitives Standard Library Integration",
             dependencies: [
-                "Ownership Namespace",
+                "Ownership Primitive",
             ]
         ),
 
@@ -165,7 +165,7 @@ let package = Package(
         .target(
             name: "Ownership Primitives",
             dependencies: [
-                "Ownership Namespace",
+                "Ownership Primitive",
                 "Ownership Borrow Primitives",
                 "Ownership Inout Primitives",
                 "Ownership Unique Primitives",
