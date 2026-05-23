@@ -87,7 +87,7 @@ extension Ownership {
 
 // MARK: - Sendable
 
-extension Ownership.Unique: @unsafe @unchecked Sendable where Value: ~Copyable & Sendable {}
+extension Ownership.Unique: @unchecked Sendable where Value: ~Copyable & Sendable {}
 
 // MARK: - Primary Accessor
 

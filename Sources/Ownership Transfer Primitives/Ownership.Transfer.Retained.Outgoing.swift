@@ -48,11 +48,15 @@ extension Ownership.Transfer.Retained {
     /// `~Copyable` — opaque, single-consumption ownership token. The stored
     /// `raw` is an ARC-retained pointer; `consume()` balances the retain on
     /// the consumed path; `deinit` balances on the abandoned path. Single
-    /// ownership prevents double-release. `@unsafe @unchecked Sendable`
-    /// per [MEM-SAFE-024] Category B (ownership transfer).
+    /// ownership prevents double-release. `@unchecked Sendable` per
+    /// [MEM-SAFE-024] Category B (ownership transfer); plain `Sendable`
+    /// cannot apply because the stored `UnsafeMutableRawPointer` is not
+    /// Sendable — [MEM-SEND-004]'s "all stored properties Sendable" premise
+    /// does not hold here.
     @safe
     @frozen
-    public struct Outgoing: ~Copyable, @unsafe @unchecked Sendable {
+    // swift-linter:disable:next unchecked sendable noncopyable
+    public struct Outgoing: ~Copyable, @unchecked Sendable {
         /// Opaque bit representation of the retained pointer.
         ///
         /// This is NOT a pointer to be manipulated — it is an ownership

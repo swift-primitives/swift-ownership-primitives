@@ -47,7 +47,7 @@ extension Ownership.Mutable where Value: ~Copyable {
     /// Task { await box.mutable.value.next() }  // Race!
     /// Task { await box.mutable.value.next() }  // Race!
     /// ```
-    public struct Unchecked: @unsafe @unchecked Sendable {
+    public struct Unchecked: @unchecked Sendable {
         /// The wrapped `Mutable` instance.
         public let mutable: Ownership.Mutable<Value>
 

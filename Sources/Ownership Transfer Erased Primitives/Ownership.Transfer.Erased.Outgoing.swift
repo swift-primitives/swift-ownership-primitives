@@ -78,11 +78,11 @@ extension Ownership.Transfer.Erased.Outgoing {
     ///
     /// ## Safety Invariant
     ///
-    /// `@unsafe @unchecked Sendable` per [MEM-SAFE-024] Category A —
+    /// `@unchecked Sendable` per [MEM-SAFE-024] Category A —
     /// synchronization is external; the holder commits to single-consumption
     /// by contract.
     @safe
-    public struct Pointer: @unsafe @unchecked Sendable {
+    public struct Pointer: @unchecked Sendable {
         /// The raw allocation address.
         @unsafe
         public let raw: UnsafeMutableRawPointer

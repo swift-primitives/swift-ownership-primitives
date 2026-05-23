@@ -81,6 +81,10 @@ extension `Optional Take Tests`.`Edge Case` {
 
     @Test
     func `take() works with class Wrapped`() {
+        // Ad hoc box fixture is structural: this package owns the
+        // Reference/Owned wrappers the rule recommends, so using them
+        // here would be circular (testing wrappers using the wrappers).
+        // swift-linter:disable:next ad hoc box class
         final class Box {
             let v: Int
             init(_ v: Int) { self.v = v }
@@ -113,21 +117,22 @@ extension `Optional Take Tests`.Integration {
     func `take() lets a ~Copyable stored property be consumed from within a method`() {
         struct Owner: ~Copyable {
             var resource: Resource?
-            mutating func releaseResource() -> Resource? {
+            // swift-linter:disable:next minimal type body
+            mutating func release() -> Resource? {
                 return resource.take()
             }
         }
         struct Resource: ~Copyable { let id: Int }
 
         var owner = Owner(resource: Resource(id: 42))
-        guard let resource = owner.releaseResource() else {
+        guard let resource = owner.release() else {
             Issue.record("Expected a Resource")
             return
         }
         #expect(resource.id == 42)
         // `owner.resource` is now nil; cannot equality-compare ~Copyable Optional.
         if case .some = owner.resource {
-            Issue.record("Expected owner.resource to be nil after releaseResource")
+            Issue.record("Expected owner.resource to be nil after release")
         }
     }
 }

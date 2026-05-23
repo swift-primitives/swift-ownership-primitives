@@ -110,6 +110,10 @@ extension `Ownership Slot Tests`.Integration {
 
     @Test
     func `works with class Value types`() {
+        // Ad hoc box fixture is structural: this package owns the
+        // Reference/Owned wrappers the rule recommends, so using them
+        // here would be circular (testing wrappers using the wrappers).
+        // swift-linter:disable:next ad hoc box class
         final class Box {
             let id: Int
             init(_ id: Int) { self.id = id }
@@ -124,7 +128,7 @@ extension `Ownership Slot Tests`.Integration {
     func `slot is reusable across many store/take cycles`() {
         let slot = Ownership.Slot<Int>()
         var total = 0
-        for i in 1...100 {
+        (1...100).forEach { i in
             slot.move.in(i)
             total += slot.move.out
         }

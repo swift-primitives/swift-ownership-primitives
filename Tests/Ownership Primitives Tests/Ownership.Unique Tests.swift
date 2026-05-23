@@ -13,17 +13,17 @@ import Testing
 
 @testable import Ownership_Primitives_Test_Support
 
-@Suite("Ownership.Unique")
-struct OwnershipUniqueTests {
+@Suite
+struct `Ownership Unique Tests` {
     @Suite struct Unit {}
-    @Suite struct EdgeCase {}
+    @Suite struct `Edge Case` {}
     @Suite struct Integration {}
     @Suite(.serialized) struct Performance {}
 }
 
 // MARK: - Unit Tests
 
-extension OwnershipUniqueTests.Unit {
+extension `Ownership Unique Tests`.Unit {
     @Test
     func `init heap-allocates value`() {
         let unique = Ownership.Unique<Int>(42)
@@ -80,7 +80,7 @@ extension OwnershipUniqueTests.Unit {
 
 // MARK: - Edge Case Tests
 
-extension OwnershipUniqueTests.EdgeCase {
+extension `Ownership Unique Tests`.`Edge Case` {
     @Test
     func `works with struct types`() {
         struct Point: Equatable {
@@ -146,8 +146,8 @@ extension OwnershipUniqueTests.EdgeCase {
 
     @Test
     func `value accessor mutates ~Copyable Value`() {
-        struct MutableHandle: ~Copyable { var count: Int }
-        var cell = Ownership.Unique(MutableHandle(count: 0))
+        struct Handle: ~Copyable { var count: Int }
+        var cell = Ownership.Unique(Handle(count: 0))
         cell.value.count += 1
         let taken = cell.consume()
         #expect(taken.count == 1)
@@ -156,7 +156,7 @@ extension OwnershipUniqueTests.EdgeCase {
 
 // MARK: - Integration Tests
 
-extension OwnershipUniqueTests.Integration {
+extension `Ownership Unique Tests`.Integration {
     @Test
     func `deinit deallocates memory`() {
         // Verifies that scope-exit deinit runs without crashing.
@@ -191,7 +191,7 @@ extension OwnershipUniqueTests.Integration {
 
 // MARK: - Performance Tests
 
-extension OwnershipUniqueTests.Performance {
+extension `Ownership Unique Tests`.Performance {
     @Test
     func `allocation and deallocation`() {
         // Warmup

@@ -104,7 +104,7 @@ extension Ownership.Indirect where Value: Copyable {
 
 // MARK: - Sendable
 
-extension Ownership.Indirect: @unsafe @unchecked Sendable where Value: Sendable {
+extension Ownership.Indirect: @unchecked Sendable where Value: Sendable {
     // Safety Invariant: Sendable when Value: Sendable.
     //
     // Per [MEM-SAFE-024] Category D (SP-5: pointer/reference-backed Copyable):

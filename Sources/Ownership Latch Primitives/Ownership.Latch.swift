@@ -70,10 +70,10 @@ extension Ownership {
     ///
     /// Atomic state machine (`Atomic<Int>` with acquiringAndReleasing CAS) +
     /// release/acquire publication protocol protects storage access.
-    /// `@unsafe @unchecked Sendable` per [MEM-SAFE-024] Category A
+    /// `@unchecked Sendable` per [MEM-SAFE-024] Category A
     /// (synchronized).
     @safe
-    public final class Latch<Value: ~Copyable>: @unsafe @unchecked Sendable {
+    public final class Latch<Value: ~Copyable>: @unchecked Sendable {
         // MARK: - State Machine
         //
         // ## Publication Protocol (release/acquire)
