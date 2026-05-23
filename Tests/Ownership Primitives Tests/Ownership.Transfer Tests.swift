@@ -13,7 +13,12 @@
 import Ownership_Primitives
 import Testing
 
+// Domain-organized sub-suites (Value / Retained / Erased × Outgoing /
+// Incoming) instead of the canonical Unit / Edge Case / Integration
+// scaffold: the SUT has 6 orthogonal Ownership.Transfer variants whose
+// distinct API surfaces benefit from per-variant test grouping.
 @Suite
+// swift-linter:disable:next suite categories
 struct `Ownership Transfer Tests` {
     @Suite struct `Value Outgoing` {}
     @Suite struct `Value Incoming` {}
@@ -120,7 +125,7 @@ extension `Ownership Transfer Tests`.`Retained Outgoing` {
             // Construct Outgoing and drop without consume().
             // Without the abandoned-path deinit on Retained.Outgoing the
             // +1 retain leaks and `weakProbe` survives the scope.
-            _ = unsafe Ownership.Transfer.Retained<Probe>.Outgoing(probe)
+            unsafe (_ = Ownership.Transfer.Retained<Probe>.Outgoing(probe))
         }
         #expect(weakProbe == nil, "Outgoing dropped without consume must release the retain")
     }

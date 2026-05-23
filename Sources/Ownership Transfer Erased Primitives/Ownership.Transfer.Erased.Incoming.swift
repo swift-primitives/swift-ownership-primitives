@@ -36,11 +36,11 @@ extension Ownership.Transfer.Erased {
     /// ## Safety Invariant
     ///
     /// Atomic state machine in the shared latch + release/acquire
-    /// publication protocol protects the stored pointer.
-    /// `@unsafe @unchecked Sendable` per [MEM-SAFE-024] Category A
-    /// (synchronized).
+    /// publication protocol protects the stored pointer. `Sendable`
+    /// per [MEM-SAFE-024] Category A (synchronized) + [MEM-SEND-004]
+    /// (compiler-verified — all stored properties Sendable).
     @safe
-    public struct Incoming: ~Copyable, @unsafe @unchecked Sendable {
+    public struct Incoming: ~Copyable, Sendable {
         internal let _latch: Ownership.Latch<UnsafeMutableRawPointer>
 
         /// Creates empty incoming storage.

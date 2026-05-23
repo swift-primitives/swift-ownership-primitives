@@ -103,6 +103,7 @@ extension `Ownership Inout Tests`.`Edge Case` {
     func `V12 — nested method-call mutation writes back (CoW preserving)`() {
         struct Holder {
             var values: [Int] = []
+            // swift-linter:disable:next minimal type body
             mutating func append(_ x: Int) { values.append(x) }
         }
         var source = Holder()
@@ -189,10 +190,10 @@ extension `Ownership Inout Tests`.Unit {
     func `Inout~Escapable type-level admission via init(unsafeRawAddress:mutating:)`() {
         // Closure exists for compile-time admission — never invoked.
         let _ = { (storage: UnsafeMutableRawPointer, owner: inout Int) in
-            _ = unsafe Ownership.Inout<NEResource>(
+            unsafe (_ = Ownership.Inout<NEResource>(
                 unsafeRawAddress: storage,
                 mutating: &owner
-            )
+            ))
         }
         #expect(true)
     }

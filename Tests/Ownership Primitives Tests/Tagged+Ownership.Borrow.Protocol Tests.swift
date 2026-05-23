@@ -4,14 +4,16 @@ import Testing
 
 // MARK: - Tagged+Ownership.Borrow.`Protocol` conformance
 
-@Suite("Tagged+Ownership.Borrow.Protocol")
-struct TaggedOwnershipBorrowProtocolTests {
+@Suite
+struct `Tagged+Ownership.Borrow.Protocol Tests` {
     @Suite struct Unit {}
+    @Suite struct `Edge Case` {}
+    @Suite struct Integration {}
 }
 
-private enum TestTag {}
+private enum Phantom {}
 
-extension TaggedOwnershipBorrowProtocolTests.Unit {
+extension `Tagged+Ownership.Borrow.Protocol Tests`.Unit {
     @Test
     func `Tagged conforms to Ownership Borrow Protocol when Underlying does`() {
         // Compile-time assertion: Tagged<Tag, Resource> conforms when
@@ -20,10 +22,11 @@ extension TaggedOwnershipBorrowProtocolTests.Unit {
         // typealias in Tagged+Ownership.Borrow.Protocol.swift and is
         // verified structurally by successful conformance checking here.
         struct Resource: ~Copyable, Ownership.Borrow.`Protocol` {
+            // swift-linter:disable:next minimal type body
             typealias Borrowed = Ownership.Borrow<Self>
         }
         func _requireBorrowProtocol<T: Ownership.Borrow.`Protocol` & ~Copyable>(_: T.Type) {}
-        _requireBorrowProtocol(Tagged<TestTag, Resource>.self)
+        _requireBorrowProtocol(Tagged<Phantom, Resource>.self)
         #expect(Bool(true))
     }
 }

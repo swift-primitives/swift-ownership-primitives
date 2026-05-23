@@ -87,6 +87,10 @@ extension `Ownership Borrow Tests`.`Edge Case` {
 
     @Test
     func `value accessor handles reference-type payload`() {
+        // Ad hoc box fixture is structural: this package owns the
+        // Reference/Owned wrappers the rule recommends, so using them
+        // here would be circular (testing wrappers using the wrappers).
+        // swift-linter:disable:next ad hoc box class
         final class Box {
             var contents: Int
             init(_ contents: Int) { self.contents = contents }

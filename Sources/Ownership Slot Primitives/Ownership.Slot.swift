@@ -82,10 +82,10 @@ extension Ownership {
     /// all mutable state. Publication protocol ensures a stored value is
     /// visible on the take side after CAS succeeds.
     ///
-    /// `@unsafe @unchecked Sendable` per [MEM-SAFE-024] Category A
+    /// `@unchecked Sendable` per [MEM-SAFE-024] Category A
     /// (synchronized); the internal atomic serializes all access.
     @safe
-    public final class Slot<Value: ~Copyable>: @unsafe @unchecked Sendable {
+    public final class Slot<Value: ~Copyable>: @unchecked Sendable {
         // MARK: - State Machine
         //
         // ## Publication Protocol (release/acquire)
