@@ -44,16 +44,16 @@ extension Optional where Wrapped: ~Copyable {
         switch consume self {
         case .some(let value):
             self = nil
+            // SAFETY: Swift 6.4-dev RegionIsolation — the bound `value`
+            // is task-isolated to `mutating self`. Re-binding through
+            // `nonisolated(unsafe)` marks the local as disconnected from
+            // the caller's region (established ecosystem pattern — see
+            // Order.Comparator+Projection / Pool.Bounded.onEnqueue). The
+            // intermediate binding is load-bearing: `nonisolated(unsafe)`
+            // is a declaration modifier and cannot apply to a bare
+            // `return` expression. Under Swift <6.4 this is a harmless
+            // no-op.
             // swift-linter:disable:next intermediate binding then return
-            // SAFETY: Swift 6.4-dev RegionIsolation — the bound `value` is
-            // SAFETY: task-isolated to `mutating self`. Re-binding through
-            // SAFETY: `nonisolated(unsafe)` marks the local as disconnected
-            // SAFETY: from the caller's region (established ecosystem pattern —
-            // SAFETY: see Order.Comparator+Projection / Pool.Bounded.onEnqueue).
-            // SAFETY: The intermediate binding is load-bearing:
-            // SAFETY: `nonisolated(unsafe)` is a declaration modifier and
-            // SAFETY: cannot apply to a bare `return` expression. Under
-            // SAFETY: Swift <6.4 this is a harmless no-op.
             nonisolated(unsafe) let v = value
             return v
 
