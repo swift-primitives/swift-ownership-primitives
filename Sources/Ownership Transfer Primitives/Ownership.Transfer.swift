@@ -44,31 +44,3 @@ extension Ownership {
     /// - Exactly-once enforcement via atomic state.
     public enum Transfer {}
 }
-
-// MARK: - Kind Namespaces
-
-extension Ownership.Transfer {
-    /// Value-typed transfer namespace.
-    ///
-    /// Use ``Ownership/Transfer/Value/Outgoing`` when the producer already
-    /// holds the value and wants to hand it across a `@Sendable` boundary.
-    /// Use ``Ownership/Transfer/Value/Incoming`` when the consumer creates an
-    /// empty slot for the producer to fill later.
-    public enum Value<V: ~Copyable> {}
-
-    /// AnyObject transfer namespace.
-    ///
-    /// Uses direct ARC retain/release via `Unmanaged` so the outgoing
-    /// direction needs no heap box at all. The incoming direction uses a
-    /// single shared atomic slot (one allocation, no internal payload
-    /// pointer indirection).
-    public enum Retained<T: AnyObject> {}
-
-    /// Type-erased transfer namespace.
-    ///
-    /// The payload's concrete type is known to producer and consumer by
-    /// agreement; the cell itself stores an opaque box that destructs
-    /// correctly even when neither side reaches the unboxing call (for
-    /// abandoned paths).
-    public enum Erased {}
-}
