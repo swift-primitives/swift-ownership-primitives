@@ -146,13 +146,13 @@ extension Ownership.Unique where Value: ~Copyable {
 extension Ownership.Unique where Value: ~Copyable {
     /// A read-only `~Escapable` view over the owned value's storage.
     ///
-    /// `Span<Value>` has `count == 1` — a single-element contiguous view
+    /// `Swift.Span<Value>` has `count == 1` — a single-element contiguous view
     /// over the heap-allocated cell. Useful for interop with stdlib APIs
     /// expecting contiguous-memory spans.
     ///
-    /// Mirrors SE-0517's `var span: Span<Value> { get }`.
+    /// Mirrors SE-0517's `var span: Swift.Span<Value> { get }`.
     @inlinable
-    public var span: Span<Value> {
+    public var span: Swift.Span<Value> {
         @_lifetime(borrow self)
         borrowing get {
             unsafe Span(_unsafeStart: _storage, count: 1)
