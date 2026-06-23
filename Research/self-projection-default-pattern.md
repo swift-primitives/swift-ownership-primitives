@@ -1,6 +1,6 @@
 # Self-Projection Default Pattern
 
-> **Dissolution note (2026-06-23)**: `Memory.Contiguous` was dissolved — the typed contiguous tier is now `Storage.Contiguous`, the read-capability protocol is `Span.Protocol` (the renamed/relocated `Memory.Contiguous.Protocol`), and owned raw bytes are `Memory.Heap`. References below are retained as the pre-dissolution design record; see `swift-institute/Research/memory-contiguous-dissolution.md`.
+> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
 
 <!--
 ---
@@ -119,7 +119,7 @@ Six candidate instances were examined in the 2026-04-22 experiment (lost mid-ses
 | V2 | `Property<Tag, Base>` — two-param projection | **DOES NOT FIT** | The default slot has only one axis (Self); Property's projection depends on two generic parameters. The natural shape would be `associatedtype Viewed = Property<???, Self>`, and nothing good fits `???`. Verb-namespace Tag is per-container, not per-Self. |
 | V3 | Constraint-mismatch probe (Self-conformance where a constraint on the projection cannot be satisfied by Self in general) | **REFUTED** | The default N<Self> must type-check in the conforming context. If N constrains Value on something Self doesn't always satisfy, the default is rejected. Noted as a shape-level footgun; protocol authors must hold `N<Self>` against their own constraints. |
 | V4 | `Hash.\`Protocol\`` — no sibling projection | **DEGENERATE** | Hash.Protocol's concern is a hash output value, not a projection of Self. There is no generic `Hash<Value>` that "is a hashed form of Value" in the ecosystem; the hash is a Cardinal. Applying the pattern would force an invented `Hash<Self>` type that doesn't correspond to anything. |
-| V5 | `Memory.Contiguous` on the element axis | **DOES NOT FIT** (structurally) | `Memory.Contiguous<Element>` is parameterized over the element, not over Self. Self-projection would require `Contiguous<Self>`, but Contiguous of a container is nonsensical — the Contiguous axis is about the element, not the owning type. This failure mode is *structural* (Swift's type system would not accept the pattern expressed here), not merely *semantic*. |
+| V5 | `Storage.Contiguous` on the element axis | **DOES NOT FIT** (structurally) | `Storage.Contiguous<Element>` is parameterized over the element, not over Self. Self-projection would require `Contiguous<Self>`, but Contiguous of a container is nonsensical — the Contiguous axis is about the element, not the owning type. This failure mode is *structural* (Swift's type system would not accept the pattern expressed here), not merely *semantic*. |
 
 ### The structural / semantic precondition distinction
 
@@ -216,7 +216,7 @@ The experiment has not been re-authored. If a future session wants empirical var
 
 2. **Do not adopt for two-parameter projection types.** V2 showed this for Property; the same reasoning rules out any protocol whose projection depends on two generic arguments. `Property<Tag, Base>` cannot default `associatedtype Viewed = Property<???, Self>` because the Tag axis is per-container, not per-Self.
 
-3. **Do not adopt for element-axis generics.** V5 showed this for Memory.Contiguous; the same reasoning rules out any `N<Element>` where the element axis is not "a projection of Self." Containers, buffers, and collections parameterized on element type don't fit.
+3. **Do not adopt for element-axis generics.** V5 showed this for Storage.Contiguous; the same reasoning rules out any `N<Element>` where the element axis is not "a projection of Self." Containers, buffers, and collections parameterized on element type don't fit.
 
 4. **Do not adopt for witness protocols.** V4 showed this for Hash. Witness protocols (Hash, Equation, Comparison) abstract over operations or categorical structures, not projections. They don't have a sibling `N<Self>` that would be a "projection" of Self.
 
