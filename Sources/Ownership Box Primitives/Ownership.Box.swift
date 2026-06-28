@@ -148,8 +148,10 @@ extension Ownership.Box where Value: ~Copyable {
     public mutating func ensureUnique() -> Bool {
         guard !isKnownUniquelyReferenced(&storage) else { return false }
         guard let clone = storage._clone else {
-            // Unreachable through the public API: a shared backing requires `Box: Copyable`, which
-            // requires `Value: Copyable`, whose constructors capture a clone strategy
+            // A clone-less cell that is nonetheless shared cannot restore uniqueness, so this traps
+            // cleanly. It does not fire in practice: the box is unconditionally Copyable, so a
+            // clone-less cell CAN be shared in principle, but the consolidation's `~Copyable`-element
+            // wrappers (`Shared` / `Unique`) keep such cells statically unique
             // ([MEM-COPY-017] / [MEM-COPY-019]).
             preconditionFailure("Ownership.Box backing is shared but carries no clone strategy")
         }
