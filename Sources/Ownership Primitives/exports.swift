@@ -16,7 +16,7 @@
 // primary decomposition.
 
 @_exported public import Ownership_Borrow_Primitives
-@_exported public import Ownership_Indirect_Primitives
+@_exported public import Ownership_Box_Primitives
 @_exported public import Ownership_Inout_Primitives
 @_exported public import Ownership_Latch_Primitives
 @_exported public import Ownership_Mutable_Primitives
