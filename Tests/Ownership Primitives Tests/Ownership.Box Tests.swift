@@ -22,7 +22,7 @@ struct `Ownership Box Tests` {
     @Suite struct Unit {}
     @Suite struct `Edge Case` {}
     @Suite struct Integration {}
-    @Suite struct `Move Only` {}
+    @Suite struct `Noncopyable Payload` {}
 }
 
 // MARK: - Unit Tests
@@ -176,9 +176,9 @@ extension `Ownership Box Tests`.Integration {
     }
 }
 
-// MARK: - Move Only Tests (drain-box teardown over a ~Copyable payload)
+// MARK: - Noncopyable Payload Tests (drain-box teardown + reference sharing over a ~Copyable payload)
 
-extension `Ownership Box Tests`.`Move Only` {
+extension `Ownership Box Tests`.`Noncopyable Payload` {
     final class Recorder {
         var destroyed = 0
     }
@@ -190,12 +190,12 @@ extension `Ownership Box Tests`.`Move Only` {
     }
 
     @Test
-    func `a ~Copyable payload is statically unique and tears down exactly once`() {
+    func `a ~Copyable payload is held and torn down exactly once`() {
         let recorder = Recorder()
         do {
-            // No clone strategy — a move-only payload whose cell can never be shared.
+            // No clone strategy — a clone-less cell, kept statically unique by its sole owner.
             var box = Ownership.Box<Token>(Token(recorder), drain: { _ in }, clone: nil)
-            let unique = box.isUnique       // move-only ⟹ always unique
+            let unique = box.isUnique
             #expect(unique)
             #expect(recorder.destroyed == 0)
         }
@@ -212,5 +212,20 @@ extension `Ownership Box Tests`.`Move Only` {
             #expect(recorder.destroyed == 0)
         }
         #expect(recorder.destroyed == 1)
+    }
+
+    @Test
+    func `copying the cell shares the ~Copyable payload by reference, torn down once`() {
+        let recorder = Recorder()
+        do {
+            var a = Ownership.Box<Token>(Token(recorder), drain: { _ in }, clone: nil)
+            let identityA = a.identity
+            let b = a                          // copies the cell — shares the backing by reference
+            let sharedA = a.isUnique
+            #expect(!sharedA)                  // both reference one cell
+            #expect(b.identity == identityA)
+            #expect(recorder.destroyed == 0)   // the Token itself was never copied
+        }
+        #expect(recorder.destroyed == 1)       // torn down once when the last reference is released
     }
 }

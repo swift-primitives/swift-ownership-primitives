@@ -16,10 +16,12 @@ extension Ownership {
     /// A heap-allocated copy-on-write cell — the single copy-on-write box of the ownership layer.
     ///
     /// `Ownership.Box<Value>` wraps a value in a refcounted heap cell whose physical copy is
-    /// deferred until mutation through a shared reference. It is `Copyable` exactly when `Value`
-    /// is: `Copyable` payloads share the cell until the first mutation restores uniqueness
-    /// (copy-on-write); `~Copyable` payloads are statically unique (move-only) — no copy-on-write
-    /// surface exists for them, and the uniqueness gate is a proven no-op.
+    /// deferred until mutation through a shared reference (copy-on-write). The box is a Copyable
+    /// reference: copying it shares the cell (ARC retain), never copying the payload. Mutation
+    /// restores uniqueness first via the injected `clone` strategy; with no clone strategy
+    /// (`clone == nil`) a shared cell cannot restore uniqueness, so clone-less cells are used only
+    /// where the wrapper keeps them statically unique (e.g. a move-only-element column), and the
+    /// uniqueness gate is a proven no-op there.
     ///
     /// `Box` is the copy-on-write sibling of ``Ownership/Unique`` (the exclusive `~Copyable`
     /// cell), mirroring Apple's `Swift.Box` / `Swift.UniqueBox` split — SE-0517 reserves bare
@@ -58,7 +60,7 @@ extension Ownership {
     /// - Heap-shared immutable value — see ``Ownership/Shared``.
     /// - Heap-shared mutable value (no copy-on-write, reference-identity) — see ``Ownership/Mutable``.
     @frozen
-    public struct Box<Value: ~Copyable>: ~Copyable {
+    public struct Box<Value: ~Copyable> {
 
         // MARK: - Stored Properties
 
@@ -91,13 +93,15 @@ extension Ownership {
     }
 }
 
-// MARK: - Copyable
-
-/// `Copyable` exactly when `Value` is: the stored property is a class reference (always
-/// Copyable-layout) and the struct carries no `deinit` — the cell's `Storage` owns teardown at
-/// the class boundary ([MEM-COPY-016]) — so SE-0427 is satisfied. For `~Copyable` payloads no
-/// clone path exists, so the instantiation is move-only by construction.
-extension Ownership.Box: Copyable where Value: Copyable {}
+// MARK: - Copyability
+//
+// `Ownership.Box` is UNCONDITIONALLY `Copyable`: copying the box copies its `Storage` class
+// reference (ARC retain), so two boxes share one heap cell — the refcounted-reference role the
+// column adapter requires. `Shared<Element, B>` stores `Ownership.Box<B>` (with `B` move-only) and
+// gates ITS OWN copyability on `Element`, exactly as the prior `final class Box` did. Copying never
+// copies the payload `Value` (it lives behind the cell's pointer); a `~Copyable` payload is shared
+// by reference and torn down once. The struct carries no `deinit` — the cell's `Storage` owns
+// teardown at the class boundary ([MEM-COPY-016]) — so SE-0427 is satisfied.
 
 // MARK: - Sendable
 
@@ -105,10 +109,12 @@ extension Ownership.Box: Copyable where Value: Copyable {}
 // WHY: Category D (SP-5) — `Storage` carries mutable payload state behind an
 // WHY: `UnsafeMutablePointer` the compiler cannot prove Sendable. Soundness is the
 // WHY: copy-on-write discipline AROUND the cell: every safe mutation restores uniqueness
-// WHY: before writing (`value`'s `_modify` / `ensureUnique()`), so a shared cell is never
-// WHY: mutated while shared; `~Copyable` payloads are move-only and never shared at all.
-// WHY: The sole unchecked lane is `unguarded`, whose name states the caller's obligation.
-// WHY: Both witnesses are `@Sendable` by stored type. See [MEM-SAFE-028].
+// WHY: before writing (`value`'s `_modify` / `ensureUnique()`) — a shared cell is detached
+// WHY: onto a fresh backing before it is mutated, so it is never mutated while shared.
+// WHY: Clone-less cells (`~Copyable`-element columns) are kept statically unique by their
+// WHY: wrapper, so the gate is a no-op there. The sole unchecked lane is `unguarded`, whose
+// WHY: name states the caller's obligation. Both witnesses are `@Sendable` by stored type.
+// WHY: See [MEM-SAFE-028].
 extension Ownership.Box: @unchecked Sendable where Value: Sendable & ~Copyable {}
 
 // MARK: - Convenience Construction (Copyable payloads)
