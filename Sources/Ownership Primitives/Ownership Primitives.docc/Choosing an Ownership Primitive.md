@@ -21,7 +21,7 @@ Every type in `swift-ownership-primitives` answers a specific combination of fiv
 | ``Ownership/Mutable/Unchecked``                       | Heap-shared (ARC)| Mutable     | Shared (ARC)           | External (asserted) | `Copyable`      |
 | ``Ownership/Slot``                                    | Heap-shared (ARC)| Mutable     | Shared (atomic)        | Atomic            | `~Copyable` or `Copyable` |
 | ``Ownership/Latch``                                   | Heap-shared (ARC)| One-shot    | Shared (atomic)        | Atomic            | `~Copyable` or `Copyable` |
-| ``Ownership/Indirect``                                | Heap-shared (CoW)| Mutable (CoW)| Shared until divergent | None              | `Copyable`        |
+| ``Ownership/Box``                                     | Heap-shared (CoW)| Mutable (CoW)| Shared until divergent | None              | `~Copyable` or `Copyable` |
 | ``Ownership/Transfer/Value/Outgoing``                 | In-transit       | One-shot    | Exclusive (post-take)  | Atomic            | `~Copyable` or `Copyable` |
 | ``Ownership/Transfer/Value/Incoming``                 | In-transit       | One-shot    | Exclusive (post-consume)| Atomic           | `~Copyable` or `Copyable` |
 | ``Ownership/Transfer/Retained/Outgoing``              | In-transit       | One-shot    | Exclusive (post-consume)| Atomic (ARC)     | `AnyObject`       |
@@ -52,7 +52,7 @@ Each type is the answer to a question no other type in the lattice answers the s
 
 - ``Ownership/Slot`` — *"I need a reusable atomic cell — publish, consume, publish again, indefinitely."* Cycles empty ↔ full.
 - ``Ownership/Latch`` — *"I need a **one-shot** atomic cell — publish once, consume once, terminal."* Terminal after take.
-- ``Ownership/Indirect`` — *"I need value semantics with a heap indirection and copy-on-write, so cheap shared copies only pay the copy cost when a holder actually diverges."*
+- ``Ownership/Box`` — *"I need value semantics with a heap indirection and copy-on-write, so cheap shared copies only pay the copy cost when a holder actually diverges."* The copy-on-write sibling of ``Ownership/Unique``.
 
 ### Cross-boundary transfer
 
@@ -85,7 +85,7 @@ The six cells (2 directions × 3 kinds) cover the complete direction × kind mat
 │         └── Mutable?
 │              ├── Single isolation? ......... Ownership.Mutable
 │              ├── External sync? ............ Ownership.Mutable.Unchecked
-│              └── CoW value semantics? ...... Ownership.Indirect
+│              └── CoW value semantics? ...... Ownership.Box
 │
 ├─ "I need an atomic shared cell."
 │    ├── Reusable (cycles)? ................. Ownership.Slot
@@ -111,7 +111,7 @@ Some pairs of primitives differ on exactly one axis — move between them by fli
 | `Shared` ↔ `Mutable`                 | Mutability                    | Shared owners wanting immutability vs. single-isolation mutation |
 | `Mutable` ↔ `Mutable.Unchecked`      | Synchronization contract      | Isolation-bound vs. explicit `@unchecked Sendable` opt-in |
 | `Slot` ↔ `Latch`                     | Lifecycle (reusable vs terminal) | Pool/channel vs. one-shot hand-off |
-| `Unique` ↔ `Indirect`                | Copyability + CoW             | Exclusive `~Copyable` owner vs. value-semantic `Copyable` CoW cell |
+| `Unique` ↔ `Box`                     | Sharing + CoW                 | Exclusive single owner vs. copy-on-write cell shared until divergent |
 | `Value.Outgoing` ↔ `Value.Incoming`  | Direction (who creates)       | Producer-side existing value vs. consumer-side empty slot |
 | `Value.*` ↔ `Retained.*`             | Payload kind (value vs class) | Generic over `~Copyable` vs. `AnyObject` with ARC retain |
 | `Retained.*` ↔ `Erased.*`            | Type visibility               | Direct AnyObject vs. type-erased box |
@@ -120,7 +120,7 @@ Some pairs of primitives differ on exactly one axis — move between them by fli
 
 - ``Ownership/Borrow`` · ``Ownership/Inout`` · ``Ownership/Unique``
 - ``Ownership/Shared`` · ``Ownership/Mutable`` · ``Ownership/Mutable/Unchecked``
-- ``Ownership/Slot`` · ``Ownership/Latch`` · ``Ownership/Indirect``
+- ``Ownership/Slot`` · ``Ownership/Latch`` · ``Ownership/Box``
 - ``Ownership/Transfer``
 - <doc:Borrow-vs-Inout>
 - <doc:Shared-vs-Mutable-vs-Unique>

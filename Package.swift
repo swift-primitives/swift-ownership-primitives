@@ -48,8 +48,8 @@ let package = Package(
             targets: ["Ownership Latch Primitives"]
         ),
         .library(
-            name: "Ownership Indirect Primitives",
-            targets: ["Ownership Indirect Primitives"]
+            name: "Ownership Box Primitives",
+            targets: ["Ownership Box Primitives"]
         ),
         .library(
             name: "Ownership Transfer Primitives",
@@ -133,7 +133,7 @@ let package = Package(
             ]
         ),
         .target(
-            name: "Ownership Indirect Primitives",
+            name: "Ownership Box Primitives",
             dependencies: [
                 "Ownership Primitive",
             ]
@@ -173,7 +173,7 @@ let package = Package(
                 "Ownership Mutable Primitives",
                 "Ownership Slot Primitives",
                 "Ownership Latch Primitives",
-                "Ownership Indirect Primitives",
+                "Ownership Box Primitives",
                 "Ownership Transfer Primitives",
                 "Ownership Transfer Erased Primitives",
                 "Ownership Primitives Standard Library Integration",
