@@ -16,7 +16,7 @@ Every type in `swift-ownership-primitives` answers a specific combination of fiv
 | ``Ownership/Borrow``                                  | Scoped           | Read-only   | Exclusive (borrow)     | None              | `Copyable`        |
 | ``Ownership/Inout``                                   | Scoped           | Mutable     | Exclusive (borrow)     | None              | `~Copyable` or `Copyable` |
 | ``Ownership/Unique``                                  | Heap-owned       | Mutable     | Exclusive              | None              | `~Copyable` or `Copyable` |
-| ``Ownership/Shared``                                  | Heap-shared (ARC)| Read-only   | Shared (ARC)           | None              | `Copyable`        |
+| ``Ownership/Immutable``                                  | Heap-shared (ARC)| Read-only   | Shared (ARC)           | None              | `Copyable`        |
 | ``Ownership/Mutable``                                 | Heap-shared (ARC)| Mutable     | Shared (ARC)           | None (isolation required) | `Copyable` |
 | ``Ownership/Mutable/Unchecked``                       | Heap-shared (ARC)| Mutable     | Shared (ARC)           | External (asserted) | `Copyable`      |
 | ``Ownership/Slot``                                    | Heap-shared (ARC)| Mutable     | Shared (atomic)        | Atomic            | `~Copyable` or `Copyable` |
@@ -44,7 +44,7 @@ Each type is the answer to a question no other type in the lattice answers the s
 
 ### Heap-shared, immutable or mutable
 
-- ``Ownership/Shared`` — *"I need many readers to cheaply pass one large read-only value around, with ARC cleanup."*
+- ``Ownership/Immutable`` — *"I need many readers to cheaply pass one large read-only value around, with ARC cleanup."*
 - ``Ownership/Mutable`` — *"...same, but I need mutation, and I'll keep all access inside one isolation domain."* Deliberately **not** `Sendable`.
 - ``Ownership/Mutable/Unchecked`` — *"...same, but my callers guarantee external synchronization and can cite the mechanism at review time."* Explicit `@unsafe @unchecked Sendable`.
 
@@ -81,7 +81,7 @@ The six cells (2 directions × 3 kinds) cover the complete direction × kind mat
 ├─ "I want heap placement for one value."
 │    ├── Single owner? ....................... Ownership.Unique
 │    └── Shared?
-│         ├── Immutable? ..................... Ownership.Shared
+│         ├── Immutable? ..................... Ownership.Immutable
 │         └── Mutable?
 │              ├── Single isolation? ......... Ownership.Mutable
 │              ├── External sync? ............ Ownership.Mutable.Unchecked
@@ -108,7 +108,7 @@ Some pairs of primitives differ on exactly one axis — move between them by fli
 | Pair | Differs on | Motivation for the difference |
 |------|-----------|-------------------------------|
 | `Borrow` ↔ `Inout`                   | Mutability                    | Reader-vs-writer discipline for scoped references |
-| `Shared` ↔ `Mutable`                 | Mutability                    | Shared owners wanting immutability vs. single-isolation mutation |
+| `Immutable` ↔ `Mutable`                 | Mutability                    | Shared owners wanting immutability vs. single-isolation mutation |
 | `Mutable` ↔ `Mutable.Unchecked`      | Synchronization contract      | Isolation-bound vs. explicit `@unchecked Sendable` opt-in |
 | `Slot` ↔ `Latch`                     | Lifecycle (reusable vs terminal) | Pool/channel vs. one-shot hand-off |
 | `Unique` ↔ `Box`                     | Sharing + CoW                 | Exclusive single owner vs. copy-on-write cell shared until divergent |
@@ -119,10 +119,10 @@ Some pairs of primitives differ on exactly one axis — move between them by fli
 ## See Also
 
 - ``Ownership/Borrow`` · ``Ownership/Inout`` · ``Ownership/Unique``
-- ``Ownership/Shared`` · ``Ownership/Mutable`` · ``Ownership/Mutable/Unchecked``
+- ``Ownership/Immutable`` · ``Ownership/Mutable`` · ``Ownership/Mutable/Unchecked``
 - ``Ownership/Slot`` · ``Ownership/Latch`` · ``Ownership/Box``
 - ``Ownership/Transfer``
 - <doc:Borrow-vs-Inout>
-- <doc:Shared-vs-Mutable-vs-Unique>
+- <doc:Immutable-vs-Mutable-vs-Unique>
 - <doc:Slot-Move-vs-Store>
 - <doc:Ownership-Transfer-Recipes>

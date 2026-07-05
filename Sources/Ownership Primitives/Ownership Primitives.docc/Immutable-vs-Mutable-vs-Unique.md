@@ -1,4 +1,4 @@
-# Shared vs Mutable vs Unique
+# Immutable vs Mutable vs Unique
 
 @Metadata {
     @DisplayName("Shared vs Mutable vs Unique")
@@ -12,7 +12,7 @@ Pick a heap-owned cell by two questions: *do I need exclusive ownership or share
 | Need | Type | Sendability |
 |------|------|-------------|
 | Exclusive owner, deterministic cleanup | ``Ownership/Unique`` | `Sendable` when `Value: Sendable` |
-| Shared owner, immutable payload | ``Ownership/Shared`` | `Sendable` when `Value: Sendable` |
+| Shared owner, immutable payload | ``Ownership/Immutable`` | `Sendable` when `Value: Sendable` |
 | Shared owner, mutable payload | ``Ownership/Mutable`` | **Not `Sendable`** |
 | Shared owner, mutable payload, explicit `@unchecked Sendable` opt-in | ``Ownership/Mutable/Unchecked`` | `@unsafe @unchecked Sendable` |
 
@@ -29,11 +29,11 @@ Use `Unique` when:
 - You intend to move the value out later via `consume()`.
 - You're transferring ownership into ``Ownership/Transfer/Value/Outgoing`` / ``Ownership/Transfer/Value/Incoming`` once (see <doc:Ownership-Transfer-Recipes>).
 
-## When to Use ``Ownership/Shared``
+## When to Use ``Ownership/Immutable``
 
-`Shared` is an ARC-retained reference to an immutable value on the heap. The `final class` backing permits multiple owners; the payload is read-only. Because the value cannot change after construction, `Shared<Value>` is safely `Sendable` when `Value: Sendable`.
+`Immutable` is an ARC-retained reference to an immutable value on the heap. The `final class` backing permits multiple owners; the payload is read-only. Because the value cannot change after construction, `Immutable<Value>` is safely `Sendable` when `Value: Sendable`.
 
-Use `Shared` when:
+Use `Immutable` when:
 
 - You want to cheaply pass a large `~Copyable` value across many owners.
 - The value is conceptually immutable after construction (configuration, parsed document, static catalogue).
@@ -62,7 +62,7 @@ Use `Mutable.Unchecked` when:
 ## See Also
 
 - ``Ownership/Unique``
-- ``Ownership/Shared``
+- ``Ownership/Immutable``
 - ``Ownership/Mutable``
 - ``Ownership/Mutable/Unchecked``
 - <doc:Ownership-Transfer-Recipes>

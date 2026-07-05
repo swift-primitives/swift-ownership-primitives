@@ -14,7 +14,7 @@ import Ownership_Primitives
 import Testing
 
 @Suite
-struct `Ownership Shared Tests` {
+struct `Ownership Immutable Tests` {
     @Suite struct Unit {}
     @Suite struct `Edge Case` {}
     @Suite struct Integration {}
@@ -22,40 +22,40 @@ struct `Ownership Shared Tests` {
 
 // MARK: - Unit Tests
 
-extension `Ownership Shared Tests`.Unit {
+extension `Ownership Immutable Tests`.Unit {
     @Test
     func `init(_:) stores the value`() {
-        let shared = Ownership.Shared(42)
-        #expect(shared.value == 42)
+        let immutable = Ownership.Immutable(42)
+        #expect(immutable.value == 42)
     }
 
     @Test
     func `value is immutable — repeated reads return the same value`() {
-        let shared = Ownership.Shared("hello")
-        #expect(shared.value == "hello")
-        #expect(shared.value == "hello")
+        let immutable = Ownership.Immutable("hello")
+        #expect(immutable.value == "hello")
+        #expect(immutable.value == "hello")
     }
 
     @Test
     func `ARC sharing — multiple references see same identity`() {
-        let shared = Ownership.Shared(7)
-        let alias = shared  // Shared is a reference type; both point at same heap cell
-        #expect(shared === alias)
+        let immutable = Ownership.Immutable(7)
+        let alias = immutable  // Immutable is a reference type; both point at same heap cell
+        #expect(immutable === alias)
         #expect(alias.value == 7)
     }
 }
 
 // MARK: - Edge Case Tests
 
-extension `Ownership Shared Tests`.`Edge Case` {
+extension `Ownership Immutable Tests`.`Edge Case` {
     @Test
     func `works with struct types`() {
         struct Point: Equatable, Sendable {
             var x: Int
             var y: Int
         }
-        let shared = Ownership.Shared(Point(x: 3, y: 4))
-        #expect(shared.value == Point(x: 3, y: 4))
+        let immutable = Ownership.Immutable(Point(x: 3, y: 4))
+        #expect(immutable.value == Point(x: 3, y: 4))
     }
 
     @Test
@@ -64,19 +64,19 @@ extension `Ownership Shared Tests`.`Edge Case` {
             let id: Int
             init(_ id: Int) { self.id = id }
         }
-        let shared = Ownership.Shared(Node(1))
-        #expect(shared.value.id == 1)
+        let immutable = Ownership.Immutable(Node(1))
+        #expect(immutable.value.id == 1)
     }
 }
 
 // MARK: - Integration Tests
 
-extension `Ownership Shared Tests`.Integration {
+extension `Ownership Immutable Tests`.Integration {
     @Test
     func `Sendable — can pass across an async boundary`() async {
-        let shared = Ownership.Shared(99)
+        let immutable = Ownership.Immutable(99)
         let captured = await Task.detached { () -> Int in
-            shared.value
+            immutable.value
         }.value
         #expect(captured == 99)
     }

@@ -42,7 +42,7 @@ Two deep-copy shapes are offered:
 |------|------|
 | Value semantics with lazy heap sharing (copy-on-write) | ``Ownership/Box`` |
 | Exclusive single-owner heap cell for a `~Copyable` value | ``Ownership/Unique`` |
-| Heap-shared immutable value (reference-identity) | ``Ownership/Shared`` |
+| Heap-shared immutable value (reference-identity) | ``Ownership/Immutable`` |
 | Heap-shared mutable value (reference-identity) | ``Ownership/Mutable`` |
 | Reusable atomic slot (cycles empty ↔ full) | ``Ownership/Slot`` |
 | One-shot atomic cell (terminal after take) | ``Ownership/Latch`` |

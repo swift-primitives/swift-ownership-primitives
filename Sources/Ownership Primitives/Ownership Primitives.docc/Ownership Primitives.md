@@ -11,11 +11,11 @@
     )
 }
 
-Safe ownership references — `Borrow`, `Inout`, `Unique`, `Shared`, `Mutable`, `Slot`, `Latch`, `Box`, and the `Transfer.*` family — for `~Copyable` / `~Escapable` / `Copyable` values on production Swift 6.3.1.
+Safe ownership references — `Borrow`, `Inout`, `Unique`, `Immutable`, `Mutable`, `Slot`, `Latch`, `Box`, and the `Transfer.*` family — for `~Copyable` / `~Escapable` / `Copyable` values on production Swift 6.3.1.
 
 ## Overview
 
-``Ownership`` is a namespace for types that carry an explicit ownership contract. `Borrow` and `Inout` are scoped references; `Unique` heap-owns an exclusive `~Copyable` cell; `Shared` and `Mutable` heap-share via ARC; `Slot` is a reusable atomic slot (cycles empty ↔ full); `Latch` is a one-shot atomic cell (terminal after take); `Box` is a heap-allocated copy-on-write value cell (the copy-on-write sibling of `Unique`); the `Transfer.*` family transfers one-shot across `@Sendable` boundaries with Sendable tokens.
+``Ownership`` is a namespace for types that carry an explicit ownership contract. `Borrow` and `Inout` are scoped references; `Unique` heap-owns an exclusive `~Copyable` cell; `Immutable` and `Mutable` heap-share via ARC; `Slot` is a reusable atomic slot (cycles empty ↔ full); `Latch` is a one-shot atomic cell (terminal after take); `Box` is a heap-allocated copy-on-write value cell (the copy-on-write sibling of `Unique`); the `Transfer.*` family transfers one-shot across `@Sendable` boundaries with Sendable tokens.
 
 The package ships these as SE-0519-parallel primitives on toolchains where `BorrowAndMutateAccessors` (SE-0507) has not yet landed in stable form. Consumers use `Ownership.Inout` / `Ownership.Borrow` as storable, lifetime-bounded references — a shape that neither `inout` parameters (not storable) nor raw `Unsafe*Pointer` (no lifetime) supply.
 
@@ -28,7 +28,7 @@ The package ships these as SE-0519-parallel primitives on toolchains where `Borr
 | Scoped read-only reference | `import Ownership_Borrow_Primitives` |
 | Scoped mutable reference | `import Ownership_Inout_Primitives` |
 | Heap-owned exclusive cell | `import Ownership_Unique_Primitives` |
-| ARC-shared immutable / mutable | `import Ownership_Shared_Primitives` / `Ownership_Mutable_Primitives` |
+| ARC-shared immutable / mutable | `import Ownership_Immutable_Primitives` / `Ownership_Mutable_Primitives` |
 | Reusable atomic slot | `import Ownership_Slot_Primitives` |
 | One-shot atomic cell | `import Ownership_Latch_Primitives` |
 | Heap CoW value cell | `import Ownership_Box_Primitives` |
@@ -56,9 +56,9 @@ The umbrella `import Ownership_Primitives` is available for prototyping and test
     @Column {
         ### Choose a cell
 
-        Decide between ``Ownership/Unique``, ``Ownership/Shared``, and ``Ownership/Mutable`` for heap-owned storage.
+        Decide between ``Ownership/Unique``, ``Ownership/Immutable``, and ``Ownership/Mutable`` for heap-owned storage.
 
-        <doc:Shared-vs-Mutable-vs-Unique>
+        <doc:Immutable-vs-Mutable-vs-Unique>
     }
 }
 
@@ -72,7 +72,7 @@ The umbrella `import Ownership_Primitives` is available for prototyping and test
 
 - <doc:Choosing-an-Ownership-Primitive>
 - <doc:Borrow-vs-Inout>
-- <doc:Shared-vs-Mutable-vs-Unique>
+- <doc:Immutable-vs-Mutable-vs-Unique>
 - <doc:Ownership-Transfer-Recipes>
 - <doc:Choosing-Among-Handoff-Primitives>
 - <doc:Slot-Move-vs-Store>
@@ -85,7 +85,7 @@ The umbrella `import Ownership_Primitives` is available for prototyping and test
 ### Heap-Owned Cells
 
 - ``Ownership/Unique``
-- ``Ownership/Shared``
+- ``Ownership/Immutable``
 - ``Ownership/Mutable``
 - ``Ownership/Mutable/Unchecked``
 

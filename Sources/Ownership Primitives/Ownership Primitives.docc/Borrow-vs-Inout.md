@@ -57,4 +57,4 @@ All four safe inits are `@safe`; the `unsafeAddress` variants are explicit escap
 
 - ``Ownership/Borrow``
 - ``Ownership/Inout``
-- <doc:Shared-vs-Mutable-vs-Unique>
+- <doc:Immutable-vs-Mutable-vs-Unique>

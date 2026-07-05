@@ -29,7 +29,7 @@ extension Ownership {
     /// ## When to Use
     ///
     /// - Heap placement of a `~Copyable` value with deterministic cleanup: this type.
-    /// - Shared immutable heap reference: ``Ownership/Shared``.
+    /// - Shared immutable heap reference: ``Ownership/Immutable``.
     /// - Shared mutable heap reference (intra-isolation): ``Ownership/Mutable``.
     /// - One-shot cross-boundary transfer: ``Ownership/Transfer``.
     ///

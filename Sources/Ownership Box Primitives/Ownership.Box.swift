@@ -97,7 +97,7 @@ extension Ownership {
 //
 // `Ownership.Box` is UNCONDITIONALLY `Copyable`: copying the box copies its `Storage` class
 // reference (ARC retain), so two boxes share one heap cell — the refcounted-reference role the
-// column adapter requires. `Shared<Element, B>` stores `Ownership.Box<B>` (with `B` move-only) and
+// column adapter requires. `Ownership.Shared<Element, B>` stores `Ownership.Box<B>` (with `B` move-only) and
 // gates ITS OWN copyability on `Element`, exactly as the prior `final class Box` did. Copying never
 // copies the payload `Value` (it lives behind the cell's pointer); a `~Copyable` payload is shared
 // by reference and torn down once. The struct carries no `deinit` — the cell's `Storage` owns
@@ -151,7 +151,7 @@ extension Ownership.Box where Value: ~Copyable {
             // A clone-less cell that is nonetheless shared cannot restore uniqueness, so this traps
             // cleanly. It does not fire in practice: the box is unconditionally Copyable, so a
             // clone-less cell CAN be shared in principle, but the consolidation's `~Copyable`-element
-            // wrappers (`Shared` / `Unique`) keep such cells statically unique
+            // wrappers (`Ownership.Shared` / `Unique`) keep such cells statically unique
             // ([MEM-COPY-017] / [MEM-COPY-019]).
             preconditionFailure("Ownership.Box backing is shared but carries no clone strategy")
         }
