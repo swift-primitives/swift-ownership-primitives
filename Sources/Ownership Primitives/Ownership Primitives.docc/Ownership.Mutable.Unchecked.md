@@ -39,4 +39,4 @@ let cell = Ownership.Mutable.Unchecked(...)   // externally synchronized
 ## See Also
 
 - ``Ownership/Mutable``
-- <doc:Shared-vs-Mutable-vs-Unique>
+- <doc:Immutable-vs-Mutable-vs-Unique>

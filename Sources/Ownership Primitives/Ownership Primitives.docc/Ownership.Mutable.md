@@ -31,7 +31,7 @@ increment(cell)
 | Cell | Ownership | Mutation | Sendability |
 |------|-----------|----------|-------------|
 | ``Ownership/Unique`` | Exclusive | Yes | `Sendable` when `Value: Sendable` |
-| ``Ownership/Shared`` | ARC-shared | No | `Sendable` when `Value: Sendable` |
+| ``Ownership/Immutable`` | ARC-shared | No | `Sendable` when `Value: Sendable` |
 | ``Ownership/Mutable`` | ARC-shared | Yes | **Not `Sendable`** |
 | ``Ownership/Mutable/Unchecked`` | ARC-shared | Yes | `@unchecked Sendable` (opt-in) |
 
@@ -46,5 +46,5 @@ The deliberate non-`Sendable` shape forces callers to state their synchronizatio
 ## See Also
 
 - ``Ownership/Unique``
-- ``Ownership/Shared``
-- <doc:Shared-vs-Mutable-vs-Unique>
+- ``Ownership/Immutable``
+- <doc:Immutable-vs-Mutable-vs-Unique>

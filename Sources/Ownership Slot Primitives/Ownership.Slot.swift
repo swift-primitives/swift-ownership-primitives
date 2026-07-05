@@ -17,7 +17,7 @@ public import Synchronization
 extension Ownership {
     /// A reusable heap-allocated slot for storing a single `~Copyable` value.
     ///
-    /// Unlike `Ownership.Shared` which holds an immutable value, `Slot` allows
+    /// Unlike `Ownership.Immutable` which holds an immutable value, `Slot` allows
     /// values to be stored and taken repeatedly. This is useful for:
     /// - Resource pools with reusable entries
     /// - Lifetime management patterns

@@ -106,6 +106,6 @@ concrete type safe to transfer — only one thread can hold an
 
 ## See Also
 
-- ``Ownership/Shared``
+- ``Ownership/Immutable``
 - ``Ownership/Mutable``
-- <doc:Shared-vs-Mutable-vs-Unique>
+- <doc:Immutable-vs-Mutable-vs-Unique>

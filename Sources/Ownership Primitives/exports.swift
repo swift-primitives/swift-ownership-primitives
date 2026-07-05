@@ -17,12 +17,12 @@
 
 @_exported public import Ownership_Borrow_Primitives
 @_exported public import Ownership_Box_Primitives
+@_exported public import Ownership_Immutable_Primitives
 @_exported public import Ownership_Inout_Primitives
 @_exported public import Ownership_Latch_Primitives
 @_exported public import Ownership_Mutable_Primitives
 @_exported public import Ownership_Primitive
 @_exported public import Ownership_Primitives_Standard_Library_Integration
-@_exported public import Ownership_Shared_Primitives
 @_exported public import Ownership_Slot_Primitives
 @_exported public import Ownership_Transfer_Erased_Primitives
 @_exported public import Ownership_Transfer_Primitives

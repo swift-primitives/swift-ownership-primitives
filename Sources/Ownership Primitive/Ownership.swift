@@ -20,7 +20,7 @@
 /// | Type | Ownership | Mutability | Sendable |
 /// |------|-----------|------------|----------|
 /// | ``Unique`` | Exclusive | Mutable | When `Value: Sendable` |
-/// | ``Shared`` | Shared (ARC) | Immutable | When `Value: Sendable` |
+/// | ``Immutable`` | Shared (ARC) | Immutable | When `Value: Sendable` |
 /// | ``Mutable`` | Shared (ARC) | Mutable | Not Sendable (use `.Unchecked`) |
 /// | ``Slot`` | Reusable | Move semantics | `@unchecked` (atomic sync) |
 /// | ``Transfer`` | One-shot | Move-only | Tokens are Sendable |
@@ -32,7 +32,7 @@
 /// This module provides ownership primitives with distinct contracts:
 ///
 /// - Need exclusive ownership with deterministic cleanup? → ``Unique``
-/// - Need shared immutable heap storage? → ``Shared``
+/// - Need shared immutable heap storage? → ``Immutable``
 /// - Need shared mutable heap storage? → ``Mutable``
 /// - Need atomic move semantics? → ``Slot``
 /// - Need cross-boundary ownership transfer? → ``Transfer``
@@ -48,7 +48,7 @@
 /// - `Unique`: Sendable when `Value: Sendable` (exclusive owner, no sharing)
 ///
 /// ### Immutable shared
-/// - `Shared`: Sendable when `Value: Sendable` (immutable, safe to share)
+/// - `Immutable`: Sendable when `Value: Sendable` (immutable, safe to share)
 ///
 /// ### Mutable shared (not Sendable by default)
 /// - `Mutable`: Not Sendable. Use `Mutable.Unchecked` for explicit opt-in.

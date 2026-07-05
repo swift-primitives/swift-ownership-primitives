@@ -13,19 +13,19 @@
 extension Ownership {
     /// A heap-allocated wrapper for an immutable value with shared ownership.
     ///
-    /// `Shared` provides reference semantics for value types via ARC, enabling:
+    /// `Immutable` provides reference semantics for value types via ARC, enabling:
     /// - Heap allocation for values that need stable identity
     /// - Breaking recursive type definitions
     /// - Storage for `~Copyable` values that need heap allocation
     ///
     /// ## Ownership Model
     ///
-    /// Multiple owners can share the same `Shared` instance via ARC.
+    /// Multiple owners can share the same `Immutable` instance via ARC.
     /// The value is immutable (`let`), so sharing is safe.
     ///
     /// ## Sendable
     ///
-    /// `Shared` is checked `Sendable` when `Value: Sendable`. The value is
+    /// `Immutable` is checked `Sendable` when `Value: Sendable`. The value is
     /// immutable (`let`) and the generic requires `Value: Sendable`, so the
     /// compiler synthesises the conformance structurally — no `@unchecked`
     /// escape hatch needed.
@@ -33,14 +33,14 @@ extension Ownership {
     /// ## Example
     ///
     /// ```swift
-    /// let shared = Ownership.Shared(42)
-    /// print(shared.value)  // 42
+    /// let immutable = Ownership.Immutable(42)
+    /// print(immutable.value)  // 42
     /// ```
     // SAFETY: Transitive absorption of `an absorber type`'s invariants;
     // SAFETY: this wrapper's API never re-exposes the underlying unsafety,
     // SAFETY: and lifetime / ownership constraints are inherited.
     @safe
-    public final class Shared<Value: ~Copyable & Sendable>: Sendable {
+    public final class Immutable<Value: ~Copyable & Sendable>: Sendable {
         /// The wrapped value.
         public let value: Value
 
