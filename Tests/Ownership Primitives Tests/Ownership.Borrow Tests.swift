@@ -95,12 +95,12 @@ extension `Ownership Borrow Tests`.`Edge Case` {
             var contents: Int
             init(_ contents: Int) { self.contents = contents }
         }
-        let obj = Box(5)
+        let box = Box(5)
         func readContents(_ value: borrowing Box) -> Int {
             let ref = Ownership.Borrow(borrowing: value)
             return ref.value.contents
         }
-        #expect(readContents(obj) == 5)
+        #expect(readContents(box) == 5)
     }
 }
 

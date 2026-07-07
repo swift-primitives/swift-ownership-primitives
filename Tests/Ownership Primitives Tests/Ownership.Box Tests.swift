@@ -62,8 +62,8 @@ extension `Ownership Box Tests`.Unit {
         var a = Ownership.Box<[Int]>([1, 2, 3])
         var b = a
         let sharedA = a.isUnique
-        #expect(!sharedA)               // shared backing
-        b.value.append(4)              // copy-on-write restores b's uniqueness
+        #expect(!sharedA)  // shared backing
+        b.value.append(4)  // copy-on-write restores b's uniqueness
         let uniqueA = a.isUnique
         let uniqueB = b.isUnique
         #expect(uniqueA)
@@ -109,10 +109,10 @@ extension `Ownership Box Tests`.`Edge Case` {
         let a = Ownership.Box<[Int]>([1])
         let identityA = a.identity
         var b = a
-        #expect(b.identity == identityA)   // share the backing
-        b.value.append(2)                  // copy-on-write
-        #expect(b.identity != identityA)   // b diverged onto a fresh backing
-        #expect(a.identity == identityA)   // a kept the original backing
+        #expect(b.identity == identityA)  // share the backing
+        b.value.append(2)  // copy-on-write
+        #expect(b.identity != identityA)  // b diverged onto a fresh backing
+        #expect(a.identity == identityA)  // a kept the original backing
     }
 }
 
@@ -152,7 +152,10 @@ extension `Ownership Box Tests`.Integration {
 
     @Test
     func `explicit clone witness drives copy-on-write through the gate`() {
-        final class Cell { var n: Int; init(_ n: Int) { self.n = n } }
+        final class Cell {
+            var n: Int
+            init(_ n: Int) { self.n = n }
+        }
         // A reference-typed payload whose clone witness deep-copies the cell.
         let a = Ownership.Box<Cell>(
             Cell(1),
@@ -160,7 +163,7 @@ extension `Ownership Box Tests`.Integration {
             clone: { Cell($0.n) }
         )
         var b = a
-        b.ensureUnique()                   // gate → deep copy via the witness
+        b.ensureUnique()  // gate → deep copy via the witness
         b.value.n = 99
         #expect(a.value.n == 1)
         #expect(b.value.n == 99)
@@ -169,9 +172,9 @@ extension `Ownership Box Tests`.Integration {
     @Test
     func `unguarded mutates in place after the gate`() {
         var a = Ownership.Box<[Int]>([1, 2])
-        let copied = a.ensureUnique()      // already unique — no copy made
+        let copied = a.ensureUnique()  // already unique — no copy made
         #expect(!copied)
-        a.unguarded.append(3)             // unchecked lane
+        a.unguarded.append(3)  // unchecked lane
         #expect(a.value == [1, 2, 3])
     }
 }
@@ -199,7 +202,7 @@ extension `Ownership Box Tests`.`Noncopyable Payload` {
             #expect(unique)
             #expect(recorder.destroyed == 0)
         }
-        #expect(recorder.destroyed == 1)   // the cell's deinit tore the payload down exactly once
+        #expect(recorder.destroyed == 1)  // the cell's deinit tore the payload down exactly once
     }
 
     @Test
@@ -220,12 +223,12 @@ extension `Ownership Box Tests`.`Noncopyable Payload` {
         do {
             var a = Ownership.Box<Token>(Token(recorder), drain: { _ in }, clone: nil)
             let identityA = a.identity
-            let b = a                          // copies the cell — shares the backing by reference
+            let b = a  // copies the cell — shares the backing by reference
             let sharedA = a.isUnique
-            #expect(!sharedA)                  // both reference one cell
+            #expect(!sharedA)  // both reference one cell
             #expect(b.identity == identityA)
-            #expect(recorder.destroyed == 0)   // the Token itself was never copied
+            #expect(recorder.destroyed == 0)  // the Token itself was never copied
         }
-        #expect(recorder.destroyed == 1)       // torn down once when the last reference is released
+        #expect(recorder.destroyed == 1)  // torn down once when the last reference is released
     }
 }

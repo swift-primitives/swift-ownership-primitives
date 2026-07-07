@@ -167,6 +167,7 @@ extension `Ownership Inout Tests`.Integration {
 
 /// Test fixture mirroring the cohort's NEResource pattern from
 /// `swift-institute/Research/escapable-support-pair-either-product.md` v1.1.0.
+///
 /// Verifies that `Ownership.Inout` admits `Value: ~Copyable & ~Escapable` via
 /// `init(unsafeRawAddress:mutating:)`.
 private struct NEResource: ~Escapable, ~Copyable {
@@ -177,15 +178,18 @@ private struct NEResource: ~Escapable, ~Copyable {
 
 extension `Ownership Inout Tests`.Unit {
     /// Compile-time admission: the new `init(unsafeRawAddress:mutating:)`
-    /// is only available when `Value: ~Copyable & ~Escapable`. If the type
-    /// constraint regresses to `~Copyable` only, this function fails to
-    /// compile. Runtime behavior for `~Escapable` Value is intentionally
-    /// limited — the `var value` accessor is gated `where Value: ~Copyable`
-    /// (Escapable implicit) because `assumingMemoryBound(to:)` returns
-    /// `UnsafeMutablePointer<Value>` which requires `Value: Escapable`. This
-    /// mirrors `Ownership.Borrow`'s existing design (`Borrow` admits
-    /// `~Escapable Value` for storage but the typed `value` accessor is
-    /// only available when Value: Escapable).
+    /// is only available when `Value: ~Copyable & ~Escapable`.
+    ///
+    /// If the type constraint regresses to `~Copyable` only, this function
+    /// fails to compile. Runtime behavior for `~Escapable` Value is
+    /// intentionally limited — the `var value` accessor is gated
+    /// `where Value: ~Copyable` (Escapable implicit) because
+    /// `assumingMemoryBound(to:)` returns `UnsafeMutablePointer<Value>` which
+    /// requires `Value: Escapable`.
+    ///
+    /// This mirrors `Ownership.Borrow`'s existing design: `Borrow` admits
+    /// `~Escapable Value` for storage, but the typed `value` accessor is
+    /// only available when `Value: Escapable`.
     @Test
     func `Inout~Escapable type-level admission via init(unsafeRawAddress:mutating:)`() {
         // Closure exists for compile-time admission — never invoked.

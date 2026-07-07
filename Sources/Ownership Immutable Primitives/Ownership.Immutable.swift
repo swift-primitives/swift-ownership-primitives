@@ -11,6 +11,9 @@
 // ===----------------------------------------------------------------------===//
 
 extension Ownership {
+    // SAFETY: Transitive absorption of `an absorber type`'s invariants;
+    // SAFETY: this wrapper's API never re-exposes the underlying unsafety,
+    // SAFETY: and lifetime / ownership constraints are inherited.
     /// A heap-allocated wrapper for an immutable value with shared ownership.
     ///
     /// `Immutable` provides reference semantics for value types via ARC, enabling:
@@ -36,9 +39,6 @@ extension Ownership {
     /// let immutable = Ownership.Immutable(42)
     /// print(immutable.value)  // 42
     /// ```
-    // SAFETY: Transitive absorption of `an absorber type`'s invariants;
-    // SAFETY: this wrapper's API never re-exposes the underlying unsafety,
-    // SAFETY: and lifetime / ownership constraints are inherited.
     @safe
     public final class Immutable<Value: ~Copyable & Sendable>: Sendable {
         /// The wrapped value.

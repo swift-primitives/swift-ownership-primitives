@@ -187,9 +187,9 @@ extension `Ownership Transfer Tests`.`Erased Outgoing` {
         final class Sentinel {}
         weak var probe: Sentinel?
         do {
-            let instance = Sentinel()
-            probe = instance
-            let raw = unsafe Ownership.Transfer.Erased.Outgoing.make(instance)
+            let sentinel = Sentinel()
+            probe = sentinel
+            let raw = unsafe Ownership.Transfer.Erased.Outgoing.make(sentinel)
             unsafe Ownership.Transfer.Erased.Outgoing.destroy(raw)
         }
         // probe observes that destroy() released the +1 retain the box held.
@@ -254,4 +254,3 @@ extension `Ownership Transfer Tests`.Integration {
         #expect(got === expected)
     }
 }
-

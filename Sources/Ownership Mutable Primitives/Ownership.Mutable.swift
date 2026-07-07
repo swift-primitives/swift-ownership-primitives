@@ -11,6 +11,9 @@
 // ===----------------------------------------------------------------------===//
 
 extension Ownership {
+    // SAFETY: Transitive absorption of `Ownership.Mutable`'s invariants;
+    // SAFETY: this wrapper's API never re-exposes the underlying unsafety,
+    // SAFETY: and lifetime / ownership constraints are inherited.
     /// A heap-allocated wrapper enabling recursive value types and shared mutable state.
     ///
     /// `Mutable` boxes a value (including `~Copyable` types) in a reference type,
@@ -61,9 +64,6 @@ extension Ownership {
     ///     var children: [Ownership.Mutable<TreeNode>]
     /// }
     /// ```
-    // SAFETY: Transitive absorption of `Ownership.Mutable`'s invariants;
-    // SAFETY: this wrapper's API never re-exposes the underlying unsafety,
-    // SAFETY: and lifetime / ownership constraints are inherited.
     @safe
     public final class Mutable<Value: ~Copyable> {
         /// The wrapped value.
