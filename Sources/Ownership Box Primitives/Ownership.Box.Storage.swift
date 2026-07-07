@@ -58,7 +58,9 @@ extension Ownership.Box where Value: ~Copyable {
         @usableFromInline
         internal let _drain: @Sendable (inout Value) -> Void
 
-        /// The payload deep-copy strategy. `nil` on statically-unique payloads (`~Copyable` payloads
+        /// The payload deep-copy strategy.
+        ///
+        /// `nil` on statically-unique payloads (`~Copyable` payloads
         /// cannot be duplicated, so uniqueness never needs restoring); non-`nil` whenever the payload
         /// is `Copyable` and the cell can become shared: `ensureUnique()` clones through it.
         @usableFromInline
