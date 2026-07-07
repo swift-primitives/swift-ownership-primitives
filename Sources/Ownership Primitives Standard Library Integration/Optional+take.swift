@@ -53,7 +53,7 @@ extension Optional where Wrapped: ~Copyable {
             // is a declaration modifier and cannot apply to a bare
             // `return` expression. Under Swift <6.4 this is a harmless
             // no-op.
-            // swift-linter:disable:next intermediate binding then return
+            // swiftlint:disable:next direct_return
             nonisolated(unsafe) let v = value
             return v
 

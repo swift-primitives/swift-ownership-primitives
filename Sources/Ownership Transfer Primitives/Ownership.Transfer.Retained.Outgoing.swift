@@ -109,8 +109,8 @@ extension Ownership.Transfer.Retained.Outgoing where T: Copyable {
     ///
     /// - Returns: The retained object. The caller now owns this reference.
     public consuming func consume() -> T {
-        let instance = unsafe Unmanaged<T>.fromOpaque(UnsafeRawPointer(raw)).takeRetainedValue()
+        let retained = unsafe Unmanaged<T>.fromOpaque(UnsafeRawPointer(raw)).takeRetainedValue()
         discard self
-        return instance
+        return retained
     }
 }

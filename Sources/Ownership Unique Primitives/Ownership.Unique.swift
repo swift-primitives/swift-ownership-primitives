@@ -13,6 +13,8 @@
 // MARK: - Ownership.Unique
 
 extension Ownership {
+    // SAFETY: Encapsulates unsafe internals behind a safe API; see
+    // SAFETY: [MEM-SAFE-024] for the absorber-pattern taxonomy.
     /// A heap-owned, exclusively-owned single-value cell.
     ///
     /// `Ownership.Unique<Value>` owns one heap-allocated value. The cell is
@@ -50,8 +52,6 @@ extension Ownership {
     /// ownership should use `Ownership.Unique<Value>?`. This matches
     /// SE-0517's explicit design choice — empty state is rejected — and
     /// eliminates the class of bugs from re-observing a taken cell.
-    // SAFETY: Encapsulates unsafe internals behind a safe API; see
-    // SAFETY: [MEM-SAFE-024] for the absorber-pattern taxonomy.
     @safe
     @frozen
     public struct Unique<Value: ~Copyable>: ~Copyable {

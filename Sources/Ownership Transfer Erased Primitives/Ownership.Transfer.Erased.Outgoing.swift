@@ -41,6 +41,10 @@ extension Ownership.Transfer.Erased {
 // MARK: - Header
 
 extension Ownership.Transfer.Erased.Outgoing {
+    // reason: well-formed 4-part WORKAROUND template (WORKAROUND/WHY/WHEN TO
+    // REMOVE/TRACKING all present, verified by hand) — the rule's regex still
+    // flags any marker's presence as an FYI, not a defect.
+    // swiftlint:disable:next workaround_marker_present
     // WORKAROUND: `destroyPayload` is a heap-allocating closure instead of a
     //             `@convention(thin)` function pointer.
     // WHY: A closure returning `@convention(thin) (Ptr, Int) -> Void` whose
@@ -53,10 +57,9 @@ extension Ownership.Transfer.Erased.Outgoing {
     //                 function references.
     // TRACKING: swift-institute/Experiments/unsafe-bitcast-generic-thin-function-pointer/
     //           (STILL PRESENT on 6.3.1, verified 2026-04-23).
-
-    /// Header for the erased box with inline payload.
     // SAFETY: Encapsulates unsafe internals behind a safe API; see
     // SAFETY: [MEM-SAFE-024] for the absorber-pattern taxonomy.
+    /// Header for the erased box with inline payload.
     @safe
     fileprivate struct Header {
         /// Function to destroy the payload given base pointer and offset.

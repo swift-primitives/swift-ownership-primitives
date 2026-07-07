@@ -105,7 +105,6 @@ extension Ownership {
 
 // MARK: - Sendable
 
-/// The single audited home for the cell's `@unchecked Sendable` contract ([MEM-SAFE-024]).
 // WHY: Category D (SP-5) — `Storage` carries mutable payload state behind an
 // WHY: `UnsafeMutablePointer` the compiler cannot prove Sendable. Soundness is the
 // WHY: copy-on-write discipline AROUND the cell: every safe mutation restores uniqueness
@@ -115,6 +114,7 @@ extension Ownership {
 // WHY: wrapper, so the gate is a no-op there. The sole unchecked lane is `unguarded`, whose
 // WHY: name states the caller's obligation. Both witnesses are `@Sendable` by stored type.
 // WHY: See [MEM-SAFE-028].
+/// The single audited home for the cell's `@unchecked Sendable` contract ([MEM-SAFE-024]).
 extension Ownership.Box: @unchecked Sendable where Value: Sendable & ~Copyable {}
 
 // MARK: - Convenience Construction (Copyable payloads)
@@ -163,7 +163,9 @@ extension Ownership.Box where Value: ~Copyable {
 // MARK: - Access
 
 extension Ownership.Box where Value: ~Copyable {
-    /// The stored value. Reads borrow without allocating; mutation restores unique ownership first
+    /// The stored value.
+    ///
+    /// Reads borrow without allocating; mutation restores unique ownership first
     /// (copy-on-write). The safe, default accessor.
     @inlinable
     public var value: Value {
@@ -176,7 +178,9 @@ extension Ownership.Box where Value: ~Copyable {
 
     /// Address-projected access that does NOT restore uniqueness — the unchecked lane for callers
     /// who have already established uniqueness (gate once with ``ensureUnique()``, then run a hot
-    /// batch). Mutating a shared backing through this accessor mutates shared state; the caller
+    /// batch).
+    ///
+    /// Mutating a shared backing through this accessor mutates shared state; the caller
     /// owns the uniqueness obligation (assert ``isUnique`` in debug at the call site).
     @inlinable
     public var unguarded: Value {

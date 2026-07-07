@@ -11,6 +11,10 @@
 // ===----------------------------------------------------------------------===//
 
 extension Ownership.Box where Value: ~Copyable {
+    // WHY: Category D (SP-5) — `Storage` reaches its payload through an
+    // WHY: `UnsafeMutablePointer`; the pointer is `Storage`-owned for the cell's
+    // WHY: whole life, projected only through the addressor below, and mutated
+    // WHY: only on uniqueness-restored paths. See [MEM-SAFE-024], [MEM-SAFE-028].
     /// The refcounted heap cell behind ``Ownership/Box`` — the single audited home for the
     /// drain-box rule ([MEM-SAFE-028]) and the cell's copy-on-write teardown discipline.
     ///
@@ -31,10 +35,6 @@ extension Ownership.Box where Value: ~Copyable {
     /// Durable repro: `swift-institute/Experiments/cow-box-deinit-omission-miscompile` (CONFIRMED,
     /// still live on Swift 6.3.3). The drain is time-boxed to that miscompile being fixed upstream;
     /// it remains correct (and stdlib-convergent) thereafter.
-    // WHY: Category D (SP-5) — `Storage` reaches its payload through an
-    // WHY: `UnsafeMutablePointer`; the pointer is `Storage`-owned for the cell's
-    // WHY: whole life, projected only through the addressor below, and mutated
-    // WHY: only on uniqueness-restored paths. See [MEM-SAFE-024], [MEM-SAFE-028].
     @safe
     @usableFromInline
     internal final class Storage {
