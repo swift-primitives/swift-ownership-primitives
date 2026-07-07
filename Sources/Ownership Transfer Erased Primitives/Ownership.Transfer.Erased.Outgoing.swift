@@ -41,10 +41,6 @@ extension Ownership.Transfer.Erased {
 // MARK: - Header
 
 extension Ownership.Transfer.Erased.Outgoing {
-    // reason: well-formed 4-part WORKAROUND template (WORKAROUND/WHY/WHEN TO
-    // REMOVE/TRACKING all present, verified by hand) — the rule's regex still
-    // flags any marker's presence as an FYI, not a defect.
-    // swiftlint:disable:next workaround_marker_present
     // WORKAROUND: `destroyPayload` is a heap-allocating closure instead of a
     //             `@convention(thin)` function pointer.
     // WHY: A closure returning `@convention(thin) (Ptr, Int) -> Void` whose
