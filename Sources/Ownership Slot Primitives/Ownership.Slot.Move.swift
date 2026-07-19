@@ -58,7 +58,7 @@ extension Ownership.Slot.Move where Value: ~Copyable {
     ///
     /// - Precondition: Slot must be empty.
     /// - Parameter value: The value to store.
-    public func `in`(_ value: consuming Value) {
+    public func `in`(_ value: consuming sending Value) {
         // swift-linter:disable:next unchecked call site
         // REASON: Slot.Move.in is the trapping public API delegating
         //   to the __unchecked: overload after precondition check ([CONV-016]).

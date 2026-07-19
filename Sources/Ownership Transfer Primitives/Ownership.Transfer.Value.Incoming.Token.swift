@@ -44,7 +44,7 @@ extension Ownership.Transfer.Value.Incoming.Token where V: ~Copyable {
     /// - Parameter value: The value to store (ownership transferred).
     /// - Precondition: Must be called exactly once across all token copies.
     ///   Second call traps with a clear error message.
-    public func store(_ value: consuming V) {
+    public func store(_ value: consuming sending V) {
         _latch.store(value)
     }
 }

@@ -55,7 +55,13 @@ extension Ownership {
     /// Atomic state machine (`Atomic<Int>` with acquiringAndReleasing CAS) +
     /// release/acquire publication protocol protects storage access.
     /// `@unchecked Sendable` per [MEM-SAFE-024] Category A
-    /// (synchronized).
+    /// (synchronized). `store(_:)` takes and `take()` returns `sending
+    /// Value`: the compiler verifies the handed-off value has no other live
+    /// uses at the hand-off point, which is what makes the unconditional
+    /// `@unchecked Sendable` conformance sound for non-Sendable `Value`
+    /// types per the SE-0433 pattern — the synchronized state machine alone
+    /// only protects `_storage`'s memory, not an aliased reference the
+    /// caller kept and continued using concurrently.
     @safe
     public final class Latch<Value: ~Copyable>: @unchecked Sendable {
         // MARK: - State Machine
@@ -144,7 +150,7 @@ extension Ownership.Latch where Value: ~Copyable {
     /// - Parameter value: The value to store (ownership transferred).
     /// - Precondition: The latch must be empty. Traps if a value is already
     ///   present or if the latch has already been taken.
-    public func store(_ value: consuming Value) {
+    public func store(_ value: consuming sending Value) {
         // Reserve: CAS empty -> initializing
         let (reserved, original) = _state.compareExchange(
             expected: State.empty,
@@ -179,7 +185,7 @@ extension Ownership.Latch where Value: ~Copyable {
     ///
     /// - Returns: The stored value, or `nil` if the latch is empty or has
     ///   already been taken.
-    public func take() -> Value? {
+    public func take() -> sending Value? {
         // CAS full -> taken
         let (exchanged, _) = _state.compareExchange(
             expected: State.full,

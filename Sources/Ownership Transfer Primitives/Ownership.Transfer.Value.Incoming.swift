@@ -75,7 +75,7 @@ extension Ownership.Transfer.Value.Incoming where V: ~Copyable {
     ///
     /// - Returns: The stored value if `token.store(_:)` was called,
     ///   `nil` otherwise.
-    public consuming func consume() -> V? {
+    public consuming func consume() -> sending V? {
         _latch.take()
     }
 }

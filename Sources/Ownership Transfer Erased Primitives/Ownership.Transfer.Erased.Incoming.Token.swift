@@ -45,7 +45,7 @@ extension Ownership.Transfer.Erased.Incoming.Token {
     /// - Precondition: Must be called exactly once across all token copies.
     ///   Second call traps with a clear error message.
     @unsafe
-    public func store(_ raw: UnsafeMutableRawPointer) {
+    public func store(_ raw: sending UnsafeMutableRawPointer) {
         unsafe _latch.store(raw)
     }
 }
