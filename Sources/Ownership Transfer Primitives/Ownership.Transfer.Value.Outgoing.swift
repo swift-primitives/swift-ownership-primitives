@@ -45,7 +45,7 @@ extension Ownership.Transfer.Value where V: ~Copyable {
         /// Creates an outgoing cell containing the given value.
         ///
         /// - Parameter value: The value to store (ownership transferred).
-        public init(_ value: consuming V) {
+        public init(_ value: consuming sending V) {
             _latch = Ownership.Latch(value)
         }
     }

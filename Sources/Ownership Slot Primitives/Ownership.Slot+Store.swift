@@ -39,7 +39,7 @@ extension Ownership.Slot where Value: ~Copyable {
     /// - Returns: `nil` if the slot was empty and the value is now stored;
     ///   `.some(value)` if the slot was occupied — the caller's value is
     ///   returned unconsumed.
-    public func store(_ value: consuming Value) -> Value? {
+    public func store(_ value: consuming sending Value) -> Value? {
         // Reserve: CAS empty -> initializing
         let (reserved, _) = _state.compareExchange(
             expected: State.empty,
@@ -64,7 +64,7 @@ extension Ownership.Slot where Value: ~Copyable {
     ///
     /// - Parameter value: The value to store (ownership transferred).
     /// - Precondition: The slot must be empty.
-    public func store(__unchecked value: consuming Value) {
+    public func store(__unchecked value: consuming sending Value) {
         if case .some = store(value) {
             preconditionFailure("Ownership.Slot.store(__unchecked:): already occupied")
         }

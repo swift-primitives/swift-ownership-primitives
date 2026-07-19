@@ -161,10 +161,14 @@ extension `Ownership Transfer Tests`.`Retained Incoming` {
             init(_ tag: Int) { self.tag = tag }
         }
         let marker = Marker(7)
+        let markerID = ObjectIdentifier(marker)
         let incoming = Ownership.Transfer.Retained<Marker>.Incoming()
+        // `store(_:)` takes `sending T` (fable-448 F-002): capture identity
+        // before the hand-off rather than keeping `marker` alive to compare
+        // against afterward, matching the sending contract.
         incoming.token.store(marker)
         let received = incoming.consume()
-        #expect(received === marker)
+        #expect(received.map(ObjectIdentifier.init) == markerID)
     }
 }
 
@@ -249,8 +253,12 @@ extension `Ownership Transfer Tests`.Integration {
         let incoming = Ownership.Transfer.Retained<Service>.Incoming()
         let producerToken = incoming.token
         let expected = Service(1)
+        let expectedID = ObjectIdentifier(expected)
+        // `store(_:)` takes `sending T` (fable-448 F-002): capture identity
+        // before the hand-off rather than keeping `expected` alive to
+        // compare against afterward, matching the sending contract.
         producerToken.store(expected)
         let got = incoming.consume()
-        #expect(got === expected)
+        #expect(got.map(ObjectIdentifier.init) == expectedID)
     }
 }

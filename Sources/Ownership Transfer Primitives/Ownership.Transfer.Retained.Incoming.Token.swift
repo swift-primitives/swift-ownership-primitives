@@ -48,7 +48,7 @@ extension Ownership.Transfer.Retained.Incoming.Token {
     /// - Parameter instance: The object to store.
     /// - Precondition: Must be called exactly once across all token copies.
     ///   Second call traps with a clear error message.
-    public func store(_ instance: T) {
+    public func store(_ instance: sending T) {
         _latch.store(instance)
     }
 }
