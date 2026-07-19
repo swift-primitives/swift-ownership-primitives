@@ -21,16 +21,28 @@ extension Ownership.Slot where Value: ~Copyable {
     ///
     /// - Returns: The stored value, or `nil` if empty.
     public func take() -> sending Value? {
-        // CAS full -> empty
+        // Reserve: CAS full -> draining. This does NOT yet publish "empty" —
+        // a concurrent store() CAS'ing on `expected: .empty` cannot match
+        // `.draining`, so the slot cannot be reinitialized until this take()
+        // has finished vacating storage. See Ownership.Slot.swift for the
+        // full publication-protocol writeup.
         let (exchanged, _) = _state.compareExchange(
             expected: State.full,
-            desired: State.empty,
+            desired: State.draining,
             ordering: .acquiringAndReleasing
         )
         guard exchanged else {
             return nil
         }
-        return unsafe _storage.move()
+
+        // Vacate storage while no other party can observe it as empty yet.
+        let value = unsafe _storage.move()
+
+        // Publish: store empty (release ensures the move-out is complete
+        // before any observer can CAS empty -> initializing and start a
+        // new store() into the same storage).
+        _state.store(State.empty, ordering: .releasing)
+        return value
     }
 
     /// Atomically takes the value from the slot, trapping if empty.

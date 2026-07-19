@@ -81,21 +81,29 @@ extension Ownership {
         //   3. store(State.full, releasing) — publishes; release barrier ensures
         //      initialize happens-before any observer sees .full
         //
-        // Take path:
-        //   1. CAS full → empty (acquiringAndReleasing) — acquire barrier ensures
-        //      we observe all writes that happened-before the release in store
-        //   2. _storage.move() — safe because we acquired the publication
+        // Take path (symmetric with store — see F-001 fix):
+        //   1. CAS full → draining (acquiringAndReleasing) — reserves the slot
+        //      for vacating; a concurrent store()'s CAS `expected: .empty` cannot
+        //      match `.draining`, so no other party can begin a new initialize()
+        //      into _storage until this take() publishes .empty in step 3
+        //   2. _storage.move() — safe because we acquired the publication, and
+        //      no other party can observe the slot as empty yet
+        //   3. store(State.empty, releasing) — publishes; release barrier ensures
+        //      the move-out happens-before any observer sees .empty and reserves
+        //      the slot for a new store()
         //
         // ## Invariants
         //
         // - State.full implies _storage is initialized and safe to move/deinit
         // - State.initializing is transient; no observer can take until .full
+        // - State.draining is transient; no observer can store until .empty
         // - _storage is non-atomic; all access is serialized by state transitions
         //
         // States:
         // - State.empty (0): storage uninitialized
         // - State.initializing (1): exclusive writer reserved; init in progress
         // - State.full (2): storage initialized; may be taken
+        // - State.draining (3): exclusive reader reserved; move-out in progress
 
         /// Atomic state for the slot.
         @usableFromInline
@@ -151,8 +159,9 @@ extension Ownership.Slot where Value: ~Copyable {
 extension Ownership.Slot where Value: ~Copyable {
     /// Whether the slot is empty.
     ///
-    /// Note: The intermediate "initializing" state is not considered empty
-    /// (a store is in progress), but is also not full (cannot be taken).
+    /// Note: The intermediate "initializing" and "draining" states are not
+    /// considered empty (a store or take is in progress), but are also not
+    /// full (cannot be taken).
     public var isEmpty: Bool {
         _state.load(ordering: .acquiring) == State.empty
     }
