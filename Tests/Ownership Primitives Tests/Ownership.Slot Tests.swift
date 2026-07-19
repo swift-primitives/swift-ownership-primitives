@@ -18,6 +18,7 @@ struct `Ownership Slot Tests` {
     @Suite struct Unit {}
     @Suite struct `Edge Case` {}
     @Suite struct Integration {}
+    @Suite struct Concurrency {}
 }
 
 // MARK: - Unit Tests
@@ -151,3 +152,58 @@ extension `Ownership Slot Tests`.Integration {
         _ = slot.take()
     }
 }
+
+// MARK: - Concurrency Tests
+//
+// Regression coverage for F-001 (fable-448): take() used to publish State.empty
+// via CAS full -> empty BEFORE vacating storage, leaving a window in which a
+// concurrent store() could observe the slot as empty and call
+// _storage.initialize(to:) while take()'s own _storage.move() was still
+// reading the same memory — an unsynchronized concurrent read/write of the
+// same storage cell. take() is now symmetric with store(): it reserves via
+// CAS full -> draining, vacates storage, and only then publishes empty.
+
+extension `Ownership Slot Tests`.Concurrency {
+    @Test
+    func `concurrent single-producer single-consumer store take never loses or duplicates a value`() async {
+        let slot = Ownership.Slot<Int>()
+        let iterations = 200_000
+
+        let consumed = await withTaskGroup(of: [Int].self) { group in
+            group.addTask {
+                var next = 1
+                var produced = 0
+                while produced < iterations {
+                    if slot.store(next) == nil {
+                        next += 1
+                        produced += 1
+                    }
+                }
+                return []
+            }
+            group.addTask {
+                var taken: [Int] = []
+                taken.reserveCapacity(iterations)
+                while taken.count < iterations {
+                    if let value = slot.take() {
+                        taken.append(value)
+                    }
+                }
+                return taken
+            }
+            var result: [Int] = []
+            for await partial in group where !partial.isEmpty {
+                result = partial
+            }
+            return result
+        }
+
+        // Pre-fix, the take()/store() race could hand the consumer the
+        // producer's next value early (and then again on the following take
+        // once the producer's real publish lands) — duplicates and gaps in
+        // the observed sequence. Post-fix, the SPSC hand-off is exact.
+        #expect(consumed.count == iterations)
+        #expect(consumed == Array(1...iterations))
+    }
+}
+
