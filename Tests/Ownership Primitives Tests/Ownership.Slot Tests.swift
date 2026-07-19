@@ -206,4 +206,3 @@ extension `Ownership Slot Tests`.Concurrency {
         #expect(consumed == Array(1...iterations))
     }
 }
-
