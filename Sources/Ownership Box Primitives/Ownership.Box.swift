@@ -80,10 +80,10 @@ extension Ownership {
         @inlinable
         public init(
             _ value: consuming Value,
-            drain: @escaping @Sendable (inout Value) -> Void,
-            clone: (@Sendable (borrowing Value) -> Value)? = nil
+            clone: (@Sendable (borrowing Value) -> Value)? = nil,
+            drain: @escaping @Sendable (inout Value) -> Void
         ) {
-            self.storage = Storage(value, drain: drain, clone: clone)
+            self.storage = Storage(value, clone: clone, drain: drain)
         }
 
         @usableFromInline
@@ -114,6 +114,13 @@ extension Ownership {
 // WHY: wrapper, so the gate is a no-op there. The sole unchecked lane is `unguarded`, whose
 // WHY: name states the caller's obligation. Both witnesses are `@Sendable` by stored type.
 // WHY: See [MEM-SAFE-028].
+// WHEN TO REMOVE: when the compiler can prove `Storage`'s `UnsafeMutablePointer`-projected
+// WHEN TO REMOVE: payload access Sendable under the copy-on-write discipline described above —
+// WHEN TO REMOVE: i.e. when region-based isolation checking (or a successor) can see through
+// WHEN TO REMOVE: `unsafeAddress`/`unsafeMutableAddress` accessors to the uniqueness-gated
+// WHEN TO REMOVE: mutation discipline.
+// TRACKING: swift-institute/Research/cow-box-deinit-omission-miscompile (Storage's drain-box
+// TRACKING: rule is the sibling audited-workaround, tracked at the same experiment).
 /// The single audited home for the cell's `@unchecked Sendable` contract ([MEM-SAFE-024]).
 extension Ownership.Box: @unchecked Sendable where Value: Sendable & ~Copyable {}
 
@@ -124,7 +131,7 @@ extension Ownership.Box where Value: Copyable {
     /// copy strategy and a no-op drain (the payload's own teardown runs on deallocation).
     @inlinable
     public init(_ value: consuming Value) {
-        self.init(value, drain: { _ in }, clone: { $0 })
+        self.init(value, clone: { $0 }, drain: { _ in })
     }
 }
 
@@ -155,7 +162,7 @@ extension Ownership.Box where Value: ~Copyable {
             // ([MEM-COPY-017] / [MEM-COPY-019]).
             preconditionFailure("Ownership.Box backing is shared but carries no clone strategy")
         }
-        storage = Storage(clone(storage.value), drain: storage._drain, clone: storage._clone)
+        storage = Storage(clone(storage.value), clone: storage._clone, drain: storage._drain)
         return true
     }
 }
@@ -205,6 +212,6 @@ extension Ownership.Box where Value: Copyable {
     /// mutation.
     @inlinable
     public borrowing func clone() -> Ownership.Box<Value> {
-        Ownership.Box(storage: Storage(storage.value, drain: storage._drain, clone: storage._clone))
+        Ownership.Box(storage: Storage(storage.value, clone: storage._clone, drain: storage._drain))
     }
 }

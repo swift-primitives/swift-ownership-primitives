@@ -38,34 +38,6 @@ extension Ownership.Transfer.Erased {
     public enum Outgoing {}
 }
 
-// MARK: - Header
-
-extension Ownership.Transfer.Erased.Outgoing {
-    // WORKAROUND: `destroyPayload` is a heap-allocating closure instead of a
-    //             `@convention(thin)` function pointer.
-    // WHY: A closure returning `@convention(thin) (Ptr, Int) -> Void` whose
-    //      body captures a generic `T` (to call `.deinitialize(count: 1)`)
-    //      fails to compile with
-    //        `INTERNAL ERROR: feature not implemented: nontrivial thin
-    //         function reference`
-    //      on Apple Swift 6.3.1.
-    // WHEN TO REMOVE: when a toolchain accepts generic-capturing thin
-    //                 function references.
-    // TRACKING: swift-institute/Experiments/unsafe-bitcast-generic-thin-function-pointer/
-    //           (STILL PRESENT on 6.3.1, verified 2026-04-23).
-    // SAFETY: Encapsulates unsafe internals behind a safe API; see
-    // SAFETY: [MEM-SAFE-024] for the absorber-pattern taxonomy.
-    /// Header for the erased box with inline payload.
-    @safe
-    fileprivate struct Header {
-        /// Function to destroy the payload given base pointer and offset.
-        let destroyPayload: (UnsafeMutableRawPointer, Int) -> Void
-
-        /// Offset from base pointer to payload (for alignment).
-        let payloadOffset: Int
-    }
-}
-
 // MARK: - Boxing
 
 extension Ownership.Transfer.Erased.Outgoing {
@@ -99,11 +71,11 @@ extension Ownership.Transfer.Erased.Outgoing {
         let headerPtr = unsafe ptr.assumingMemoryBound(to: Header.self)
         unsafe headerPtr.initialize(
             to: Header(
+                payloadOffset: payloadOffset,
                 destroyPayload: { base, offset in
                     unsafe (base + offset).assumingMemoryBound(to: T.self)
                         .deinitialize(count: 1)
-                },
-                payloadOffset: payloadOffset
+                }
             )
         )
 

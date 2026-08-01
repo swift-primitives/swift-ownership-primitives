@@ -69,8 +69,8 @@ extension Ownership.Box where Value: ~Copyable {
         @usableFromInline
         internal init(
             _ value: consuming Value,
-            drain: @escaping @Sendable (inout Value) -> Void,
-            clone: (@Sendable (borrowing Value) -> Value)? = nil
+            clone: (@Sendable (borrowing Value) -> Value)? = nil,
+            drain: @escaping @Sendable (inout Value) -> Void
         ) {
             let payload = UnsafeMutablePointer<Value>.allocate(capacity: 1)
             unsafe payload.initialize(to: value)

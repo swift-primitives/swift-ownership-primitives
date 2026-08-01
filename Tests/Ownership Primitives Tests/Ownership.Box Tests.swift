@@ -159,8 +159,8 @@ extension `Ownership Box Tests`.Integration {
         // A reference-typed payload whose clone witness deep-copies the cell.
         let a = Ownership.Box<Cell>(
             Cell(1),
-            drain: { _ in },
-            clone: { Cell($0.n) }
+            clone: { Cell($0.n) },
+            drain: { _ in }
         )
         var b = a
         b.ensureUnique()  // gate → deep copy via the witness
@@ -197,7 +197,7 @@ extension `Ownership Box Tests`.`Noncopyable Payload` {
         let recorder = Recorder()
         do {
             // No clone strategy — a clone-less cell, kept statically unique by its sole owner.
-            var box = Ownership.Box<Token>(Token(recorder), drain: { _ in }, clone: nil)
+            var box = Ownership.Box<Token>(Token(recorder), clone: nil, drain: { _ in })
             let unique = box.isUnique
             #expect(unique)
             #expect(recorder.destroyed == 0)
@@ -210,7 +210,7 @@ extension `Ownership Box Tests`.`Noncopyable Payload` {
         let recorder = Recorder()
         let token = Token(recorder)
         do {
-            let box = Ownership.Box<Token>(token, drain: { _ in }, clone: nil)
+            let box = Ownership.Box<Token>(token, clone: nil, drain: { _ in })
             _ = box
             #expect(recorder.destroyed == 0)
         }
@@ -221,7 +221,7 @@ extension `Ownership Box Tests`.`Noncopyable Payload` {
     func `copying the cell shares the ~Copyable payload by reference, torn down once`() {
         let recorder = Recorder()
         do {
-            var a = Ownership.Box<Token>(Token(recorder), drain: { _ in }, clone: nil)
+            var a = Ownership.Box<Token>(Token(recorder), clone: nil, drain: { _ in })
             let identityA = a.identity
             let b = a  // copies the cell — shares the backing by reference
             let sharedA = a.isUnique
