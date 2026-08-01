@@ -80,10 +80,10 @@ extension Ownership {
         @inlinable
         public init(
             _ value: consuming Value,
-            clone: (@Sendable (borrowing Value) -> Value)? = nil,
-            drain: @escaping @Sendable (inout Value) -> Void
+            drain: @escaping @Sendable (inout Value) -> Void,
+            clone: (@Sendable (borrowing Value) -> Value)? = nil
         ) {
-            self.storage = Storage(value, clone: clone, drain: drain)
+            self.storage = Storage(value, drain: drain, clone: clone)
         }
 
         @usableFromInline
@@ -131,7 +131,7 @@ extension Ownership.Box where Value: Copyable {
     /// copy strategy and a no-op drain (the payload's own teardown runs on deallocation).
     @inlinable
     public init(_ value: consuming Value) {
-        self.init(value, clone: { $0 }, drain: { _ in })
+        self.init(value, drain: { _ in }, clone: { $0 })
     }
 }
 
@@ -162,7 +162,7 @@ extension Ownership.Box where Value: ~Copyable {
             // ([MEM-COPY-017] / [MEM-COPY-019]).
             preconditionFailure("Ownership.Box backing is shared but carries no clone strategy")
         }
-        storage = Storage(clone(storage.value), clone: storage._clone, drain: storage._drain)
+        storage = Storage(clone(storage.value), drain: storage._drain, clone: storage._clone)
         return true
     }
 }
@@ -212,6 +212,6 @@ extension Ownership.Box where Value: Copyable {
     /// mutation.
     @inlinable
     public borrowing func clone() -> Ownership.Box<Value> {
-        Ownership.Box(storage: Storage(storage.value, clone: storage._clone, drain: storage._drain))
+        Ownership.Box(storage: Storage(storage.value, drain: storage._drain, clone: storage._clone))
     }
 }
