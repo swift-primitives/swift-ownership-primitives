@@ -18,7 +18,8 @@ extension Optional where Wrapped: ~Copyable {
     /// Takes the value out of the optional, leaving nil behind.
     ///
     /// This is the canonical pattern for consuming ~Copyable optional stored properties.
-    /// Uses `consume self` to move the value out, then reassigns nil to the storage.
+    /// Consumes the whole optional in one step and clears the storage via `defer`,
+    /// so there is no intermediate binding extracted from a `mutating self` region.
     ///
     /// ## Usage
     /// ```swift
@@ -29,40 +30,19 @@ extension Optional where Wrapped: ~Copyable {
     ///
     /// - Returns: The wrapped value if present, nil otherwise.
     ///
-    /// > Note: Swift 6.4-dev nightly emits a RegionIsolation diagnostic on
-    /// > the `sending` return ("returning task-isolated 'value' as a
-    /// > 'sending' result risks causing data races"). The diagnostic does
-    /// > not fire on Swift 6.3 release. The CI matrix's nightly job is
-    /// > `continue-on-error: true`; the package builds clean on Swift 6.3.1
-    /// > across macOS, Ubuntu, and Windows. Restructuring to satisfy the
-    /// > nightly analyzer (e.g. consuming into a local before returning)
-    /// > does not eliminate the diagnostic — the binding inherits
-    /// > task-isolation from `mutating self`. Track for a re-evaluation
-    /// > when 6.4 stabilizes.
+    /// > Note: An earlier `switch consume self { case .some(let value): ... }`
+    /// > shape triggered a Swift 6.4 RegionIsolation diagnostic ("returning
+    /// > 'value' as a 'sending' result risks causing data races"): pattern
+    /// > matching bound `value` as a fresh local still tied to the
+    /// > `mutating self` region, and the region checker could not see it as
+    /// > disconnected from the caller's region on return. Consuming `self`
+    /// > directly into the `return` expression removes the extra binding
+    /// > entirely — the sending value and the consumed storage are the same
+    /// > single expression, so there is nothing left for the checker to tie
+    /// > back to `self`'s isolation.
     @inlinable
     public mutating func take() -> sending Wrapped? {
-        switch consume self {
-        case .some(let value):
-            self = nil
-            // SAFETY: Swift 6.4-dev RegionIsolation — the bound `value`
-            // is task-isolated to `mutating self`. Re-binding through
-            // `nonisolated(unsafe)` marks the local as disconnected from
-            // the caller's region (established ecosystem pattern — see
-            // Order.Comparator+Projection / Pool.Bounded.onEnqueue). The
-            // intermediate binding is load-bearing: `nonisolated(unsafe)`
-            // is a declaration modifier and cannot apply to a bare
-            // `return` expression. Under Swift <6.4 this is a harmless
-            // no-op.
-            // swift-linter:disable:next intermediate binding then return
-            // REASON: the binding is load-bearing, not stylistic —
-            // `nonisolated(unsafe)` is a declaration modifier and cannot
-            // apply to a bare `return` expression, so the intermediate
-            // `let` is the only way to attach it (see the doc comment above).
-            return value
-
-        case .none:
-            self = nil
-            return nil
-        }
+        defer { self = nil }
+        return consume self
     }
 }
