@@ -165,7 +165,9 @@ extension `Ownership Slot Tests`.Integration {
 
 extension `Ownership Slot Tests`.Concurrency {
     @Test
-    func `concurrent single-producer single-consumer store take never loses or duplicates a value`() async {
+    func `concurrent single-producer single-consumer store take never loses or duplicates a value`()
+        async
+    {
         let slot = Ownership.Slot<Int>()
         let iterations = 200_000
 

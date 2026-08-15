@@ -42,7 +42,10 @@ extension Ownership.Transfer.Erased.Outgoing {
         /// Offset from base pointer to payload (for alignment).
         package let payloadOffset: Int
 
-        package init(payloadOffset: Int, destroyPayload: @escaping (UnsafeMutableRawPointer, Int) -> Void) {
+        package init(
+            payloadOffset: Int,
+            destroyPayload: @escaping (UnsafeMutableRawPointer, Int) -> Void
+        ) {
             self.payloadOffset = payloadOffset
             unsafe (self.destroyPayload = destroyPayload)
         }

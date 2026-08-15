@@ -198,7 +198,9 @@ extension Ownership.Latch where Value: ~Copyable {
 
         // Invariant: state-CAS full→taken succeeded ⇒ _storage non-nil.
         guard let p = unsafe _storage else {
-            preconditionFailure("Ownership.Latch: state-CAS succeeded but _storage was nil — protocol violation")
+            preconditionFailure(
+                "Ownership.Latch: state-CAS succeeded but _storage was nil — protocol violation"
+            )
         }
         unsafe (_storage = nil)
         let value = unsafe p.move()

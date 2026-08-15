@@ -58,9 +58,7 @@ extension Optional where Wrapped: ~Copyable {
             // `nonisolated(unsafe)` is a declaration modifier and cannot
             // apply to a bare `return` expression, so the intermediate
             // `let` is the only way to attach it (see the doc comment above).
-            // swiftlint:disable:next direct_return
-            nonisolated(unsafe) let v = value
-            return v
+            return value
 
         case .none:
             self = nil
