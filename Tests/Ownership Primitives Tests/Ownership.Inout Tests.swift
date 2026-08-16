@@ -206,8 +206,11 @@ extension `Ownership Inout Tests`.Unit {
     @Test
     func `Inout~Int Copyable Value regression guard`() {
         var source = 0
-        let ref = Ownership.Inout(mutating: &source)
-        ref.value = 99
+        func write(_ value: inout Int) {
+            let ref = Ownership.Inout(mutating: &value)
+            ref.value = 99
+        }
+        write(&source)
         #expect(source == 99)
     }
 
@@ -217,8 +220,11 @@ extension `Ownership Inout Tests`.Unit {
     func `Inout~Copyable Escapable Value regression guard`() {
         struct Payload: ~Copyable { var n: Int }
         var source = Payload(n: 0)
-        let ref = Ownership.Inout(mutating: &source)
-        ref.value = Payload(n: 5)
+        func write(_ value: inout Payload) {
+            let ref = Ownership.Inout(mutating: &value)
+            ref.value = Payload(n: 5)
+        }
+        write(&source)
         #expect(source.n == 5)
     }
 }
