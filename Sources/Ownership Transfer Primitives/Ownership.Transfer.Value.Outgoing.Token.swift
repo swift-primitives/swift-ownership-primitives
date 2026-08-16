@@ -46,7 +46,9 @@ extension Ownership.Transfer.Value.Outgoing.Token where V: ~Copyable {
     ///   Second call traps with a clear error message.
     public func take() -> sending V {
         guard let value = _latch.take() else {
-            preconditionFailure("Ownership.Transfer.Value.Outgoing.Token.take(): called twice or on a latch that was never filled")
+            preconditionFailure(
+                "Ownership.Transfer.Value.Outgoing.Token.take(): called twice or on a latch that was never filled"
+            )
         }
         return value
     }

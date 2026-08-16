@@ -58,6 +58,7 @@ extension Ownership.Slot where Value: ~Copyable {
         return nil
     }
 
+    // swift-format-ignore: AlwaysUseLowerCamelCase
     /// Atomically stores a value into the slot, trapping if occupied.
     ///
     /// Use this when failure indicates a logic error in the calling code.
