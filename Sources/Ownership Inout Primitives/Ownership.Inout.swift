@@ -81,10 +81,34 @@ extension Ownership.Inout where Value: ~Copyable {
     /// This mirrors stdlib `Inout.init(_ value: inout Value)`. Enables
     /// construction from any mutating context without pointer exposure.
     ///
+    /// ## Why `@_transparent`
+    ///
+    /// The address is materialised in the *caller's* frame by mandatory
+    /// inlining, so the optimiser sees `address_to_pointer` of the caller's
+    /// own storage rather than a pointer returned from an opaque call. When
+    /// this initializer was merely `@inlinable`, `-O` builds hoisted loads of
+    /// the source out of loops that mutated it through the view (a
+    /// `while !x.isEmpty { x.pop.front() }` drain never terminated —
+    /// swift-buffer-ring-primitives run 31905986762). The same stale load
+    /// reproduces with `Builtin.addressof`, `Builtin.unprotectedAddressOf`
+    /// and the standard library's `MutableRef` when they are wrapped in a
+    /// non-transparent `@_lifetime(&x) init(_ x: inout X)`, so the trigger is
+    /// the opaque address-taking call, not the pointer's provenance.
+    ///
+    /// Consequently every `~Escapable` wrapper whose initializer forwards an
+    /// `inout` value to this initializer must itself be `@_transparent`
+    /// (see `Ownership Inout Drain Tests`); the pointer must reach the
+    /// accessor that owns the `inout` access without passing through an
+    /// opaque return value.
+    ///
     /// - Parameter value: The value to mutate.
-    @inlinable
+    @_transparent
     @_lifetime(&value)
     public init(mutating value: inout Value) {
+        // SAFETY: after mandatory inlining this is the address of the caller's
+        // SAFETY: own `value` storage; `@_lifetime(&value)` keeps that storage
+        // SAFETY: under exclusive mutable access for the whole lifetime of the
+        // SAFETY: view, so the pointer never outlives or races the storage.
         unsafe (_pointer = withUnsafeMutablePointer(to: &value) { UnsafeMutableRawPointer($0) })
     }
 }
