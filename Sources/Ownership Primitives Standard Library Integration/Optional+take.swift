@@ -18,8 +18,7 @@ extension Optional where Wrapped: ~Copyable {
     /// Takes the value out of the optional, leaving nil behind.
     ///
     /// This is the canonical pattern for consuming ~Copyable optional stored properties.
-    /// Consumes the whole optional in one step and clears the storage via `defer`,
-    /// so there is no intermediate binding extracted from a `mutating self` region.
+    /// Consumes the optional and clears its storage before returning the value.
     ///
     /// ## Usage
     /// ```swift
@@ -30,19 +29,19 @@ extension Optional where Wrapped: ~Copyable {
     ///
     /// - Returns: The wrapped value if present, nil otherwise.
     ///
-    /// > Note: An earlier `switch consume self { case .some(let value): ... }`
-    /// > shape triggered a Swift 6.4 RegionIsolation diagnostic ("returning
-    /// > 'value' as a 'sending' result risks causing data races"): pattern
-    /// > matching bound `value` as a fresh local still tied to the
-    /// > `mutating self` region, and the region checker could not see it as
-    /// > disconnected from the caller's region on return. Consuming `self`
-    /// > directly into the `return` expression removes the extra binding
-    /// > entirely — the sending value and the consumed storage are the same
-    /// > single expression, so there is nothing left for the checker to tie
-    /// > back to `self`'s isolation.
+    /// > Note: This result is intentionally not `sending`. Swift 6.4 cannot
+    /// > prove that a general non-`Sendable` value extracted from mutating
+    /// > storage is disconnected from the caller's region. The plain result
+    /// > preserves support for every `~Copyable` wrapped value.
     @inlinable
-    public mutating func take() -> sending Wrapped? {
-        defer { self = nil }
-        return consume self
+    public mutating func take() -> Wrapped? {
+        switch consume self {
+        case .some(let value):
+            self = nil
+            return value
+        case .none:
+            self = nil
+            return nil
+        }
     }
 }
