@@ -103,9 +103,9 @@
 
     @Section(title: "Consume an `Optional<~Copyable>`") {
         @ContentAndMedia {
-            The stdlib does not provide `Optional<~Copyable>.take()`. This
-            package provides the extension: `take()` consumes `self`,
-            leaves `nil` in its place, and returns the wrapped value.
+            The stdlib provides `Optional<~Copyable>.take()`: it consumes
+            `self`, leaves `nil` in its place, and returns the wrapped
+            value.
 
             It is the canonical pattern for moving out of a `~Copyable`
             optional stored property.
