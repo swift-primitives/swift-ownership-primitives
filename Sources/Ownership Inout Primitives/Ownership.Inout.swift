@@ -69,7 +69,7 @@ extension Ownership.Inout where Value: ~Copyable {
     @inlinable
     @_lifetime(borrow pointer)
     public init(_ pointer: UnsafeMutablePointer<Value>) {
-        self._pointer = UnsafeMutableRawPointer(pointer)
+        unsafe self._pointer = UnsafeMutableRawPointer(pointer)
     }
 }
 
