@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Testing
 
 @testable import Ownership_Primitives_Test_Support
@@ -20,8 +9,6 @@ struct `Ownership Unique Tests` {
     @Suite struct Integration {}
     @Suite(.serialized) struct Performance {}
 }
-
-// MARK: - Unit Tests
 
 extension `Ownership Unique Tests`.Unit {
     @Test
@@ -47,8 +34,7 @@ extension `Ownership Unique Tests`.Unit {
     func `consume returns owned value and destroys cell`() {
         let unique = Ownership.Unique<Int>(123)
         let value = unique.consume()
-        // `unique` no longer exists after consume — compile-time error
-        // to reference it here, which IS the contract.
+
         #expect(value == 123)
     }
 
@@ -57,7 +43,7 @@ extension `Ownership Unique Tests`.Unit {
         let unique = Ownership.Unique<Int>(77)
         let duplicated = unique.clone()
         #expect(duplicated.consume() == 77)
-        #expect(unique.value == 77)  // original still owns its value
+        #expect(unique.value == 77)
     }
 
     @Test
@@ -77,8 +63,6 @@ extension `Ownership Unique Tests`.Unit {
         #expect(unique.value == 20)
     }
 }
-
-// MARK: - Edge Case Tests
 
 extension `Ownership Unique Tests`.`Edge Case` {
     @Test
@@ -126,8 +110,6 @@ extension `Ownership Unique Tests`.`Edge Case` {
         #expect(unique.value == [1, 2, 3, 4])
     }
 
-    // MARK: - ~Copyable Value regression
-
     @Test
     func `consume works with ~Copyable Value`() {
         struct Handle: ~Copyable { let fd: Int32 }
@@ -140,7 +122,7 @@ extension `Ownership Unique Tests`.`Edge Case` {
     func `value accessor works with ~Copyable Value via transitive borrow`() {
         struct Handle: ~Copyable { let fd: Int32 }
         let cell = Ownership.Unique(Handle(fd: 11))
-        // transitive borrow — reads .fd through _read yield
+
         #expect(cell.value.fd == 11)
     }
 
@@ -154,18 +136,15 @@ extension `Ownership Unique Tests`.`Edge Case` {
     }
 }
 
-// MARK: - Integration Tests
-
 extension `Ownership Unique Tests`.Integration {
     @Test
     func `deinit deallocates memory`() {
-        // Verifies that scope-exit deinit runs without crashing.
-        // Memory leak detection would require external tools.
+
         do {
             _ = Ownership.Unique<Int>(42)
-            // Unique goes out of scope and should deallocate
+
         }
-        #expect(true)  // If we get here, deinit didn't crash
+        #expect(true)
     }
 
     @Test
@@ -189,12 +168,10 @@ extension `Ownership Unique Tests`.Integration {
     }
 }
 
-// MARK: - Performance Tests
-
 extension `Ownership Unique Tests`.Performance {
     @Test
     func `allocation and deallocation`() {
-        // Warmup
+
         for _ in 0..<10 {
             for _ in 0..<1000 {
                 let unique = Ownership.Unique<Int>(42)
@@ -202,7 +179,6 @@ extension `Ownership Unique Tests`.Performance {
             }
         }
 
-        // Measured
         for _ in 0..<100 {
             for _ in 0..<1000 {
                 let unique = Ownership.Unique<Int>(42)
@@ -215,14 +191,12 @@ extension `Ownership Unique Tests`.Performance {
     func `value read access`() {
         let unique = Ownership.Unique<Int>(42)
 
-        // Warmup
         for _ in 0..<10 {
             for _ in 0..<10000 {
                 _ = unique.value
             }
         }
 
-        // Measured
         for _ in 0..<100 {
             for _ in 0..<10000 {
                 _ = unique.value
@@ -234,14 +208,12 @@ extension `Ownership Unique Tests`.Performance {
     func `value mutate access`() {
         var unique = Ownership.Unique<Int>(0)
 
-        // Warmup
         for _ in 0..<10 {
             for _ in 0..<10000 {
                 unique.value += 1
             }
         }
 
-        // Measured
         for _ in 0..<100 {
             for _ in 0..<10000 {
                 unique.value += 1

@@ -1,15 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives
-// project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Ownership_Primitives
 import Testing
 
@@ -19,8 +7,6 @@ struct `Ownership Latch Tests` {
     @Suite struct `Edge Case` {}
     @Suite struct Integration {}
 }
-
-// MARK: - Unit Tests
 
 extension `Ownership Latch Tests`.Unit {
     @Test
@@ -57,8 +43,6 @@ extension `Ownership Latch Tests`.Unit {
     }
 }
 
-// MARK: - Edge Case Tests
-
 extension `Ownership Latch Tests`.`Edge Case` {
     @Test
     func `take() after take() returns nil`() {
@@ -93,8 +77,6 @@ extension `Ownership Latch Tests`.`Edge Case` {
     }
 }
 
-// MARK: - Integration Tests
-
 extension `Ownership Latch Tests`.Integration {
     @Test
     func `latch carries a class reference identity across take`() {
@@ -126,7 +108,7 @@ extension `Ownership Latch Tests`.Integration {
     @Test
     func `shared latch delivers to a single consumer across captures`() {
         let latch = Ownership.Latch<Int>()
-        // ARC sharing: multiple strong references, one store, one take.
+
         let alias = latch
         latch.store(123)
         #expect(alias.hasValue)

@@ -1,15 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives
-// project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Ownership_Primitives
 import Testing
 
@@ -19,8 +7,6 @@ struct `Ownership Borrow Tests` {
     @Suite struct `Edge Case` {}
     @Suite struct Integration {}
 }
-
-// MARK: - Unit Tests
 
 extension `Ownership Borrow Tests`.Unit {
     @Test
@@ -55,8 +41,6 @@ extension `Ownership Borrow Tests`.Unit {
     }
 }
 
-// MARK: - Edge Case Tests
-
 extension `Ownership Borrow Tests`.`Edge Case` {
     @Test
     func `value accessor works with struct types`() {
@@ -77,7 +61,7 @@ extension `Ownership Borrow Tests`.`Edge Case` {
         let source = 100
         func forkAndReadBoth(_ value: borrowing Int) -> (Int, Int) {
             let a = Ownership.Borrow(borrowing: value)
-            let b = a  // Copyable — second copy of the same borrow
+            let b = a
             return (a.value, b.value)
         }
         let (x, y) = forkAndReadBoth(source)
@@ -87,10 +71,7 @@ extension `Ownership Borrow Tests`.`Edge Case` {
 
     @Test
     func `value accessor handles reference-type payload`() {
-        // Ad hoc box fixture is structural: this package owns the
-        // Reference/Owned wrappers the rule recommends, so using them
-        // here would be circular (testing wrappers using the wrappers).
-        // swift-linter:disable:next ad hoc box class
+
         final class Box {
             var contents: Int
             init(_ contents: Int) { self.contents = contents }
@@ -103,8 +84,6 @@ extension `Ownership Borrow Tests`.`Edge Case` {
         #expect(readContents(box) == 5)
     }
 }
-
-// MARK: - Integration Tests
 
 extension `Ownership Borrow Tests`.Integration {
     @Test

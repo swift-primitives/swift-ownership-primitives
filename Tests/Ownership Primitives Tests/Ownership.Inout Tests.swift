@@ -1,15 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives
-// project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Ownership_Primitives
 import Testing
 
@@ -19,8 +7,6 @@ struct `Ownership Inout Tests` {
     @Suite struct `Edge Case` {}
     @Suite struct Integration {}
 }
-
-// MARK: - Unit Tests
 
 extension `Ownership Inout Tests`.Unit {
     @Test
@@ -59,16 +45,13 @@ extension `Ownership Inout Tests`.Unit {
         var source = 10
         func addOne(_ value: inout Int) {
             let ref = Ownership.Inout(mutating: &value)
-            // `ref` is `let`-bound but `.value` has `nonmutating _modify`
-            // per [IMPL-071] — mutation goes through the pointee.
+
             ref.value += 1
         }
         addOne(&source)
         #expect(source == 11)
     }
 }
-
-// MARK: - Edge Case Tests
 
 extension `Ownership Inout Tests`.`Edge Case` {
     @Test
@@ -77,7 +60,7 @@ extension `Ownership Inout Tests`.`Edge Case` {
         var source = Counter(count: 5)
         func incrementViaRead(_ value: inout Counter) {
             let ref = Ownership.Inout(mutating: &value)
-            // Pure read through `get` — returns a copy, no compound lifetime.
+
             let current = ref.value.count
             ref.value = Counter(count: current + 1)
         }
@@ -91,7 +74,7 @@ extension `Ownership Inout Tests`.`Edge Case` {
         var source = Payload(value: 5)
         func bump(_ value: inout Payload) {
             let ref = Ownership.Inout(mutating: &value)
-            // `_read` path yields the payload; mutation routes through `_modify`.
+
             let snapshot = ref.value.value
             ref.value = Payload(value: snapshot + 2)
         }
@@ -103,14 +86,13 @@ extension `Ownership Inout Tests`.`Edge Case` {
     func `V12 — nested method-call mutation writes back (CoW preserving)`() {
         struct Holder {
             var values: [Int] = []
-            // swift-linter:disable:next minimal type body
+
             mutating func append(_ x: Int) { values.append(x) }
         }
         var source = Holder()
         func appendTwo(_ value: inout Holder) {
             let ref = Ownership.Inout(mutating: &value)
-            // Nested method-call on a mutating method. A get + set split
-            // would silently discard; _modify routes through the pointer.
+
             ref.value.append(1)
             ref.value.append(2)
         }
@@ -133,8 +115,6 @@ extension `Ownership Inout Tests`.`Edge Case` {
         #expect(source.count == 5)
     }
 }
-
-// MARK: - Integration Tests
 
 extension `Ownership Inout Tests`.Integration {
     @Test
@@ -163,13 +143,6 @@ extension `Ownership Inout Tests`.Integration {
     }
 }
 
-// MARK: - ~Escapable Value Admission
-
-/// Test fixture mirroring the cohort's NEResource pattern from
-/// `swift-institute/Research/escapable-support-pair-either-product.md` v1.1.0.
-///
-/// Verifies that `Ownership.Inout` admits `Value: ~Copyable & ~Escapable` via
-/// `init(unsafeRawAddress:mutating:)`.
 private struct NEResource: ~Escapable, ~Copyable {
     let id: Int
     @_lifetime(immortal)
@@ -177,22 +150,10 @@ private struct NEResource: ~Escapable, ~Copyable {
 }
 
 extension `Ownership Inout Tests`.Unit {
-    /// Compile-time admission: the new `init(unsafeRawAddress:mutating:)`
-    /// is only available when `Value: ~Copyable & ~Escapable`.
-    ///
-    /// If the type constraint regresses to `~Copyable` only, this function
-    /// fails to compile. Runtime behavior for `~Escapable` Value is
-    /// intentionally limited — the `var value` accessor is gated
-    /// `where Value: ~Copyable` (Escapable implicit) because
-    /// `assumingMemoryBound(to:)` returns `UnsafeMutablePointer<Value>` which
-    /// requires `Value: Escapable`.
-    ///
-    /// This mirrors `Ownership.Borrow`'s existing design: `Borrow` admits
-    /// `~Escapable Value` for storage, but the typed `value` accessor is
-    /// only available when `Value: Escapable`.
+
     @Test
     func `Inout~Escapable type-level admission via init(unsafeRawAddress:mutating:)`() {
-        // Closure exists for compile-time admission — never invoked.
+
         let _ = { (storage: UnsafeMutableRawPointer, owner: inout Int) in
             unsafe (_ = Ownership.Inout<NEResource>(
                 unsafeRawAddress: storage,
@@ -202,7 +163,6 @@ extension `Ownership Inout Tests`.Unit {
         #expect(true)
     }
 
-    /// Regression guard: existing `Value: Copyable` path still compiles.
     @Test
     func `Inout~Int Copyable Value regression guard`() {
         var source = 0
@@ -214,8 +174,6 @@ extension `Ownership Inout Tests`.Unit {
         #expect(source == 99)
     }
 
-    /// Regression guard: existing `Value: ~Copyable` (Escapable-implicit)
-    /// path still compiles.
     @Test
     func `Inout~Copyable Escapable Value regression guard`() {
         struct Payload: ~Copyable { var n: Int }

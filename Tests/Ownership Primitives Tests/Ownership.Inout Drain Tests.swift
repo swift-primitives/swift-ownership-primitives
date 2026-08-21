@@ -1,31 +1,6 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives
-// project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Ownership_Primitives
 import Testing
 
-/// Regression fixture for the `-O` stale-load defect on `Ownership.Inout`.
-///
-/// When `Ownership.Inout(mutating:)` was only `@inlinable`, an optimised
-/// caller hoisted loads of the source out of a loop that mutated the source
-/// through an accessor-backed view, so a `while !x.isEmpty { x.pop.front() }`
-/// drain never observed the pops (swift-buffer-ring-primitives
-/// `Buffer.Ring.Builder.buildPartialBlock`, hosted run 31905986762). The
-/// initializer is now `@_transparent`, and every wrapper initializer that
-/// forwards `inout` to it must be `@_transparent` too — `Pop`/`Push` below
-/// model that contract. Removing either attribute makes the builder tests
-/// fail at `-O` (`trips == 16`) while debug passes.
-///
-/// The loops are bounded so a regression fails instead of hanging.
 @Suite
 struct `Ownership Inout Drain Tests` {
     @Suite struct Unit {}
@@ -33,18 +8,15 @@ struct `Ownership Inout Drain Tests` {
     @Suite struct Integration {}
 }
 
-// MARK: - Fixture
-
 extension `Ownership Inout Drain Tests` {
     struct Header {
         var head: Int = 0
         var count: Int = 0
     }
 
-    /// A minimal heap-backed ring, shaped like `Buffer.Ring`.
     struct Ring<E: ~Copyable>: ~Copyable {
         var header: Header = .init()
-        /// Loop trips recorded by the last builder drain (diagnostic only).
+
         var trips: Int = 0
         let capacity: Int
         let storage: UnsafeMutablePointer<E>
@@ -64,8 +36,6 @@ extension `Ownership Inout Drain Tests` {
         }
     }
 
-    /// An `Ownership.Inout`-backed mutable view, shaped like
-    /// `Property.Inout.Typed`.
     struct Pop<E: ~Copyable>: ~Copyable, ~Escapable {
         let base: Ownership.Inout<Ring<E>>
 
@@ -157,8 +127,6 @@ extension `Ownership Inout Drain Tests`.Builder where E: ~Copyable {
         first
     }
 
-    /// The swift-buffer-ring-primitives drain shape: a condition loop that
-    /// re-reads `rest` while popping through the view.
     static func buildPartialBlock(accumulated: consuming Ring, next: consuming Ring) -> Ring {
         var result = consume accumulated
         var rest = consume next
@@ -171,8 +139,6 @@ extension `Ownership Inout Drain Tests`.Builder where E: ~Copyable {
         return result
     }
 }
-
-// MARK: - Unit Tests
 
 extension `Ownership Inout Drain Tests`.Unit {
     typealias Ring = `Ownership Inout Drain Tests`.Ring
@@ -195,8 +161,6 @@ extension `Ownership Inout Drain Tests`.Unit {
         #expect(empty)
     }
 }
-
-// MARK: - Edge Case Tests
 
 extension `Ownership Inout Drain Tests`.`Edge Case` {
     typealias Ring = `Ownership Inout Drain Tests`.Ring
@@ -223,8 +187,6 @@ extension `Ownership Inout Drain Tests`.`Edge Case` {
         return popped
     }
 }
-
-// MARK: - Integration Tests
 
 extension `Ownership Inout Drain Tests`.Integration {
     typealias Ring = `Ownership Inout Drain Tests`.Ring

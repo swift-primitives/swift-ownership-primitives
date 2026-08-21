@@ -1,50 +1,10 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives
-// project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 extension Ownership {
-    // SAFETY: Transitive absorption of `an absorber type`'s invariants;
-    // SAFETY: this wrapper's API never re-exposes the underlying unsafety,
-    // SAFETY: and lifetime / ownership constraints are inherited.
-    /// A heap-allocated wrapper for an immutable value with shared ownership.
-    ///
-    /// `Immutable` provides reference semantics for value types via ARC, enabling:
-    /// - Heap allocation for values that need stable identity
-    /// - Breaking recursive type definitions
-    /// - Storage for `~Copyable` values that need heap allocation
-    ///
-    /// ## Ownership Model
-    ///
-    /// Multiple owners can share the same `Immutable` instance via ARC.
-    /// The value is immutable (`let`), so sharing is safe.
-    ///
-    /// ## Sendable
-    ///
-    /// `Immutable` is checked `Sendable` when `Value: Sendable`. The value is
-    /// immutable (`let`) and the generic requires `Value: Sendable`, so the
-    /// compiler synthesises the conformance structurally — no `@unchecked`
-    /// escape hatch needed.
-    ///
-    /// ## Example
-    ///
-    /// ```swift
-    /// let immutable = Ownership.Immutable(42)
-    /// print(immutable.value)  // 42
-    /// ```
+
     @safe
     public final class Immutable<Value: ~Copyable & Sendable>: Sendable {
-        /// The wrapped value.
+
         public let value: Value
 
-        /// Creates a shared owner containing the given value.
         @inlinable
         public init(_ value: consuming Value) {
             self.value = value

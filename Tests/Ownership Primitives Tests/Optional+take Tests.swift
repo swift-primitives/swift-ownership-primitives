@@ -1,15 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives
-// project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Ownership_Primitives
 import Testing
 
@@ -19,8 +7,6 @@ struct `Optional Take Tests` {
     @Suite struct `Edge Case` {}
     @Suite struct Integration {}
 }
-
-// MARK: - Unit Tests
 
 extension `Optional Take Tests`.Unit {
     @Test
@@ -47,8 +33,6 @@ extension `Optional Take Tests`.Unit {
     }
 }
 
-// MARK: - Edge Case Tests
-
 extension `Optional Take Tests`.`Edge Case` {
     @Test
     func `take() on Optional<~Copyable> moves the value out`() {
@@ -61,8 +45,7 @@ extension `Optional Take Tests`.`Edge Case` {
             return
         }
         #expect(handle.id == 7)
-        // After take(): the slot is nil; cannot assert via equality because
-        // Handle is ~Copyable — use the none-check shape that doesn't copy.
+
         if case .some = slot {
             Issue.record("Expected slot to be nil after take()")
         }
@@ -81,10 +64,7 @@ extension `Optional Take Tests`.`Edge Case` {
 
     @Test
     func `take() works with class Wrapped`() {
-        // Ad hoc box fixture is structural: this package owns the
-        // Reference/Owned wrappers the rule recommends, so using them
-        // here would be circular (testing wrappers using the wrappers).
-        // swift-linter:disable:next ad hoc box class
+
         final class Box {
             let v: Int
             init(_ v: Int) { self.v = v }
@@ -95,8 +75,6 @@ extension `Optional Take Tests`.`Edge Case` {
         #expect(slot == nil)
     }
 }
-
-// MARK: - Integration Tests
 
 extension `Optional Take Tests`.Integration {
     @Test
@@ -110,14 +88,14 @@ extension `Optional Take Tests`.Integration {
         }
 
         #expect(consume(&slot) == 3)
-        #expect(consume(&slot) == -1)  // second consume sees nil
+        #expect(consume(&slot) == -1)
     }
 
     @Test
     func `take() lets a ~Copyable stored property be consumed from within a method`() {
         struct Owner: ~Copyable {
             var resource: Resource?
-            // swift-linter:disable:next minimal type body
+
             mutating func release() -> Resource? {
                 return resource.take()
             }
@@ -130,7 +108,7 @@ extension `Optional Take Tests`.Integration {
             return
         }
         #expect(resource.id == 42)
-        // `owner.resource` is now nil; cannot equality-compare ~Copyable Optional.
+
         if case .some = owner.resource {
             Issue.record("Expected owner.resource to be nil after release")
         }

@@ -12,13 +12,12 @@ let package = Package(
         .visionOS(.v27),
     ],
     products: [
-        // MARK: - Namespace
+
         .library(
             name: "Ownership Primitive",
             targets: ["Ownership Primitive"]
         ),
 
-        // MARK: - Variants (primary decomposition per [MOD-015])
         .library(
             name: "Ownership Borrow Primitives",
             targets: ["Ownership Borrow Primitives"]
@@ -60,19 +59,16 @@ let package = Package(
             targets: ["Ownership Transfer Erased Primitives"]
         ),
 
-        // MARK: - StdLib Integration
         .library(
             name: "Ownership Primitives Standard Library Integration",
             targets: ["Ownership Primitives Standard Library Integration"]
         ),
 
-        // MARK: - Umbrella
         .library(
             name: "Ownership Primitives",
             targets: ["Ownership Primitives"]
         ),
 
-        // MARK: - Test Support
         .library(
             name: "Ownership Primitives Test Support",
             targets: ["Ownership Primitives Test Support"]
@@ -85,13 +81,12 @@ let package = Package(
         )
     ],
     targets: [
-        // MARK: - Namespace
+
         .target(
             name: "Ownership Primitive",
             dependencies: []
         ),
 
-        // MARK: - Variants
         .target(
             name: "Ownership Borrow Primitives",
             dependencies: [
@@ -156,7 +151,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - StdLib Integration
         .target(
             name: "Ownership Primitives Standard Library Integration",
             dependencies: [
@@ -164,7 +158,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Umbrella
         .target(
             name: "Ownership Primitives",
             dependencies: [
@@ -183,7 +176,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Test Support
         .target(
             name: "Ownership Primitives Test Support",
             dependencies: [
@@ -196,7 +188,6 @@ let package = Package(
             path: "Tests/Support"
         ),
 
-        // MARK: - Tests
         .testTarget(
             name: "Ownership Primitives Tests",
             dependencies: [

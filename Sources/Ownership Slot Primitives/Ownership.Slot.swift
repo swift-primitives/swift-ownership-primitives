@@ -1,132 +1,21 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives
-// project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 public import Synchronization
 
-// MARK: - Slot
-
 extension Ownership {
-    /// A reusable heap-allocated slot for storing a single `~Copyable` value.
-    ///
-    /// Unlike `Ownership.Immutable` which holds an immutable value, `Slot` allows
-    /// values to be stored and taken repeatedly. This is useful for:
-    /// - Resource pools with reusable entries
-    /// - Lifetime management patterns
-    /// - Any pattern requiring heap storage with move-in/move-out semantics
-    ///
-    /// The key difference from `Ownership.Transfer`:
-    /// - `Transfer`: One-shot (empty → filled → taken, then done)
-    /// - `Slot`: Reusable (empty ↔ filled, can cycle indefinitely)
-    ///
-    /// ## Thread Safety
-    ///
-    /// All operations are atomic. The slot can be safely shared across threads,
-    /// though only one thread will succeed at any given store/take operation.
-    ///
-    /// ## Totality
-    ///
-    /// Primary operations return `Value?` rather than trapping:
-    /// - `store(_:)` returns `nil` on success, or the caller's value bounced
-    ///   back if the slot was occupied. Shape mirrors stdlib
-    ///   `Dictionary.updateValue(_:forKey:)`: the `Optional` carries the
-    ///   value the operation did NOT consume.
-    /// - `take()` returns the stored value, or `nil` if empty.
-    ///
-    /// Trapping variants are available via `__unchecked` overloads for contexts
-    /// where failure indicates a logic error.
-    ///
-    /// ## Example
-    ///
-    /// ```swift
-    /// let slot = Ownership.Slot<Resource>()
-    ///
-    /// if let returned = slot.store(resource) {
-    ///     // Slot was full — `returned` is the value we tried to store.
-    ///     releaseElsewhere(returned)
-    /// } else {
-    ///     // Resource is now stored.
-    /// }
-    ///
-    /// if let r = slot.take() {
-    ///     print("Got resource: \(r)")
-    /// }
-    /// ```
-    ///
-    /// ## Safety Invariant
-    ///
-    /// Atomic state machine (`Atomic<UInt8>` with release/acquire) protects
-    /// all mutable state. Publication protocol ensures a stored value is
-    /// visible on the take side after CAS succeeds.
-    ///
-    /// `@unchecked Sendable` per [MEM-SAFE-024] Category A
-    /// (synchronized); the internal atomic serializes all access.
+
     @safe
     public final class Slot<Value: ~Copyable>: @unchecked Sendable {
-        // MARK: - State Machine
-        //
-        // ## Publication Protocol (release/acquire)
-        //
-        // Store path:
-        //   1. CAS empty → initializing (acquiringAndReleasing) — reserves slot
-        //   2. _storage.initialize(to:) — writes non-atomic memory
-        //   3. store(State.full, releasing) — publishes; release barrier ensures
-        //      initialize happens-before any observer sees .full
-        //
-        // Take path (symmetric with store — see F-001 fix):
-        //   1. CAS full → draining (acquiringAndReleasing) — reserves the slot
-        //      for vacating; a concurrent store()'s CAS `expected: .empty` cannot
-        //      match `.draining`, so no other party can begin a new initialize()
-        //      into _storage until this take() publishes .empty in step 3
-        //   2. _storage.move() — safe because we acquired the publication, and
-        //      no other party can observe the slot as empty yet
-        //   3. store(State.empty, releasing) — publishes; release barrier ensures
-        //      the move-out happens-before any observer sees .empty and reserves
-        //      the slot for a new store()
-        //
-        // ## Invariants
-        //
-        // - State.full implies _storage is initialized and safe to move/deinit
-        // - State.initializing is transient; no observer can take until .full
-        // - State.draining is transient; no observer can store until .empty
-        // - _storage is non-atomic; all access is serialized by state transitions
-        //
-        // States:
-        // - State.empty (0): storage uninitialized
-        // - State.initializing (1): exclusive writer reserved; init in progress
-        // - State.full (2): storage initialized; may be taken
-        // - State.draining (3): exclusive reader reserved; move-out in progress
 
-        /// Atomic state for the slot.
         @usableFromInline
         let _state: Atomic<UInt8>
 
-        /// Preallocated storage for the value.
-        ///
-        /// Always allocated, even when empty. This avoids allocation on
-        /// the hot path (store/take operations).
         @usableFromInline
         let _storage: UnsafeMutablePointer<Value>
 
-        /// Creates an empty slot.
-        ///
-        /// Storage is preallocated but uninitialized.
         public init() {
             _state = Atomic(State.empty)
             unsafe (_storage = .allocate(capacity: 1))
         }
 
-        /// Creates a slot containing the given value.
-        ///
-        /// - Parameter value: The value to store (ownership transferred).
         public init(_ value: consuming sending Value) {
             _state = Atomic(State.initializing)
             unsafe (_storage = .allocate(capacity: 1))
@@ -139,34 +28,24 @@ extension Ownership {
             if prior == State.full {
                 unsafe _storage.deinitialize(count: 1)
             }
-            // State.initializing at deinit indicates a logic bug (store in progress
-            // when object deallocated). In release builds we treat as empty.
+
             unsafe _storage.deallocate()
         }
     }
 }
 
-// MARK: - State Typealias
-
 extension Ownership.Slot where Value: ~Copyable {
-    /// State constants for the slot state machine.
+
     @usableFromInline
     typealias State = __OwnershipSlotState
 }
 
-// MARK: - State Inspection
-
 extension Ownership.Slot where Value: ~Copyable {
-    /// Whether the slot is empty.
-    ///
-    /// Note: The intermediate "initializing" and "draining" states are not
-    /// considered empty (a store or take is in progress), but are also not
-    /// full (cannot be taken).
+
     public var isEmpty: Bool {
         _state.load(ordering: .acquiring) == State.empty
     }
 
-    /// Whether the slot contains a value that can be taken.
     public var isFull: Bool {
         _state.load(ordering: .acquiring) == State.full
     }

@@ -1,15 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives
-// project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Ownership_Primitives
 import Testing
 
@@ -19,8 +7,6 @@ struct `Ownership Mutable Tests` {
     @Suite struct `Edge Case` {}
     @Suite struct Integration {}
 }
-
-// MARK: - Unit Tests
 
 extension `Ownership Mutable Tests`.Unit {
     @Test
@@ -60,14 +46,12 @@ extension `Ownership Mutable Tests`.Unit {
     }
 }
 
-// MARK: - Edge Case Tests
-
 extension `Ownership Mutable Tests`.`Edge Case` {
     @Test
     func `works with ~Copyable Value — transitive borrow read`() {
         struct Handle: ~Copyable { let fd: Int32 }
         let mutable = Ownership.Mutable(Handle(fd: 3))
-        // transitive borrow through _read yield
+
         #expect(mutable.value.fd == 3)
     }
 
@@ -80,14 +64,12 @@ extension `Ownership Mutable Tests`.`Edge Case` {
     }
 }
 
-// MARK: - Integration Tests
-
 extension `Ownership Mutable Tests`.Integration {
     @Test
     func `Unchecked opt-in wraps a Mutable and passes across Sendable`() async {
         let unchecked = Ownership.Mutable<Int>.Unchecked(0)
         unchecked.mutable.value = 42
-        // The caller is asserting single-consumer access across the boundary.
+
         let read = await Task.detached { () -> Int in
             unchecked.mutable.value
         }.value

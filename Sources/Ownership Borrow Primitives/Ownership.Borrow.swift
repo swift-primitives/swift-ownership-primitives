@@ -1,73 +1,5 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives
-// project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// MARK: - Ownership.Borrow
-
 extension Ownership {
-    // WHY: Category D (SP-5) — pointer-backed value type; storage is
-    // WHY: private/internal; the type's safe API never lets the raw pointer
-    // WHY: escape, and lifetime invariants are enforced by init/deinit pairing.
-    /// A safe reference allowing in-place reads to a borrowed value.
-    ///
-    /// `Borrow` provides read-only access to a value through a raw pointer,
-    /// with its lifetime tied to the source. This is the ecosystem equivalent of
-    /// Swift stdlib's `Borrow<T>` (SE-0519, SwiftStdlib 6.4), using
-    /// `UnsafeRawPointer` instead of `Builtin.Borrow<Value>`.
-    ///
-    /// ## When to Use
-    ///
-    /// - Need to return a borrowed view of a ~Copyable element without consuming it
-    /// - Need `Optional<Ownership.Borrow<Element>>` for peek-style APIs
-    /// - `Property.Inout` is ~Copyable — use `Ownership.Borrow` when Optional is needed
-    ///
-    /// ## Copyable + ~Escapable
-    ///
-    /// `Borrow` is `Copyable` (pointer copies are safe) but `~Escapable`
-    /// (must not outlive its source). This enables `Optional<Ownership.Borrow<Element>>`
-    /// — the key use case that `Property.Inout` (~Copyable) cannot serve.
-    ///
-    /// ## ~Escapable `Value`
-    ///
-    /// `Value` admits both `~Copyable` and `~Escapable`. Storage is
-    /// `UnsafeRawPointer` because stdlib's `UnsafePointer<Pointee>` implicitly
-    /// requires `Pointee: Escapable`. The typed construction API
-    /// (`init(_ pointer: UnsafePointer<Value>)`) and the `value` accessor
-    /// are therefore available only when `Value: Escapable` (extensions
-    /// constrained with `where Value: ~Copyable` — the `~Copyable`
-    /// suppression does not re-suppress escapability).
-    ///
-    /// ## Dual-storage invariant
-    ///
-    /// `Borrow` holds two pieces of storage that together define its
-    /// semantics:
-    ///
-    /// - `_pointer` — a raw pointer to an initialized `Value`.
-    /// - `_owner` — an optional class reference that keeps the underlying
-    ///   allocation alive for the Borrow's lifetime.
-    ///
-    /// For `~Copyable Value`, `_owner` is always `nil`: the borrowing-parameter
-    /// calling convention forces indirect passing, so the caller's storage
-    /// address is already stable for the lifetime scope expressed by
-    /// `@_lifetime(borrow value)`.
-    ///
-    /// For `Copyable Value`, the borrowing convention may be trivial (by
-    /// register for types like `Int`), meaning no stable callee-side address
-    /// exists. `init(borrowing:)` therefore copies the value into a
-    /// class-owned heap allocation and stores a reference to the owner in
-    /// `_owner`; `Borrow`'s struct copies inherit the class reference via
-    /// ARC, and the owner's `deinit` frees the allocation when the last
-    /// `Borrow` referencing it is destroyed. The typed and raw-address
-    /// initializers leave `_owner = nil` — they promise the caller provided
-    /// a pointer whose lifetime is managed elsewhere.
+
     @safe
     public struct Borrow<Value: ~Copyable & ~Escapable>: ~Escapable {
 
@@ -77,30 +9,6 @@ extension Ownership {
         @usableFromInline
         let _owner: AnyObject?
 
-        /// Designated internal initializer.
-        ///
-        /// All public inits delegate here. Two construction paths reach this init; both produce sound
-        /// lifetimes despite the `@_lifetime(borrow pointer)` attribute
-        /// naming only `pointer`:
-        ///
-        /// 1. **Caller-managed pointer** (`owner == nil`). The caller
-        ///    guarantees `pointer` outlives the constructed `Borrow` —
-        ///    typically because `pointer` was acquired inside
-        ///    `withUnsafePointer(to:)` and the `Borrow` does not escape
-        ///    the closure. The lifetime attribute correctly names
-        ///    `pointer` as the binding source.
-        /// 2. **Heap-owned via `owner`** (`owner != nil`). `owner` is an
-        ///    ARC-managed heap buffer (the `_Ownership_Borrow_OwnedBuffer`
-        ///    used by the Copyable `init(borrowing:)` path) whose
-        ///    deallocation deinit frees the storage `pointer` references.
-        ///    `Borrow`'s struct copies retain `owner` via ARC, so as long
-        ///    as any `Borrow` referencing this storage exists, `owner`
-        ///    is kept alive — and therefore `pointer` remains valid. The
-        ///    `@_lifetime(borrow pointer)` attribute names `pointer`
-        ///    because `pointer` is the lifetime *anchor*; `owner` is the
-        ///    lifetime *backing* on this path. The attribute is correct
-        ///    in practice — `pointer`'s validity is mediated by `owner`'s
-        ///    ARC scope.
         @inlinable
         @_lifetime(borrow pointer)
         package init(
@@ -111,28 +19,12 @@ extension Ownership {
             self._owner = owner
         }
 
-        /// Canonical conformance path for the borrow-capability protocol.
-        ///
-        /// Conform via `extension Path: Ownership.Borrow.\`Protocol\` {}`.
-        /// The typealias resolves to the module-scope
-        /// `__Ownership_Borrow_Protocol` (hoisted because SE-0404 prohibits
-        /// protocol nesting inside a generic struct).
         public typealias `Protocol` = __Ownership_Borrow_Protocol
     }
 }
 
-// MARK: - Typed Construction
-
 extension Ownership.Borrow where Value: ~Copyable {
-    /// Creates a borrow reference from the given typed pointer.
-    ///
-    /// The lifetime of this `Borrow` is tied to the pointer's lifetime scope.
-    ///
-    /// Only available when `Value: Escapable` — stdlib's `UnsafePointer<T>`
-    /// requires `T: Escapable`. `~Escapable` `Value` constructs via the
-    /// raw-address init in the ~Escapable-admitting extension.
-    ///
-    /// - Parameter pointer: A pointer to the value to borrow.
+
     @inlinable
     @_lifetime(borrow pointer)
     public init(_ pointer: UnsafePointer<Value>) {
@@ -141,53 +33,8 @@ extension Ownership.Borrow where Value: ~Copyable {
     }
 }
 
-// MARK: - Borrowing Construction (~Copyable Value path)
-
 extension Ownership.Borrow where Value: ~Copyable {
-    /// Creates a borrow reference from a borrowed `~Copyable` value.
-    ///
-    /// > Important: This init is sound for callers in a **different module**
-    /// > than `Ownership_Borrow_Primitives`. Same-module consumers
-    /// > (tests or additional sources within this module) will hit the
-    /// > Swift 6.3.1 / 6.4-dev release-mode miscompile where
-    /// > `withUnsafePointer(to: borrowing value)` returns a callee-frame
-    /// > spill slot that dies after the closure returns. Same-module
-    /// > consumers that need a borrow-shaped reference should instead
-    /// > call `withUnsafePointer(to: value)` at their own scope and pass
-    /// > the resulting `UnsafePointer<Value>` to
-    /// > `init(_ pointer: UnsafePointer<Value>)`. Cross-module consumers
-    /// > are the primary use case and this init is safe for them.
-    ///
-    /// > Warning: Do NOT add `@inlinable` to this init. `@inlinable`
-    /// > causes the Swift 6.3.1 / 6.4-dev optimizer to inline the body
-    /// > across module boundaries, reproducing the same-module miscompile
-    /// > everywhere. Keeping the init non-`@inlinable` preserves the
-    /// > cross-module function-call boundary; inside the callee,
-    /// > `Builtin.addressOfBorrow(value)` observes the `@in_guaranteed`
-    /// > indirect ABI and yields the caller's actual address. Evidence
-    /// > and the minimal reproducer are at
-    /// > `swift-institute/Experiments/borrow-pointer-storage-release-miscompile/`
-    /// > and the audit at
-    /// > `swift-institute/Audits/borrow-pointer-storage-release-miscompile.md`.
-    /// > If you are adding `@inlinable` to solve a cross-module-import
-    /// > or performance problem, verify downstream release-mode tests
-    /// > for `Tagged<Tag, Ownership.Borrow<~Copyable Base>>` consumers
-    /// > (e.g. `swift-property-primitives` `Property.Borrow` suite)
-    /// > still pass in `swift test -c release` first.
-    ///
-    /// This mirrors stdlib `Borrow.init(_ value: borrowing Value)` and the
-    /// ecosystem `Property.Borrow` borrowing-init pattern. Enables
-    /// construction from any borrowing context without pointer exposure.
-    ///
-    /// For `Copyable Value`, a separate overload in the `where Value: Copyable`
-    /// extension takes priority; it heap-allocates a copy because the
-    /// borrowing convention for trivial `Copyable` types may be by-register
-    /// (no stable callee address even at a cross-module boundary).
-    ///
-    /// Only available for `Escapable` `Value` — stdlib's
-    /// `withUnsafePointer(to:)` does not support `~Escapable` values.
-    ///
-    /// - Parameter value: The value to borrow.
+
     @_lifetime(borrow value)
     public init(borrowing value: borrowing Value) {
         unsafe (self._pointer = withUnsafePointer(to: value) { unsafe UnsafeRawPointer($0) })
@@ -195,33 +42,8 @@ extension Ownership.Borrow where Value: ~Copyable {
     }
 }
 
-// MARK: - Borrowing Construction (Copyable Value path)
-
 extension Ownership.Borrow where Value: Copyable {
-    /// Creates a borrow reference from a `Copyable` value via a heap-owned copy.
-    ///
-    /// For `Copyable Value`, the borrowing calling convention may be trivial
-    /// (pass-by-register for types like `Int`). `withUnsafePointer(to: value)`
-    /// would then capture the callee's spill slot, which becomes invalid the
-    /// moment the `withUnsafePointer` frame unwinds — leaving `Borrow`
-    /// storing a dangling pointer. The optimizer is free to rematerialize
-    /// the (dangling) init on each `.value` read because `Borrow` is
-    /// `Copyable`, producing different garbage across reads.
-    ///
-    /// This overload bypasses the issue by copying `value` into a
-    /// class-owned heap buffer and storing a reference to the class in
-    /// `_owner`. The buffer lives as long as any `Borrow` referencing it
-    /// exists (ARC on the class reference), and the copy semantics of the
-    /// underlying `Value` guarantee read-stability: every subsequent read
-    /// via `.value` returns a value equal to the borrowed source.
-    ///
-    /// Cost: one heap allocation per `init(borrowing:)` call with `Copyable
-    /// Value`, plus ARC on `Borrow` copies. This is the price of preserving
-    /// the `init(borrowing:)` API for `Copyable Value` within the pre-SE-0519
-    /// toolchain surface; the overhead disappears once the package migrates
-    /// to stdlib `Borrow<T>` after SE-0519 stabilises.
-    ///
-    /// - Parameter value: The value to borrow. Copied into a heap buffer.
+
     @inlinable
     @_lifetime(borrow value)
     public init(borrowing value: borrowing Value) {
@@ -231,20 +53,8 @@ extension Ownership.Borrow where Value: Copyable {
     }
 }
 
-// MARK: - Unsafe Typed Construction
-
 extension Ownership.Borrow where Value: ~Copyable {
-    /// Unsafely creates a borrow reference using the given address, with
-    /// lifetime based on the borrowed owner.
-    ///
-    /// This mirrors stdlib `Borrow.init(unsafeAddress:borrowing:)` (SE-0519).
-    ///
-    /// Only available for `Escapable` `Value` — the typed
-    /// `UnsafePointer<Value>` parameter requires it.
-    ///
-    /// - Parameters:
-    ///   - pointer: The address of the value to borrow.
-    ///   - owner: The owning instance whose lifetime scopes this borrow.
+
     @unsafe
     @inlinable
     @_lifetime(borrow owner)
@@ -257,23 +67,8 @@ extension Ownership.Borrow where Value: ~Copyable {
     }
 }
 
-// MARK: - Raw-Address Construction (~Escapable Value)
-
 extension Ownership.Borrow where Value: ~Copyable & ~Escapable {
-    /// Unsafely creates a borrow reference using a raw address, with
-    /// lifetime based on the borrowed owner.
-    ///
-    /// This is the only construction path available when `Value` is
-    /// `~Escapable`, because stdlib's typed `UnsafePointer<Value>` requires
-    /// `Value: Escapable`. In practice, the default associatedtype
-    /// `Borrowed = Ownership.Borrow<Self>` on `Ownership.Borrow.\`Protocol\``
-    /// only resolves to this shape for conformers that specifically want it;
-    /// typical `~Escapable` conformers (Path, String) declare their own
-    /// nested `Borrowed` struct instead.
-    ///
-    /// - Parameters:
-    ///   - pointer: The raw address of the value to borrow.
-    ///   - owner: The owning instance whose lifetime scopes this borrow.
+
     @unsafe
     @inlinable
     @_lifetime(borrow owner)
@@ -286,18 +81,8 @@ extension Ownership.Borrow where Value: ~Copyable & ~Escapable {
     }
 }
 
-// MARK: - Value Access
-
 extension Ownership.Borrow where Value: ~Copyable {
-    /// The borrowed value.
-    ///
-    /// Provides in-place read access to the underlying value through the
-    /// stored pointer. Uses `_read` coroutine until `borrow` accessor
-    /// (SE-0507, `BorrowAndMutateAccessors`) ships in a production compiler.
-    ///
-    /// Only available when `Value: Escapable` — reconstructing a typed
-    /// pointer from `UnsafeRawPointer` via `assumingMemoryBound(to:)`
-    /// returns `UnsafePointer<Value>`, which requires `Value: Escapable`.
+
     @inlinable
     public var value: Value {
         _read {

@@ -1,24 +1,8 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives
-// project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Ownership_Primitives
 import Testing
 
-// Domain-organized sub-suites (Value / Retained / Erased × Outgoing /
-// Incoming) instead of the canonical Unit / Edge Case / Integration
-// scaffold: the SUT has 6 orthogonal Ownership.Transfer variants whose
-// distinct API surfaces benefit from per-variant test grouping.
 @Suite
-// swift-linter:disable:next suite categories
+
 struct `Ownership Transfer Tests` {
     @Suite struct `Value Outgoing` {}
     @Suite struct `Value Incoming` {}
@@ -28,8 +12,6 @@ struct `Ownership Transfer Tests` {
     @Suite struct `Erased Incoming` {}
     @Suite struct Integration {}
 }
-
-// MARK: - Value.Outgoing
 
 extension `Ownership Transfer Tests`.`Value Outgoing` {
     @Test
@@ -62,8 +44,6 @@ extension `Ownership Transfer Tests`.`Value Outgoing` {
     }
 }
 
-// MARK: - Value.Incoming
-
 extension `Ownership Transfer Tests`.`Value Incoming` {
     @Test
     func `token.store(_) then consume() round-trips`() {
@@ -87,8 +67,6 @@ extension `Ownership Transfer Tests`.`Value Incoming` {
         #expect(incoming.consume() == nil)
     }
 }
-
-// MARK: - Retained.Outgoing
 
 extension `Ownership Transfer Tests`.`Retained Outgoing` {
     @Test
@@ -122,16 +100,12 @@ extension `Ownership Transfer Tests`.`Retained Outgoing` {
         do {
             let probe = Probe()
             weakProbe = probe
-            // Construct Outgoing and drop without consume().
-            // Without the abandoned-path deinit on Retained.Outgoing the
-            // +1 retain leaks and `weakProbe` survives the scope.
+
             unsafe (_ = Ownership.Transfer.Retained<Probe>.Outgoing(probe))
         }
         #expect(weakProbe == nil, "Outgoing dropped without consume must release the retain")
     }
 }
-
-// MARK: - Retained.Incoming
 
 extension `Ownership Transfer Tests`.`Retained Incoming` {
     @Test
@@ -163,16 +137,12 @@ extension `Ownership Transfer Tests`.`Retained Incoming` {
         let marker = Marker(7)
         let markerID = ObjectIdentifier(marker)
         let incoming = Ownership.Transfer.Retained<Marker>.Incoming()
-        // `store(_:)` takes `sending T` (fable-448 F-002): capture identity
-        // before the hand-off rather than keeping `marker` alive to compare
-        // against afterward, matching the sending contract.
+
         incoming.token.store(marker)
         let received = incoming.consume()
         #expect(received.map(ObjectIdentifier.init) == markerID)
     }
 }
-
-// MARK: - Erased.Outgoing
 
 extension `Ownership Transfer Tests`.`Erased Outgoing` {
     @Test
@@ -196,12 +166,10 @@ extension `Ownership Transfer Tests`.`Erased Outgoing` {
             let raw = unsafe Ownership.Transfer.Erased.Outgoing.make(sentinel)
             unsafe Ownership.Transfer.Erased.Outgoing.destroy(raw)
         }
-        // probe observes that destroy() released the +1 retain the box held.
+
         #expect(probe == nil)
     }
 }
-
-// MARK: - Erased.Incoming
 
 extension `Ownership Transfer Tests`.`Erased Incoming` {
     @Test
@@ -226,21 +194,17 @@ extension `Ownership Transfer Tests`.`Erased Incoming` {
     }
 }
 
-// MARK: - Integration
-
 extension `Ownership Transfer Tests`.Integration {
     @Test
     func `Outgoing + Incoming together model a bidirectional channel`() {
         let request = Ownership.Transfer.Value<Int>.Outgoing(42)
         let reply = Ownership.Transfer.Value<Int>.Incoming()
 
-        // Producer side — would typically run on a detached task.
         let requestToken = request.token()
         let replyToken = reply.token
         let received = requestToken.take()
         replyToken.store(received * 2)
 
-        // Consumer side — retrieves the produced value.
         #expect(reply.consume() == 84)
     }
 
@@ -254,9 +218,7 @@ extension `Ownership Transfer Tests`.Integration {
         let producerToken = incoming.token
         let expected = Service(1)
         let expectedID = ObjectIdentifier(expected)
-        // `store(_:)` takes `sending T` (fable-448 F-002): capture identity
-        // before the hand-off rather than keeping `expected` alive to
-        // compare against afterward, matching the sending contract.
+
         producerToken.store(expected)
         let got = incoming.consume()
         #expect(got.map(ObjectIdentifier.init) == expectedID)

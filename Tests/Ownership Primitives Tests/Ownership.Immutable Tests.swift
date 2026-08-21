@@ -1,15 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives
-// project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Ownership_Primitives
 import Testing
 
@@ -19,8 +7,6 @@ struct `Ownership Immutable Tests` {
     @Suite struct `Edge Case` {}
     @Suite struct Integration {}
 }
-
-// MARK: - Unit Tests
 
 extension `Ownership Immutable Tests`.Unit {
     @Test
@@ -39,13 +25,11 @@ extension `Ownership Immutable Tests`.Unit {
     @Test
     func `ARC sharing — multiple references see same identity`() {
         let immutable = Ownership.Immutable(7)
-        let alias = immutable  // Immutable is a reference type; both point at same heap cell
+        let alias = immutable
         #expect(immutable === alias)
         #expect(alias.value == 7)
     }
 }
-
-// MARK: - Edge Case Tests
 
 extension `Ownership Immutable Tests`.`Edge Case` {
     @Test
@@ -68,8 +52,6 @@ extension `Ownership Immutable Tests`.`Edge Case` {
         #expect(immutable.value.id == 1)
     }
 }
-
-// MARK: - Integration Tests
 
 extension `Ownership Immutable Tests`.Integration {
     @Test
